@@ -34,7 +34,7 @@
   - Intervals: semitones, degree numeral, inversion, consonance, common context
   - Scales: degree numerals, triad map, modal character, parent scale
   - Chords: interval numerals, Riemannian relations, tritone sub, dim/aug/sus theory
-- **23** Voicing modes: Full / Real / Shell / Guide + Random chip
+- **23** Voicing modes: Full / Real / Shell / Guide + Random chip — *to be expanded and reorganised in Point 41*
 - **24** Tritone label: A4/d5 context-aware, replaces "TT" everywhere
 - **25** Slash chords: root-agnostic, 18 types (9 maj + 9 min upper), grand staff
 - **25b** Slash playback fix: bass merged into shared pipeline
@@ -52,9 +52,118 @@
 - **35** More UST types — Minor shell [♭3 + ♭7]: IIm, IV, ♭VII, ♭VI upper triads → m7 contexts. Maj7 shell [3 + 7]: II, IIm, V, VIm upper triads → Maj7 contexts. Pool panel split into three UST sections (Dom7 / m7 / Maj7 shell). Breakdown, labels, notation and root badge all adapt per shell quality
 - **36** Chord scales breakdown row (all chord families): algorithmic set-intersection against all 25 scales in SCALE_REF. Scale root = chord root (upper root for slash, lower root for poly, implied root for UST); all sounding pitch classes must be contained in the scale. Collapsible "N scales fit ▸" sub-section within breakdown; each row shows scale name + teal tag (neutral/bright/tense/dark/etc.) + faint descriptive note. Applies in quiz (post-answer) and dictionary mode across normal chords, inversions, slash, polychords, and UST
 - **37** Voice leading panel — *partially implemented, being redesigned* (see TODO below)
+- **38** Chord progression mode — *partially implemented* (see TODO below)
 - **39** Extended / compound intervals: 7 new entries: m9, M9, A9/♯9, P11, A11/♯11, m13, M13. Pool panel split into "Simple intervals" and "Extended / Compound" sections (compound collapsed and unselected by default). Breakdown: "Simple equivalent" row replaces inversion row for compound intervals. INTERVAL_CONSONANCE and INTERVAL_CONTEXT extended to cover all new semitone values
 - **Tab order** Tabs reordered to Intervals | Chords | Scales (was Chords | Intervals | Scales); Intervals is now the default landing mode
 - **Mobile** Full mobile responsive pass: fixed bottom play bar removed; dark mode toggle moved to score bar on mobile (duplicate button, CSS show/hide per breakpoint, JS syncs both); root panel open on desktop / collapsed on mobile via JS boot; all root chips visible via flex-wrap grid (was hidden horizontal scroll); dynamic body padding-top driven by actual sticky header height; default root set to C
+
+---
+
+## Bug Tracker
+
+### Fixed ✓
+
+#### BUG-1 — Mode switch after Progressions corrupts notation in all other modes
+**Symptom:** After visiting the Progressions tab and switching back to Chords/Intervals/Scales,
+notation rendered as garbage or was completely blank.
+**Root cause:** `showProgressionNotation()` mutated shared DOM without restoring it on exit:
+- hid `.notation-scroll` (never re-shown)
+- injected `.prog-notation-row` into `#notationArea` (never removed)
+- hid `#keysigChipRow` (never re-shown)
+- left progression buttons in `#controls` (Submit / Next / Hear Slowly persisted)
+**Fix:** Added `teardownProgressionUI()` — a single idempotent cleanup function that restores
+all five elements to their baseline state. Called at the top of `switchMode()`, `setAppMode()`,
+and `resetQuizUI()`. (Session: Aug 2026)
+
+#### BUG-2 — Progression mini-stave notation: wrong spelling, always sharps, flat detection broken
+**Symptom:** Progression notation showed notes spelled as sharps even in flat keys (Bb → A#,
+Eb → D#, etc.). VexFlow errors were silently swallowed, leaving blank stave cells.
+**Root cause:** `showProgressionNotation()` used a raw sharp-name array
+(`['c','c#','d','d#',...]`) instead of the proper `midiToVexKeySpelled()` pipeline.
+Accidental detection used a broken `k.includes('b') && !k.startsWith('b')` guard that
+misfired on the note B natural. No key signature support at all.
+**Fix:** Replaced the raw array with `midiToVexKeySpelled()` + `respellForKeySig()` +
+`isCoveredByKeySig()` — identical pipeline to all other modes. Added `progKeySigMode`
+state variable, wired Key/C chips for progressions, added `stave.addKeySignature()`.
+Changed `catch(e) {}` to `console.warn(...)` to surface errors during testing. (Session: Aug 2026)
+
+#### BUG-3 — Interval notation: two notes render on same staff position in Key mode
+**Symptom:** When Key mode is active for intervals, certain enharmonic spellings (e.g. Db → Ebb
+for a minor 2nd) caused both notes to render on the exact same D line. The note on the E space
+also showed a double-flat glyph instead of a single flat (or no accidental at all).
+**Root cause:** `respellForKeySig()` tried to simplify double accidentals by finding a
+single-accidental enharmonic at the same pitch class. For Ebb (pc 2), the only candidate was
+D natural (pc 2) — which is on a different staff position and collides with Db. The cross-letter
+natural fallback was running before the same-letter strip, so Ebb → D rather than Ebb → Eb.
+Additionally, `spellMidi()` was not tracking whether a same-letter simplification had occurred,
+so `addAccidentalsFiltered()` had no way to know it needed to force-draw the remaining single
+accidental on top of what the key sig already provides.
+**Fix (Aug 2026):**
+- `respellForKeySig()`: reordered priorities — cross-letter covered candidate first, then
+  same-letter one-step strip (ebb → eb, x## → x#), then cross-letter natural last resort.
+  This ensures staff position is always preserved when a same-letter simplification exists.
+- `spellMidi()` (and equivalents in poly notation and progression mini-staves): now returns
+  `{ key, forcedAcc }` instead of a plain string. `forcedAcc=true` when a same-letter
+  double→single simplification occurred.
+- `addAccidentalsFiltered()`: when `forcedAcc=true`, bypasses `isCoveredByKeySig()` and
+  draws the accidental unconditionally — key sig provides one flat on E, the drawn flat
+  signals the second, correctly communicating Ebb to the reader.
+**Status:** Fixed. ✓
+
+#### BUG-4 — Resolution notation: Key/C chip selection has no effect
+**Symptom:** Clicking Key or C while the resolution notation is showing (after clicking
+"Resolve →") doesn't change the notation. Accidentals are always shown inline regardless
+of key sig mode.
+**Root cause:** `renderResolutionNotation()` called `midiToVexKeySpelled()` directly but
+never called `respellForKeySig()`. `stave.addKeySignature()` was never called. The
+`chordKeySigMode` state was completely ignored in this code path.
+**Fix (Aug 2026):** `renderResolutionNotation()` now fully wires `chordKeySigMode`:
+computes `keySigStr` and `coveredLetters` from it, calls `respellForKeySig()` on every
+note, calls `stave.addKeySignature()` on both treble and bass staves when Key mode is
+active. Verified by `// BUG-4 fix` comment in code.
+**Status:** Fixed. ✓
+
+---
+
+### Open Bugs 🔴
+
+#### BUG-5 — Resolution notation: VexFlow two-chord layout is fragile
+**Symptom:** Source and resolution chords sometimes render in wrong positions or overlap.
+**Root cause:** Uses a single stave with `[srcNote, BarNote, tgtNote]` as half-notes in
+one voice. `BarNote` inside a single voice is fragile in VexFlow and the Formatter
+misbehaves with it.
+**Fix approach:** Use two separate stave segments or two independent voices.
+**Status:** Not yet fixed. Deferred — needs more testing to confirm whether it causes
+visible problems in practice before prioritising the fix.
+
+#### BUG-6 — Progression: breakdown panel not shown post-answer
+**Symptom:** After submitting an answer in Progressions quiz mode, the breakdown panel
+never appears.
+**Root cause:** `showBreakdown()` has no `progressions` branch. It falls through to the
+chord branch which crashes silently because `currentChord` is null during progressions.
+**Status:** Not yet fixed. Will be addressed as part of the Point 38 remaining work.
+
+#### BUG-7 — Progression notation: staves missing clef, misaligned, cut off, treble only
+**Symptom:** Mini staves in progression notation render without a clef symbol. Cells are
+inconsistently sized and notes are clipped at the bottom. Only treble clef is used
+regardless of the register of the notes.
+**Root cause:** `showProgressionNotation()` never calls `addClef()`. Container height is
+fixed at 100px which is too small for low-register notes or grand staff. No logic to
+detect whether bass or grand staff is needed based on MIDI range.
+**Also:** `notationPanel` and `notationArea` were being set to `display: ''` (empty string)
+instead of `'block'`, causing the notation to stay hidden entirely. Fixed in v5.
+**Fix approach:** Rewrite `showProgressionNotation()` as a single continuous score:
+- One clef decision for the whole progression based on the union of all MIDI notes
+  across all chords (treble / bass / grand staff — same threshold logic as `showNotation()`)
+- One wide SVG with a single stave (or grand staff pair), clef at the left, key sig
+  after it, then chord 1 — barline — chord 2 — barline — etc.
+- Chord label drawn as SVG text above each chord's x-position on the staff showing both
+  numeral + quality AND the actual chord name with root, e.g. "V maj — G" or two lines:
+  "V maj" / "G major" — so the user sees both harmonic function and absolute pitch identity
+- Width scales with number of chords; existing horizontal scroll handles overflow
+- Height: single staff for treble/bass only; grand staff height when needed
+- No more separate per-chord cell divs
+**Status:** Partially fixed (display bug fixed in v5). Notation redesign not yet done.
 
 ---
 
@@ -156,6 +265,32 @@ and voice leading arrows.
 
 ### Point 38 — Chord progression mode
 
+#### Status: Partially implemented
+The following is already working:
+- `PROGRESSIONS` data (original collection — cadences through extended)
+- `playProgression()` / `playProgressionSlowly()` — audio playback
+- `generateProgressionQuestion()` — random progression, random root, slot state
+- `renderProgressionAnswerUI()` — per-slot degree + quality chip grid, Submit, Hear Slowly
+- `submitProgressionAnswer()` — grading, green/red per slot, revealed correct answer, scoring, Next
+- `showProgressionNotation()` — notation display (display bug fixed in v5; redesign pending per BUG-7)
+- Key/C chip support for progression notation
+- Dictionary mode (`dictShowProgression`, `renderDictProgressionPoolPanel`) — wired
+- Pool panel: collapsible sections, two-line chips (symbol + name) unified across quiz and dict modes (fixed v5)
+
+#### Still to do:
+- **BUG-7 notation redesign**: rewrite `showProgressionNotation()` as a single continuous
+  score (see BUG-7 above for full spec)
+- **BUG-6 progression breakdown**: add `progressions` branch to `showBreakdown()`.
+  Show: progression name + symbol header, per-chord row (degree label, chord name,
+  notes spelled at current root, one-line function note e.g. "dominant function")
+- **`recomputeCurrentNotes()` progressions branch**: changing the root chip in
+  progressions mode does not retranspose and re-render. Add a progressions case
+  that mirrors the other modes.
+- **Root badge spelling**: `dictShowProgression` uses raw `NOTE_NAMES[pc]` (always
+  sharps). Should use `spelledRoot(pc)`.
+- **Expanded progression collection**: add all progressions from the genre reference
+  (see full list below)
+
 #### Overview
 New **Progressions** tab added to the mode tab bar: Intervals | Chords | Scales | **Progressions**.
 Fixed collection of common progressions, granularly selectable via the pool panel (same
@@ -163,132 +298,206 @@ chip pattern as all other modes). Available in both **Quiz** and **Dictionary** 
 
 #### Playback
 - Play button plays the **whole progression** once, with a short gap between chords
-- **No loop** — user re-listens by pressing the main play button again (no extra "Play Again" button needed)
+- **No loop** — user re-listens by pressing the main play button again
 - Root is **randomised per question** (same as chord/interval/scale modes)
-- Chord vocabulary kept **simple** — triads and basic 7ths only, no heavy extensions
-  (this is a harmonic relationship test, not an absolute ear test)
+- Chord vocabulary: **triads and 7th chords only** (no extensions beyond 7th)
 
 #### What the user identifies
 - **Degree in Roman numerals + chord quality** for each chord in the progression
 - e.g. `V 7`, `ii m7`, `I maj` — not absolute roots
-- This tests understanding of harmonic relationships, not perfect pitch
 
 #### Answer UI — two-step chip selection per chord slot
-Each chord slot gets a two-step selection (more musical, reduces cognitive load,
-teaches the two dimensions separately):
+Each chord slot gets a two-step selection:
 1. **Degree chip**: `I  ii  iii  IV  V  vi  vii°  ♭VII` etc.
 2. **Quality chip**: `maj  m  7  maj7  m7  dim  aug  sus4` etc.
 
-User listens to the whole progression first, then fills in all slots before submitting.
-One degree+quality pair per chord slot, all slots visible upfront.
-
 #### Scoring & feedback
-- A progression is counted as **correct only if all chord slots are right** — partial
-  answers do not increment the score or streak
-- After submitting, each chord slot turns **green (correct) or red (wrong)** independently,
-  consistent with the existing dropdown correct/wrong colour pattern
-- **Correct answer is always revealed** in red slots — same behaviour as the existing
-  dropdown, essential for learning; the student sees exactly what the chord should have
-  been and where in the progression they went wrong
-- Granular per-slot feedback is shown regardless of overall score outcome — getting
-  3 out of 4 right shows three green and one red, so the student knows precisely
-  which chord they missed and can re-listen to focus on that moment
+- Correct only if **all chord slots are right** — partial answers do not score
+- Each slot turns green (correct) or red (wrong) independently
+- Correct answer revealed in red slots
 
 #### Notation
-- Notation panel shows **all chords in the progression** simultaneously, like a lead sheet
-- Revealed after answering (same pattern as other modes)
+- Single continuous score (after BUG-7 redesign): one stave or grand staff, clef at left,
+  key sig, chords separated by barlines, chord labels above each bar
+- Each chord label shows **both** Roman numeral + quality AND chord name with root,
+  e.g. "V maj / G major" — harmonic function and absolute pitch identity together
+- Key/C chips control key signature (tonic major key when Key is active)
+- Clef chosen once for the whole progression based on overall MIDI range
 
 #### Pool panel
 - Same collapsible chip panel as other modes
-- Progressions grouped by section (see below)
-- Each progression chip shows **Roman numerals + cadence/style name**, e.g. `V–I  (Perfect Authentic)`
-- Dictionary mode: select a progression chip → hear it + see notation immediately
-
-#### Progression collection (2–6 chords)
-
-**Cadences (2 chords) — named harmonic gestures that end a phrase:**
-
-Cadences are the most fundamental harmonic relationships in tonal music. Each chip
-shows both Roman numerals and the cadence name so students learn the terminology
-passively while training their ear.
-
-- `V–I` **(Perfect Authentic Cadence)** — strongest possible resolution; both chords
-  root position, melody ends on tonic
-- `V7–I` **(Perfect Authentic, with dom7)** — same but with added tension from the 7th
-- `IV–I` **(Plagal Cadence)** — the "amen" cadence; softer, more final; common in hymns
-  and gospel
-- `I–V` **(Half Cadence)** — ends on dominant, feels unresolved; a musical question mark
-- `ii–V` **(Half Cadence, jazz)** — the standard jazz setup; ear expects I to follow
-- `IV–V` **(Half Cadence, rock/pop)** — common approach to the dominant
-- `V–vi` **(Deceptive Cadence)** — ear expects I but gets vi; surprise resolution; very
-  common in pop and classical
-- `V7–vi` **(Deceptive Cadence, with dom7)** — same surprise but with added tension
-- `iv6–V` **(Phrygian Cadence)** — iv in first inversion to V in minor; very dark and
-  distinctive; common in baroque and flamenco
-
-**Diminished & half-diminished resolutions (2 chords) — critical for jazz and classical:**
-
-Often neglected in ear training but essential. The diminished and half-diminished
-chords have strong tendency tones that make their resolutions very characteristic.
-
-- `vii°–I` **(Leading tone resolution)** — diminished triad resolves to major tonic;
-  classical voice leading; the 3-note version of V7→I
-- `vii°7–I` **(Fully diminished resolution)** — fully diminished 7th to major tonic;
-  very dramatic; common in classical and jazz; symmetrical chord (4 enharmonic roots)
-- `vii°7–i` **(Fully diminished to minor tonic)** — same tension, darker arrival;
-  extremely common in minor key classical music
-- `iiø7–V` **(Half-diminished to dominant)** — the ii∅ in minor; sets up dominant
-  without resolving; classic jazz minor ii–V setup
-- `iiø7–V7` **(Half-diminished to dominant 7th)** — complete jazz minor ii–V; the most
-  important 2-chord gesture in jazz minor harmony
-- `iiø7–i` **(Half-diminished direct resolution)** — skips the dominant; less common
-  but distinctive sound
-- `#iv°–V` **(Chromatic diminished approach)** — augmented fourth diminished chord
-  resolving to dominant; chromatic colour, common in romantic and jazz harmony
-
-**Short progressions — 3 chords:**
-- I–IV–V (rock / folk / blues foundation)
-- I–V–vi (partial axis, very common in pop)
-- i–VII–VI (minor descending, rock/metal)
-- I–vi–V (classical descending)
-- I–IV–I (blues turnaround fragment)
-
-**Pop & Rock — 4 chords:**
-- I–V–vi–IV (axis progression — dominant in modern pop)
-- vi–IV–I–V (axis starting on vi — same chords, different feel)
-- I–IV–vi–V
-- I–iii–IV–V (ascending, bright)
-- I–iii–vi–IV (emotional pop variant)
-- I–IV–I–V (blues-adjacent, country)
-- I–VII–IV–I (mixolydian feel, classic rock)
-- ii–IV–I–V (gospel)
-
-**Jazz — 4 chords:**
-- ii–V–I–VI (jazz turnaround — the most important 4-chord pattern in jazz)
-- iii–VI–ii–V (jazz cycle of 5ths)
-- I–VI–ii–V (rhythm changes A section)
-- i–iv–VII–III (minor jazz)
-- i–iiø7–V7–i (minor ii–V–I — essential jazz minor cadence)
-
-**Minor — 4 chords:**
-- i–VII–VI–VII (natural minor, very common in rock/pop)
-- i–VI–III–VII (natural minor cycle)
-- i–iv–v–i (pure minor, classical)
-- i–VI–VII–i
-- i–III–VII–VI (epic/cinematic minor)
-- i–v–VI–VII (dramatic minor)
-
-**Extended — 5 & 6 chords:**
-- I–IV–V–IV–I (rock/blues, symmetrical return)
-- ii–V–I–IV–V (extended jazz cadence)
-- i–VII–VI–VII–i (minor with return)
-- I–iii–IV–iv–I–V (borrowed iv chord — emotional, Beatles-style)
-- ii–V–I–vi–ii–V (jazz loop, 6 chords)
-- i–VII–VI–V–i–V (flamenco/classical minor, 6 chords)
+- Two-line chips: Roman numeral symbol on top, style/cadence name below
+- Unified appearance in both quiz mode (multi-select + All/None) and dictionary mode (single-select)
+- Progressions grouped by style (see collection below)
 
 #### Open questions
-- Scoring: partial credit per chord slot, or all-or-nothing per progression?
-- 8-chord progressions (12-bar blues, rhythm changes) deferred to Parking Lot for now
+- Scoring: partial credit per chord slot, or all-or-nothing per progression? (currently all-or-nothing)
+
+---
+
+#### Full progression collection (2–6 chords)
+
+Chord vocabulary: triads and 7th chords only. Complex extensions (9ths, altered dominants,
+augmented sixths) represented as their simpler triad/7th equivalents.
+8-chord progressions (12-bar blues, 16-bar blues, full rhythm changes) deferred to Parking Lot.
+
+---
+
+**Cadences (2 chords):**
+- `V–I` (Perfect Authentic)
+- `V7–I` (Perfect Authentic, dom7)
+- `IV–I` (Plagal)
+- `I–V` (Half)
+- `ii–V` (Half, jazz)
+- `IV–V` (Half, rock/pop)
+- `vi–V` (Half, minor)
+- `V–vi` (Deceptive)
+- `V7–vi` (Deceptive, dom7)
+- `iv–V` (Phrygian half)
+
+**Diminished & half-diminished (2 chords):**
+- `vii°–I`
+- `vii°7–I`
+- `vii°7–i`
+- `iiø7–V`
+- `iiø7–V7`
+- `iiø7–i`
+- `♯iv°–V`
+
+**Classical (3–6 chords):**
+- `I–V–I`
+- `I–IV–V–I`
+- `I–ii–V–I`
+- `I–vi–ii–V–I`
+- `I–IV–I–V–I`
+- `viio–I` (leading-tone dim)
+- `iii–vi–ii–V–I` (circle of fifths)
+- `vi–ii–V–I` (circle of fifths short)
+- `I–V–vi–iii–IV–I–IV–V` (Romanesca / Pachelbel — 8 chords, defer)
+
+**Short progressions (3 chords):**
+- `I–IV–V`
+- `I–V–vi`
+- `i–VII–VI`
+- `I–vi–V`
+- `I–IV–I`
+- `I–V–IV`
+- `IV–V–vi`
+- `i–♭VII–i` (modal)
+
+**Pop (4 chords):**
+- `I–V–vi–IV` (axis / four chords)
+- `vi–IV–I–V`
+- `I–vi–IV–V`
+- `I–IV–vi–V`
+- `I–iii–IV–V`
+- `I–iii–vi–IV`
+- `I–IV–I–V`
+- `vi–IV–I–V`
+- `I–iii–vi–IV`
+- `vi–I–V–IV`
+- `IV–I–V–vi`
+- `I–vi–ii–V` (pop/jazz ballad)
+- `vi–ii–V–I`
+- `IV–I–ii–V`
+
+**Rock (4 chords):**
+- `I–♭VII–IV` (mixolydian rock)
+- `I–IV–V` — already in Short
+- `I–♭III–IV`
+- `i–♭VII–♭VI`
+- `I–V–vi–IV` — shared with Pop
+- `I–♭III–♭VII`
+- `i–♭VI–♭VII`
+- `i–♭VII–IV`
+- `ii–IV–I–V` (gospel)
+- `I–VII–IV–I` (mixolydian)
+
+**Jazz (4–6 chords):**
+- `ii–V–I` — already in Cadences
+- `ii–V–i` (minor ii–V–I)
+- `iii–vi–ii–V–I` (cycle)
+- `I–vi–ii–V` (rhythm changes A)
+- `vi–ii–V–I`
+- `I–VI7–ii–V` (turnaround with secondary dom)
+- `iii–VI–ii–V` (cycle short)
+- `i–iv–VII–III` (minor jazz)
+- `i–iiø7–V7–i` (minor ii–V–I)
+- `ii–♭VII7–I` (backdoor dominant)
+- `iiø7–V7–i` — already in Diminished
+- `i–VI–iiø7–V` (minor jazz)
+- `ii–V–I–vi–ii–V` (jazz loop — 6 chords)
+
+**Blues (4–6 chords):**
+- `I7–IV7–I7–V7` (jazz blues turnaround)
+- `I7–VI7–ii7–V7` (jazz blues)
+- `I–V–IV–IV` (eight-bar blues short)
+- `I–V–I–V` (eight-bar turnaround)
+- `I–IV–I–V` (quick change — 4 chords)
+- `IV–IV–I–I` (blues middle)
+- `V–IV–I–V` (blues ending)
+
+**Minor (4 chords):**
+- `i–VII–VI–VII`
+- `i–VI–III–VII`
+- `i–iv–v–i`
+- `i–VI–VII–i`
+- `i–III–VII–VI`
+- `i–v–VI–VII`
+- `i–iv–VII` — already in Short
+- `i–VI–III–VII` (Aeolian)
+- `i–IV` (Dorian)
+- `i–VII–IV` (Dorian)
+
+**Reggae (3–4 chords):**
+- `I–V` — already in Cadences
+- `I–IV–V`
+- `I–vi–IV–V`
+- `I–IV–I–V`
+- `I–vi–ii–V` (lovers rock)
+- `vi–IV–I–V` (lovers rock)
+- `i–♭VII` (roots reggae)
+- `i–♭VI–♭VII` (roots reggae)
+- `I–♭VII–IV` — shared with Rock
+
+**Metal (2–4 chords):**
+- `i–♭VII–♭VI`
+- `i–♭VI–♭VII`
+- `i–iv–♭VII`
+- `i–♭II` (Phrygian)
+- `i–♭II–♭VII` (Phrygian)
+- `i–VI–III–VII` (Aeolian / neoclassical)
+- `i–iv–V–i` (harmonic minor)
+- `iii–vi–ii–V–i` (neoclassical)
+- `i–♭VI` (power)
+- `i–V` (harmonic minor cadence)
+
+**Samba (3–5 chords):**
+- `I–VI7–ii–V7`
+- `I–vi–ii–V`
+- `iii–VI7–ii–V`
+- `iii–VI–ii–V–I` (circle)
+- `vi–ii–V–I` — shared with Jazz
+- `I–III7–vi` (passing dominant)
+- `ii–V–I` — already in Cadences
+- `IV–V–I`
+
+**Bossa Nova (3–5 chords):**
+- `ii–V–I` — already in Cadences
+- `iii–VI7–ii–V7`
+- `I–vi–ii–V`
+- `vi–ii–V–I`
+- `iiø7–V7–i` — already in Diminished
+- `iv–♭VII7–III` (minor bossa)
+- `i–VI7–iiø7–V7`
+
+**Extended (5–6 chords):**
+- `I–IV–V–IV–I`
+- `ii–V–I–IV–V`
+- `i–VII–VI–VII–i`
+- `I–iii–IV–iv–I–V` (borrowed iv)
+- `i–VII–VI–V–i–V` (flamenco — 6 chords)
+- `I–IV–viio–iii–vi–ii–V–I` (descending fifths sequence — 8 chords, defer)
 
 ---
 
@@ -299,26 +508,111 @@ dictionary mode), each scale name is **clickable** and opens that scale in Dicti
 mode for immediate exploration.
 
 #### Behaviour
-- Clicking a scale name in the chord scales list switches the app to **Dictionary mode,
-  Scales tab**, and loads that scale instantly with notation and full breakdown
-- The scale opens at the **currently active root at the moment of clicking** — not the
-  original quiz question root. If the user changed the root chip to explore a different
-  voicing before clicking, that root is used. The user is always in control of the root.
-- **All current settings are inherited** by Dictionary mode — key signature (C or Key),
-  notation style, ascending/descending direction, and any other active state carries
-  over exactly as-is. Nothing resets.
-- To return to the quiz, the user simply presses the **Quiz toggle** in the existing
-  Quiz/Dictionary switcher — no extra back button or navigation needed
-- The quiz session (score, streak, current question) is **fully preserved** in memory
-  while the user explores in Dictionary mode and is restored immediately on switching back
+- Clicking a scale name switches to **Dictionary mode, Scales tab**, loading that scale
+  instantly with notation and full breakdown
+- Scale opens at the **currently active root** — not the original quiz question root
+- **All current settings inherited** — key signature, notation style, direction, etc.
+- To return to quiz, user presses the **Quiz toggle** — no extra back button needed
+- Quiz session (score, streak, current question) **fully preserved** in memory while
+  exploring in Dictionary mode, restored immediately on switching back
 
-#### Why this is powerful
-- The user can explore any matching scale in full — hear it, see the notation, read the
-  breakdown — without losing their quiz context
-- Root inheritance means the scale always shows in the musical context the user was
-  already exploring, making the chord→scale relationship immediately audible
-- Clicking multiple scales in sequence (switching back to quiz between each) lets the
-  user compare all matching scales against the same chord root
+---
+
+### Point 41 — Expanded voicing system (Chords mode)
+
+#### Status: Not yet implemented
+
+Replaces and greatly expands the current Point 23 voicing chips (Full / Real / Shell / Guide + Random).
+Applies to **Chords mode only** — not progressions or other modes.
+
+#### Open questions (to resolve before implementation)
+- **"Full" voicing** — is this close position (all notes within one octave, classical default)?
+  Or does it mean something else in the current implementation? Needs clarification before mapping.
+- **"Real" voicing** — is this open position (notes spread over more than one octave)?
+  Or something else? Needs clarification before mapping to the new system.
+- Once clarified, Full and Real will either be renamed to match standard terminology
+  (Close / Open) or retired if they duplicate other voicings.
+
+#### Excluded voicings (rhythmic — not applicable to static chord playback)
+- **Stride** — alternating bass + chord on beats; a performance style not a voicing
+- **Block chords / Locked Hands** — requires a melody line to harmonise; not applicable
+
+#### Voicing chip panel — 4 collapsible groups
+Same UI pattern as chord pool panel: collapsible sections, All/None per group, Random chip.
+
+**Group 1 — Structural**
+| Voicing | Description | Already implemented? |
+|---|---|---|
+| Close | All notes within one octave. Dense, clear, classical | Possibly "Full" — TBC |
+| Open | Notes spread over more than one octave. Bigger, less muddy | Possibly "Real" — TBC |
+| Shell | Root + 3rd + 7th only | ✓ (existing chip) |
+| Rootless | Root omitted; bass player supplies it. Very common in jazz/bossa | ✓ (rename from "Guide") |
+| Drop-2 | Second-highest note dropped an octave. Open sound, excellent voice leading | New |
+| Drop-3 | Third-highest note dropped an octave. More guitar/big band, but usable on piano | New |
+| Drop-2&4 | Second and fourth voices dropped. Wide, transparent, modern | New |
+| Spread | Large intervals throughout. Huge, orchestral feeling | New |
+
+**Group 2 — Intervallic**
+| Voicing | Description |
+|---|---|
+| Quartal | Built from stacked fourths. Modern, modal, open. McCoy Tyner / Herbie Hancock |
+| Quintal | Built from stacked fifths. Spacious, cinematic |
+| Secundal | Built from stacked seconds. Cluster-like, tense |
+| Cluster | Adjacent semitones. Impressionistic, modern jazz, film |
+| Tenths | LH plays root + 10th (wide 3rd). Reduces muddiness; stride, jazz, contemporary |
+
+**Group 3 — Style-specific**
+| Voicing | Description |
+|---|---|
+| So What | P4 + P4 + P4 + M3 + P4 stack. Named after Miles Davis. Essential modal jazz |
+| Bill Evans | Highly voice-led; typically 3–7–9–13, no root. Floating, rich, transparent |
+| Kenny Barron | LH: root + 7. RH: 3–5–9. Warm and smooth |
+| Herbie Hancock | Quartal plus clusters. Modern, angular, colorful |
+| McCoy Tyner | Powerful quartal stacks in LH. e.g. C–F–Bb–Eb |
+| Gospel | Added 2nds, added 6ths, quartal movement, passing diminished. Parallel motion |
+| Pop Piano | LH octave, RH: 3–5–9. Standard modern worship/pop ballad voicing |
+
+**Group 4 — Texture-based**
+| Voicing | Description | Notes |
+|---|---|---|
+| Triad over Bass | Simple triad in RH over a different bass note | Overlaps with Slash chords family |
+| Upper Structure Triads | Major/minor triad over dominant chord shell | Already a chord family (UST) |
+| Pedal Point | Bass stays fixed while upper chords move | Requires multi-chord context |
+| Octave Doubling | Chord tones doubled in octaves. Full, orchestral | New |
+| Hybrid | Combines open voicing + rootless texture + added extensions | New |
+| Dense Extended | Five to seven chord tones including 7th, 9th, 11th, 13th. Rich, jazz ensemble | New |
+| Power Chord | Root + fifth only, sometimes doubled | Overlaps with existing power chord type |
+
+#### Random chip
+Kept as-is — picks randomly from all enabled voicings in the expanded pool.
+
+#### Breakdown panel — voicing explanation row
+When any specific voicing is active (not Random), the breakdown panel gains a new row
+showing the voicing name, its defining structural rule, and its typical musical context.
+
+Examples:
+- **Drop-2**: "Second-highest note dropped an octave. Produces open sound with excellent
+  voice leading. Common in jazz and big band arranging."
+- **So What**: "Stack of three perfect fourths + major third + perfect fourth (P4–P4–P4–M3–P4).
+  Named after Miles Davis's 'So What'. Essential for modal jazz."
+- **Bill Evans**: "Highly voice-led; typically 3rd, 7th, 9th, 13th — no root.
+  Root supplied by bass. Produces a floating, transparent, harmonically rich texture."
+- **Quartal**: "Built from stacked perfect fourths. Avoids the major/minor polarity
+  of tertian harmony. Open, modern, modal sound. Associated with McCoy Tyner and Herbie Hancock."
+
+#### Voicings that overlap with existing chord families
+- **Rootless** → rename existing "Guide" chip to "Rootless"
+- **Upper Structure Triads** → already implemented as a chord family; note in breakdown
+  that UST is itself a texture-based voicing technique
+- **Slash chords / Triad over Bass** → already implemented as a chord family; cross-reference
+  in breakdown
+- **Power Chord** → already exists as a chord type; the Power Chord voicing chip would
+  apply power-chord spacing to any chord (root + fifth only, drop all other tones)
+
+#### Chord library dependency
+The existing chord library already covers extensions to 9ths and 13ths, which is sufficient
+for most voicings. Additional chord types may be added incrementally if specific voicings
+expose gaps (e.g. very dense extended voicings needing 11ths on non-dominant chords).
 
 ---
 
@@ -329,3 +623,7 @@ mode for immediate exploration.
 - Timed mode — answer before the clock runs out
 - MIDI input — play answer on a connected keyboard instead of the dropdown
 - Export session stats as CSV
+- 8-chord progressions: 12-bar blues (I–I–I–I / IV–IV–I–I / V–IV–I–I), quick-change
+  12-bar, jazz blues 12-bar, 16-bar blues, full rhythm changes (A+bridge)
+- Romanesca / Pachelbel (8 chords: I–V–vi–iii–IV–I–IV–V)
+- Descending fifths sequence (8 chords: I–IV–viio–iii–vi–ii–V–I)

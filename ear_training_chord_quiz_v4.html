@@ -412,6 +412,62 @@
   .vl-table td:nth-child(3) { color: var(--text-faint); font-size: 0.75rem; white-space: nowrap; }
   .vl-table td:nth-child(4) { color: var(--text-faint); font-size: 0.75rem; font-style: italic; }
   .vl-table tr:hover td { background: var(--bg-hover); }
+
+  /* ── POINT 38: Progression mode ── */
+  .prog-slots-wrap { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.5rem 0 0.75rem; }
+  .prog-slot {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem 0.7rem 0.6rem;
+    background: var(--bg-card);
+    transition: border-color 0.2s;
+  }
+  .prog-slot.correct  { border-color: var(--correct-border); background: var(--correct-bg); }
+  .prog-slot.wrong    { border-color: var(--wrong-border);   background: var(--wrong-bg);   }
+  .prog-slot-label {
+    font-size: 0.7rem; font-weight: 600; color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+  }
+  .prog-slot-label .prog-slot-revealed {
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--wrong); margin-left: 0.5rem; text-transform: none; letter-spacing: 0;
+  }
+  .prog-slot-row { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.3rem; }
+  .prog-slot-row:last-child { margin-bottom: 0; }
+  .prog-chip {
+    padding: 0.25rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border);
+    background: var(--bg-chip); color: var(--text-muted); font-size: 0.78rem; font-weight: 500;
+    cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s;
+    white-space: nowrap;
+  }
+  .prog-chip:hover { background: var(--bg-hover); color: var(--text); }
+  .prog-chip.active {
+    background: var(--bg-chip-active); border-color: var(--border-active);
+    color: var(--accent-text); font-weight: 600;
+  }
+  .prog-chip.disabled { opacity: 0.45; pointer-events: none; }
+  .prog-submit-row { display: flex; justify-content: center; margin-top: 0.5rem; }
+  .prog-submit-btn {
+    padding: 0.5rem 2rem; border-radius: 8px; border: none;
+    background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s; min-height: 2.75rem;
+  }
+  .prog-submit-btn:hover { background: var(--accent-dark); }
+  .prog-submit-btn:disabled { opacity: 0.4; pointer-events: none; }
+  /* Notation row for progressions — horizontal scroll of mini staves */
+  .prog-notation-row {
+    display: flex; gap: 0.5rem; overflow-x: auto;
+    padding: 0.25rem 0 0.5rem; align-items: flex-start;
+  }
+  .prog-notation-cell { flex: 0 0 auto; text-align: center; }
+  .prog-notation-cell-label {
+    font-size: 0.7rem; color: var(--text-faint); margin-bottom: 0.15rem;
+  }
+  /* Pool chip two-line variant for progressions */
+  .pool-chip.prog-pool-chip { line-height: 1.25; padding: 0.35rem 0.65rem; }
+  .pool-chip.prog-pool-chip .prog-chip-sym  { display: block; font-weight: 600; font-size: 0.82rem; color: var(--text); }
+  .pool-chip.prog-pool-chip .prog-chip-name { display: block; font-size: 0.68rem; color: var(--text-faint); }
   .ctrl-btn.resolve {
     background: var(--bg-chip); border: 1px solid var(--border-active);
     color: var(--accent-text); font-weight: 600;
@@ -535,6 +591,7 @@
     <button class="mode-tab active" data-mode="intervals">Intervals</button>
     <button class="mode-tab" data-mode="chords">Chords</button>
     <button class="mode-tab" data-mode="scales">Scales</button>
+    <button class="mode-tab" data-mode="progressions">Progressions</button>
   </div><!-- /.mode-tabs -->
   </div><!-- /#stickyInner -->
 </div><!-- /#stickyShell -->
@@ -899,12 +956,21 @@ function pcInterval(targetPc, rootPc) {
 
 // Toggle the C / Key chip and re-render notation
 function setKeySig(mode) {
-  if (currentMode === 'scales')    scaleKeySigMode    = mode;
-  else if (currentMode === 'chords')    chordKeySigMode    = mode;
-  else if (currentMode === 'intervals') intervalKeySigMode = mode;
+  if (currentMode === 'scales')          scaleKeySigMode    = mode;
+  else if (currentMode === 'chords')     chordKeySigMode    = mode;
+  else if (currentMode === 'intervals')  intervalKeySigMode = mode;
+  else if (currentMode === 'progressions') progKeySigMode   = mode;
   document.getElementById('keysigChipC').classList.toggle('active', mode === 'C');
   document.getElementById('keysigChipKey').classList.toggle('active', mode === 'key');
-  showNotation();
+  // For progressions, re-render the mini staves directly
+  if (currentMode === 'progressions' && currentProgression && progAnswered) {
+    showProgressionNotation();
+  } else if (currentMode === 'chords') {
+    // BUG-4: use dispatcher so Key/C chip works in both chord and resolution views
+    showCurrentView();
+  } else {
+    showNotation();
+  }
 }
 
 // VexFlow key signature strings for each pitch class + quality.
@@ -1037,8 +1103,11 @@ function respellForKeySig(midi, vexKey, coveredLetters, keySigStr) {
   // Enharmonic pitch class
   const pc = midi % 12;
 
-  // Try the two simpler enharmonic spellings (natural or single-acc) for this pc
-  // and pick whichever fits the key sig (covered) or is a natural note
+  // Step 1: try cross-letter enharmonic respell (existing logic).
+  // e.g. c## → d, b## → c#, etc. — only when a simpler spelling at the same
+  // pitch class exists and is covered by the key sig or is a natural note.
+  // We allow letter changes here because in these cases the cross-letter spelling
+  // is musically correct and there is no staff-position collision risk.
   const candidates = [];
   for (let li = 0; li < 7; li++) {
     const naturalPc = LETTER_PCS[li];
@@ -1047,7 +1116,6 @@ function respellForKeySig(midi, vexKey, coveredLetters, keySigStr) {
       const candidate_pc = ((naturalPc + delta) % 12 + 12) % 12;
       if (candidate_pc === pc) {
         const candidateKey = letter + accSuffix;
-        // Adjust octave: handle C/B boundary
         let candOct = parseInt(oct);
         if (letter === 'c' && pc >= 9) candOct += 1;
         if (letter === 'b' && pc <= 2) candOct -= 1;
@@ -1056,12 +1124,26 @@ function respellForKeySig(midi, vexKey, coveredLetters, keySigStr) {
     }
   }
 
-  // Prefer: covered by key sig → natural → single sharp → single flat
+  // Priority 1: cross-letter candidate covered by the key sig — genuinely simpler
   const covered = candidates.find(k => isCoveredByKeySig(k, coveredLetters));
   if (covered) return covered;
+
+  // Priority 2: same-letter one-step strip — preserves staff position.
+  // Must come BEFORE the cross-letter natural fallback, because a natural note
+  // on a different letter (e.g. D natural for Ebb) causes a staff collision
+  // with any other note already on that letter (e.g. Db).
+  // E.g. ebb → eb (different pc, same letter E, correct staff position).
+  // The forcedAcc flag in spellMidi ensures the single remaining accidental is
+  // drawn explicitly, correctly communicating the double accidental to the reader.
+  const originalLetter = letterAcc[0].toLowerCase();
+  if (isDoubleFlat)  return originalLetter + 'b/' + oct;
+  if (isDoubleSharp) return originalLetter + '#/' + oct;
+
+  // Priority 3: cross-letter natural — last resort only
   const natural = candidates.find(k => !k.split('/')[0].match(/[#b]/));
   if (natural) return natural;
-  return candidates[0] ?? vexKey; // fallback to first candidate or original
+
+  return candidates[0] ?? vexKey; // absolute last resort
 }
 
 // Legacy pitch-class based function (kept for callers that still use it)
@@ -1418,6 +1500,7 @@ let currentScaleDir = 'asc';         // POINT 20b: resolved direction for the cu
 let scaleKeySigMode    = 'key';  // 'C' | 'key' — resets to 'key' each new question
 let chordKeySigMode    = 'C';   // POINT 32b: chords default to C (accidentals inline)
 let intervalKeySigMode = 'C';   // POINT 32b: intervals default to C (accidentals inline)
+let progKeySigMode     = 'C';   // POINT 38: progressions default to C (accidentals inline)
 
 // POINT 8: UX state
 let showRoot = true;                 // show/hide root badge before answering
@@ -1877,6 +1960,19 @@ function playSlowly() {
       piano.play(midiToSoundFontName(midi), now + i * gap, { duration: 2.5, gain: 1.4 });
     });
     setTimeout(() => setPlayingState(false), (notes.length * gap + 2.5) * 1000);
+  } else if (currentMode === 'chords' && resolutionActive) {
+    // In resolution view: slow arpeggio source → pause → slow arpeggio resolution
+    const info = getResolutionInfo();
+    if (!info) { setPlayingState(false); return; }
+    const sourceMidi = getSourceMidi().sort((a, b) => a - b);
+    const tgtMidi    = info.targetMidi.sort((a, b) => a - b);
+    const gap = 0.5;
+    const srcDur = sourceMidi.length * gap + 2.5;
+    sourceMidi.forEach((m, i) => piano.play(midiToSoundFontName(m), now + i * gap, { duration: 2.5, gain: 1.4 }));
+    const tgtStart = now + srcDur + 0.5;
+    tgtMidi.forEach((m, i) => piano.play(midiToSoundFontName(m), tgtStart + i * gap, { duration: 2.5, gain: 1.4 }));
+    const totalMs = (tgtStart - now + tgtMidi.length * gap + 2.5) * 1000;
+    setTimeout(() => setPlayingState(false), totalMs);
   } else {
     // Chords: always slow arpeggio ascending regardless of playback style
     // POINT 25: merge bass note into full set for slash chords; POINT 26: poly/UST already merged
@@ -1959,17 +2055,30 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
 
     // Spell a midi note and, when a key sig is active, re-spell any double
     // accidentals to their enharmonic equivalent that fits the key.
+    // Returns { key, forcedAcc } where forcedAcc is true when a same-letter
+    // respell happened (e.g. ebb → eb) and an explicit accidental must always
+    // be drawn regardless of key sig coverage — because the key sig accounts
+    // for one flat on that letter but the note needs one more.
     function spellMidi(midi) {
-      let key = midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, symbol);
-      if (keySigStr) key = respellForKeySig(midi, key, coveredLetters, keySigStr);
-      return key;
+      const raw = midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, symbol);
+      if (!keySigStr) return { key: raw, forcedAcc: false };
+      const respelled = respellForKeySig(midi, raw, coveredLetters, keySigStr);
+      // Detect same-letter simplification: double acc → single acc, same letter
+      const rawLetter    = raw.split('/')[0];
+      const respelledLetter = respelled.split('/')[0];
+      const wasDouble    = rawLetter.endsWith('##') || (rawLetter.endsWith('bb') && rawLetter.length > 2);
+      const isSameLetter = rawLetter[0] === respelledLetter[0];
+      const forcedAcc    = wasDouble && isSameLetter && respelled !== raw;
+      return { key: respelled, forcedAcc };
     }
 
     // Add accidentals for a StaveNote, skipping any already in the key sig.
-    // keys: array of vex key strings (already respelled).
+    // keys: array of { key, forcedAcc } objects (already respelled).
+    // forcedAcc=true means draw the accidental even if covered by key sig
+    // (same-letter double→single respell: key sig has one flat, note needs two).
     function addAccidentalsFiltered(sn, keys) {
-      keys.forEach((key, i) => {
-        if (isCoveredByKeySig(key, coveredLetters)) return; // key sig handles it
+      keys.forEach(({ key, forcedAcc }, i) => {
+        if (!forcedAcc && isCoveredByKeySig(key, coveredLetters)) return;
         const acc = vexAccidental(key);
         if (acc) sn.addModifier(new VF.Accidental(acc), i);
       });
@@ -2003,9 +2112,9 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
       stave.setContext(ctx).draw();
 
       const noteTicks = notes.map(midi => {
-        const key = spellMidi(midi);
-        const sn = new StaveNote({ keys: [key], duration: 'q', clef });
-        addAccidentalsFiltered(sn, [key]);
+        const spelled = spellMidi(midi);
+        const sn = new StaveNote({ keys: [spelled.key], duration: 'q', clef });
+        addAccidentalsFiltered(sn, [spelled]);
         return sn;
       });
 
@@ -2047,9 +2156,10 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
 
       function drawChordNotes(midiArr, clef, stave) {
         if (!midiArr.length || !stave) return;
-        const keys = midiArr.map(m => spellMidi(m));
+        const spelled = midiArr.map(m => spellMidi(m));
+        const keys = spelled.map(s => s.key);
         const sn = new StaveNote({ keys, duration: 'w', clef });
-        addAccidentalsFiltered(sn, keys);
+        addAccidentalsFiltered(sn, spelled);
         const voice = new Voice({ num_beats: 4, beat_value: 4 }).setMode(Voice.Mode.SOFT);
         voice.addTickables([sn]);
         new Formatter().joinVoices([voice]).format([voice], STAVE_W - 60);
@@ -2704,6 +2814,179 @@ function makeChordScalesRow(panel, rootPc, chordPcs) {
 // Each entry: { offset: semitones from chord root to resolution root, quality: 'maj'|'min'|'dom7'|'maj7'|'m7' }
 // offset is measured upward (mod 12).
 // For chord types not listed, the nearest sensible resolution is used.
+// ─── POINT 38: Chord Progressions ────────────────────────────────────────────
+//
+// Each progression entry:
+//   symbol   – short Roman numeral string used as a unique key
+//   name     – human-readable cadence / style name shown as chip sub-label
+//   group    – pool panel section
+//   degrees  – semitone offsets from tonic for each chord root (0 = tonic)
+//   qualities– chord quality symbol per degree (keys into CHORD_TYPES arrays)
+//
+// Chord vocabulary: triads + basic 7ths only (plan §38 "harmonic relationship test").
+// Quality symbols map onto the existing CHORD_TYPES families for playback.
+
+const PROGRESSIONS = [
+  // ── Cadences (2 chords) ──────────────────────────────────────────────────
+  { symbol: 'V-I',       name: 'Perfect Authentic',          group: 'Cadences',
+    degrees: [7, 0],   qualities: ['maj', 'maj'] },
+  { symbol: 'V7-I',      name: 'Perfect Authentic (dom7)',    group: 'Cadences',
+    degrees: [7, 0],   qualities: ['7', 'maj'] },
+  { symbol: 'IV-I',      name: 'Plagal',                     group: 'Cadences',
+    degrees: [5, 0],   qualities: ['maj', 'maj'] },
+  { symbol: 'I-V',       name: 'Half Cadence',               group: 'Cadences',
+    degrees: [0, 7],   qualities: ['maj', 'maj'] },
+  { symbol: 'ii-V',      name: 'Half Cadence (jazz)',        group: 'Cadences',
+    degrees: [2, 7],   qualities: ['m', 'maj'] },
+  { symbol: 'IV-V',      name: 'Half Cadence (rock/pop)',    group: 'Cadences',
+    degrees: [5, 7],   qualities: ['maj', 'maj'] },
+  { symbol: 'V-vi',      name: 'Deceptive',                  group: 'Cadences',
+    degrees: [7, 9],   qualities: ['maj', 'm'] },
+  { symbol: 'V7-vi',     name: 'Deceptive (dom7)',           group: 'Cadences',
+    degrees: [7, 9],   qualities: ['7', 'm'] },
+  { symbol: 'iv6-V',     name: 'Phrygian',                   group: 'Cadences',
+    degrees: [5, 7],   qualities: ['m', 'maj'] },
+
+  // ── Diminished & half-dim resolutions (2 chords) ─────────────────────────
+  { symbol: 'vii°-I',    name: 'Leading tone resolution',    group: 'Diminished',
+    degrees: [11, 0],  qualities: ['dim', 'maj'] },
+  { symbol: 'vii°7-I',   name: 'Fully dim → major tonic',   group: 'Diminished',
+    degrees: [11, 0],  qualities: ['o7', 'maj'] },
+  { symbol: 'vii°7-i',   name: 'Fully dim → minor tonic',   group: 'Diminished',
+    degrees: [11, 0],  qualities: ['o7', 'm'] },
+  { symbol: 'iiø7-V',    name: 'Half-dim → dominant',       group: 'Diminished',
+    degrees: [2, 7],   qualities: ['m7b5', 'maj'] },
+  { symbol: 'iiø7-V7',   name: 'Jazz minor ii–V',           group: 'Diminished',
+    degrees: [2, 7],   qualities: ['m7b5', '7'] },
+  { symbol: 'iiø7-i',    name: 'Half-dim direct resolution', group: 'Diminished',
+    degrees: [2, 0],   qualities: ['m7b5', 'm'] },
+  { symbol: '#iv°-V',    name: 'Chromatic dim approach',    group: 'Diminished',
+    degrees: [6, 7],   qualities: ['dim', 'maj'] },
+
+  // ── Short progressions (3 chords) ────────────────────────────────────────
+  { symbol: 'I-IV-V',    name: 'Rock / folk / blues',       group: 'Short',
+    degrees: [0, 5, 7],   qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'I-V-vi',    name: 'Partial axis',              group: 'Short',
+    degrees: [0, 7, 9],   qualities: ['maj', 'maj', 'm'] },
+  { symbol: 'i-VII-VI',  name: 'Minor descending',          group: 'Short',
+    degrees: [0, 10, 8],  qualities: ['m', 'maj', 'maj'] },
+  { symbol: 'I-vi-V',    name: 'Classical descending',      group: 'Short',
+    degrees: [0, 9, 7],   qualities: ['maj', 'm', 'maj'] },
+  { symbol: 'I-IV-I',    name: 'Blues turnaround fragment', group: 'Short',
+    degrees: [0, 5, 0],   qualities: ['maj', 'maj', 'maj'] },
+
+  // ── Pop & Rock (4 chords) ─────────────────────────────────────────────────
+  { symbol: 'I-V-vi-IV', name: 'Axis progression',         group: 'Pop & Rock',
+    degrees: [0, 7, 9, 5],   qualities: ['maj', 'maj', 'm', 'maj'] },
+  { symbol: 'vi-IV-I-V', name: 'Axis (vi start)',          group: 'Pop & Rock',
+    degrees: [9, 5, 0, 7],   qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'I-IV-vi-V', name: 'Pop variant',              group: 'Pop & Rock',
+    degrees: [0, 5, 9, 7],   qualities: ['maj', 'maj', 'm', 'maj'] },
+  { symbol: 'I-iii-IV-V',name: 'Ascending bright',         group: 'Pop & Rock',
+    degrees: [0, 4, 5, 7],   qualities: ['maj', 'm', 'maj', 'maj'] },
+  { symbol: 'I-iii-vi-IV',name: 'Emotional pop',           group: 'Pop & Rock',
+    degrees: [0, 4, 9, 5],   qualities: ['maj', 'm', 'm', 'maj'] },
+  { symbol: 'I-IV-I-V',  name: 'Blues-adjacent / country', group: 'Pop & Rock',
+    degrees: [0, 5, 0, 7],   qualities: ['maj', 'maj', 'maj', 'maj'] },
+  { symbol: 'I-VII-IV-I',name: 'Mixolydian feel',          group: 'Pop & Rock',
+    degrees: [0, 10, 5, 0],  qualities: ['maj', 'maj', 'maj', 'maj'] },
+  { symbol: 'ii-IV-I-V', name: 'Gospel',                   group: 'Pop & Rock',
+    degrees: [2, 5, 0, 7],   qualities: ['m', 'maj', 'maj', 'maj'] },
+
+  // ── Jazz (4 chords) ───────────────────────────────────────────────────────
+  { symbol: 'ii-V-I-VI', name: 'Jazz turnaround',          group: 'Jazz',
+    degrees: [2, 7, 0, 9],   qualities: ['m7', '7', 'maj7', '7'] },
+  { symbol: 'iii-VI-ii-V',name: 'Cycle of 5ths',          group: 'Jazz',
+    degrees: [4, 9, 2, 7],   qualities: ['m7', '7', 'm7', '7'] },
+  { symbol: 'I-VI-ii-V', name: 'Rhythm changes A',        group: 'Jazz',
+    degrees: [0, 9, 2, 7],   qualities: ['maj7', '7', 'm7', '7'] },
+  { symbol: 'i-iv-VII-III',name: 'Minor jazz',             group: 'Jazz',
+    degrees: [0, 5, 10, 3],  qualities: ['m7', 'm7', '7', 'maj7'] },
+  { symbol: 'i-iiø7-V7-i',name: 'Minor ii–V–I',           group: 'Jazz',
+    degrees: [0, 2, 7, 0],   qualities: ['m', 'm7b5', '7', 'm'] },
+
+  // ── Minor (4 chords) ──────────────────────────────────────────────────────
+  { symbol: 'i-VII-VI-VII',name: 'Natural minor',          group: 'Minor',
+    degrees: [0, 10, 8, 10], qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-VI-III-VII',name: 'Minor cycle',            group: 'Minor',
+    degrees: [0, 8, 3, 10],  qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-iv-v-i',   name: 'Pure minor / classical', group: 'Minor',
+    degrees: [0, 5, 7, 0],   qualities: ['m', 'm', 'm', 'm'] },
+  { symbol: 'i-VI-VII-i', name: 'Minor with return',      group: 'Minor',
+    degrees: [0, 8, 10, 0],  qualities: ['m', 'maj', 'maj', 'm'] },
+  { symbol: 'i-III-VII-VI',name: 'Epic / cinematic',       group: 'Minor',
+    degrees: [0, 3, 10, 8],  qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-v-VI-VII', name: 'Dramatic minor',         group: 'Minor',
+    degrees: [0, 7, 8, 10],  qualities: ['m', 'm', 'maj', 'maj'] },
+
+  // ── Extended (5–6 chords) ─────────────────────────────────────────────────
+  { symbol: 'I-IV-V-IV-I',      name: 'Rock/blues return',        group: 'Extended',
+    degrees: [0, 5, 7, 5, 0],         qualities: ['maj', 'maj', 'maj', 'maj', 'maj'] },
+  { symbol: 'ii-V-I-IV-V',      name: 'Extended jazz cadence',    group: 'Extended',
+    degrees: [2, 7, 0, 5, 7],         qualities: ['m7', '7', 'maj7', 'maj7', '7'] },
+  { symbol: 'i-VII-VI-VII-i',   name: 'Minor with return',        group: 'Extended',
+    degrees: [0, 10, 8, 10, 0],       qualities: ['m', 'maj', 'maj', 'maj', 'm'] },
+  { symbol: 'I-iii-IV-iv-I-V',  name: 'Borrowed iv (Beatles)',    group: 'Extended',
+    degrees: [0, 4, 5, 5, 0, 7],      qualities: ['maj', 'm', 'maj', 'm', 'maj', 'maj'] },
+  { symbol: 'ii-V-I-vi-ii-V',   name: 'Jazz loop (6 chords)',     group: 'Extended',
+    degrees: [2, 7, 0, 9, 2, 7],      qualities: ['m7', '7', 'maj7', 'm7', 'm7', '7'] },
+  { symbol: 'i-VII-VI-V-i-V',   name: 'Flamenco / classical minor', group: 'Extended',
+    degrees: [0, 10, 8, 7, 0, 7],     qualities: ['m', 'maj', 'maj', 'maj', 'm', 'maj'] },
+];
+
+// Degree labels for the answer UI — covers common diatonic degrees + chromatic borrows
+const PROG_DEGREES = [
+  { label: 'I',    semi: 0  },
+  { label: 'ii',   semi: 2  },
+  { label: 'iii',  semi: 4  },
+  { label: 'IV',   semi: 5  },
+  { label: 'V',    semi: 7  },
+  { label: 'vi',   semi: 9  },
+  { label: 'vii°', semi: 11 },
+  { label: '♭II',  semi: 1  },
+  { label: '♭III', semi: 3  },
+  { label: '♭VI',  semi: 8  },
+  { label: '♭VII', semi: 10 },
+  { label: '♯IV',  semi: 6  },
+];
+
+// Quality options for the answer UI — triads + basic 7ths
+const PROG_QUALITIES = [
+  { label: 'maj',   sym: 'maj'   },
+  { label: 'm',     sym: 'm'     },
+  { label: '7',     sym: '7'     },
+  { label: 'maj7',  sym: 'maj7'  },
+  { label: 'm7',    sym: 'm7'    },
+  { label: 'dim',   sym: 'dim'   },
+  { label: 'ø7',    sym: 'm7b5'  },
+  { label: 'dim7',  sym: 'o7'    },
+  { label: 'aug',   sym: 'aug'   },
+  { label: 'sus4',  sym: 'sus4'  },
+];
+
+// Group order for pool panel
+const PROG_GROUPS = ['Cadences', 'Diminished', 'Short', 'Pop & Rock', 'Jazz', 'Minor', 'Extended'];
+
+// Which groups start collapsed in the pool panel
+const PROG_GROUP_COLLAPSED = { Diminished: true, Short: false, 'Pop & Rock': false, Jazz: false, Minor: false, Extended: true };
+
+// ─── Progression state ────────────────────────────────────────────────────────
+const selectedProgressions = new Set(
+  PROGRESSIONS.filter(p => ['I-V-I', 'I-V-vi-IV', 'ii-V-I-VI', 'V-I', 'V7-I', 'IV-I', 'I-IV-V', 'i-VII-VI-VII'].includes(p.symbol)).map(p => p.symbol)
+);
+// Default: a handful of common ones across cadences + short + pop
+// If none match, fall back to first 8
+if (selectedProgressions.size === 0) {
+  PROGRESSIONS.slice(0, 8).forEach(p => selectedProgressions.add(p.symbol));
+}
+
+let currentProgression = null;    // the PROGRESSIONS entry for this question
+let currentProgRootMidi = 60;     // MIDI of tonic for this question
+let currentProgRootPc   = 0;      // pitch class of tonic
+// Per-slot answer state: array of { degreeIdx: null|number, qualityIdx: null|number }
+let progSlotAnswers = [];
+let progAnswered = false;
+
 const RESOLUTION_TARGETS = {
   // Major triads → subdominant (P4 up = IV)
   'maj':      { offset: 5,  quality: 'maj',  label: '→ IV' },
@@ -2952,51 +3235,145 @@ function makeVoiceLeadingRow(panel) {
 
 // State: has the resolution been triggered for the current chord?
 let resolutionActive = false;
+// Resolution root (midi) — stored once at answer time from full chord, never re-derived mid-session
+let resolutionRootMidi = null;
 
-// Play current chord → pause → resolution chord
+// Toggle between chord view and resolution view.
+// First call into resolution view: stores the resolution root and plays audio.
+// Subsequent toggles: silently swap notation; audio only plays when entering resolution view.
 function playResolution() {
-  const info = getResolutionInfo();
-  if (!info || !piano) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (!piano) return;
 
-  const sourceMidi = (() => {
-    if (currentChord?.family === 'poly') return [...currentPolyLowerMidi, ...currentPolyUpperMidi];
-    if (currentChord?.family === 'ust')  return [...currentMidiNotes];
-    if (currentChord?.family === 'slash') return [currentSlashBassMidi, ...currentMidiNotes];
-    return [...currentMidiNotes];
-  })().sort((a, b) => a - b);
+  if (resolutionActive) {
+    // ── Currently in resolution view → go back to chord view ──────────────────
+    resolutionActive = false;
+    updateResolveBtn();
+    showNotation();
+    return;
+  }
+
+  // ── Entering resolution view ──────────────────────────────────────────────
+  // Store resolution root once from the full chord (never re-derived)
+  if (resolutionRootMidi === null) {
+    const info0 = getResolutionInfo();
+    if (!info0) return;
+    resolutionRootMidi = info0.targetRootMidi;
+  }
+
+  resolutionActive = true;
+  updateResolveBtn();
+
+  // Play audio: source chord → pause → resolution chord
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const sourceMidi = getSourceMidi().sort((a, b) => a - b);
+  const info = getResolutionInfo();
+  if (!info) return;
 
   setPlayingState(true);
   const now = audioCtx.currentTime;
-  const srcDuration = 1.8;
-  const pause = 0.7;
+  const srcDuration = 1.8, pause = 0.7;
 
-  // Play source chord (block)
   sourceMidi.forEach(m => piano.play(midiToSoundFontName(m), now, { duration: srcDuration, gain: 1.4 }));
-
-  // Play resolution chord (block) after pause
   const tgtStart = now + srcDuration + pause;
   info.targetMidi.forEach(m => piano.play(midiToSoundFontName(m), tgtStart, { duration: 2.2, gain: 1.4 }));
 
-  // Update notation to show both chords side by side, and mark resolution active
-  resolutionActive = true;
-  renderResolutionNotation(sourceMidi, info);
-
   const totalMs = (srcDuration + pause + 2.2) * 1000;
   setTimeout(() => setPlayingState(false), totalMs);
+
+  renderResolutionNotation();
 }
 
-// Render two chords side by side on a grand staff (source | barline | resolution)
-function renderResolutionNotation(sourceMidi, info) {
+// Helper: get source midi notes for current chord family
+function getSourceMidi() {
+  if (currentChord?.family === 'poly')  return [...currentPolyLowerMidi, ...currentPolyUpperMidi];
+  if (currentChord?.family === 'ust')   return [...currentMidiNotes];
+  if (currentChord?.family === 'slash') return [currentSlashBassMidi, ...currentMidiNotes];
+  return [...currentMidiNotes];
+}
+
+// Update the Resolve button label to reflect current state
+function updateResolveBtn() {
+  const btn = document.getElementById('resolveBtn');
+  if (btn) btn.textContent = resolutionActive ? '← Chord' : 'Resolve →';
+}
+
+// Dispatcher: show whichever view is currently active
+function showCurrentView() {
+  if (resolutionActive) renderResolutionNotation();
+  else showNotation();
+}
+
+// Render two chords side by side on a grand staff (source | barline | resolution).
+// Fully derived from current state every time — no cached arguments.
+// BUG-4 fix: honours chordKeySigMode (Key/C chip) for both staves.
+function renderResolutionNotation() {
+  if (!resolutionRootMidi) return;
+
   const VF = (typeof Vex !== 'undefined' && Vex.Flow) ? Vex.Flow
            : (typeof VexFlow !== 'undefined') ? VexFlow : null;
   if (!VF) return;
   const { Renderer, Stave, StaveNote, StaveConnector, Voice, Formatter, BarNote } = VF;
 
+  // ── Recompute resolution info from stored root + current voicing ─────────────
+  const info = getResolutionInfo();
+  if (!info) return;
+
+  // ── Recompute source midi from current state (voicing may have changed) ───────
+  const sourceMidi = getSourceMidi().sort((a, b) => a - b);
+
+  // ── BUG-4: Key sig — honour chordKeySigMode ──────────────────────────────────
+  const sym = currentChord?.invIndex !== undefined ? currentChord.baseChord.symbol : (currentChord?.symbol || 'maj');
+  let srcRootPc;
+  if (currentChord?.family === 'poly')  srcRootPc = (currentPolyLowerRootMidi % 12 + 12) % 12;
+  else if (currentChord?.family === 'ust') srcRootPc = (currentUSTRootMidi % 12 + 12) % 12;
+  else if (currentChord?.family === 'slash') srcRootPc = (currentUpperRootMidi % 12 + 12) % 12;
+  else srcRootPc = ((currentChordRootMidi || 0) % 12 + 12) % 12;
+
+  const keySigStr = chordKeySigMode === 'key' ? getChordKeyStr(sym, srcRootPc) : null;
+  const coveredLetters = keySigStr ? keySigCoveredLetters(keySigStr) : new Set();
+
+  // ── Update notation panel header ──────────────────────────────────────────────
+  const nameEl = document.getElementById('notationChordName');
+  if (nameEl) {
+    let srcLabel = '';
+    if (currentChord?.family === 'poly') srcLabel = getPolyChordLabel();
+    else if (currentChord?.family === 'ust') srcLabel = getUSTLabel().split(' → ')[0];
+    else if (currentChord?.family === 'slash') srcLabel = getSlashResolvedName();
+    else srcLabel = getChordRootName() + ' ' + (currentChord?.name || '');
+    nameEl.textContent = srcLabel + '  →  ' + info.targetName;
+  }
+
+  // ── Show Key/C chip row, sync active state ────────────────────────────────────
+  const chipRow = document.getElementById('keysigChipRow');
+  chipRow.style.display = 'flex';
+  document.getElementById('keysigChipC').classList.toggle('active', chordKeySigMode === 'C');
+  document.getElementById('keysigChipKey').classList.toggle('active', chordKeySigMode === 'key');
+
+  // ── Spell helpers ──────────────────────────────────────────────────────────────
+  function spellMidiWithKeySig(midi, rootPc, symbol) {
+    const raw = midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, symbol);
+    if (!keySigStr) return { key: raw, forcedAcc: false };
+    const respelled = respellForKeySig(midi, raw, coveredLetters, keySigStr);
+    const rawLetter       = raw.split('/')[0];
+    const respelledLetter = respelled.split('/')[0];
+    const wasDouble   = rawLetter.endsWith('##') || (rawLetter.endsWith('bb') && rawLetter.length > 2);
+    const isSameLetter = rawLetter[0] === respelledLetter[0];
+    const forcedAcc   = wasDouble && isSameLetter && respelled !== raw;
+    return { key: respelled, forcedAcc };
+  }
+
+  function addAccFiltered(sn, spells) {
+    spells.forEach(({ key, forcedAcc }, i) => {
+      if (!forcedAcc && keySigStr && isCoveredByKeySig(key, coveredLetters)) return;
+      const acc = vexAccidental(key);
+      if (acc) sn.addModifier(new VF.Accidental(acc), i);
+    });
+  }
+
+  // ── Layout ───────────────────────────────────────────────────────────────────
   const svg = document.getElementById('notation-svg');
   svg.innerHTML = '';
 
-  // Determine if we need grand staff
   const allMidi = [...sourceMidi, ...info.targetMidi];
   const lowestMidi  = Math.min(...allMidi);
   const highestMidi = Math.max(...allMidi);
@@ -3004,14 +3381,13 @@ function renderResolutionNotation(sourceMidi, info) {
   const needsTreble = highestMidi >= 55;
   const grandStaff  = needsBass && needsTreble;
 
-  // Two measures side by side — each measure ~140px + header
   const MEASURE_W = 150;
-  const HEADER_W  = 70; // clef + time sig
+  const HEADER_W  = keySigStr ? 90 : 70;
   const W = HEADER_W + MEASURE_W * 2 + 30;
   let H, trebleY, bassY;
-  if (grandStaff)        { H = 240; trebleY = 20; bassY = 120; }
-  else if (needsBass)    { H = 140; bassY = 30; }
-  else                   { H = 140; trebleY = 30; }
+  if (grandStaff)     { H = 240; trebleY = 20; bassY = 120; }
+  else if (needsBass) { H = 140; bassY = 30; trebleY = undefined; }
+  else                { H = 140; trebleY = 30; bassY = undefined; }
 
   svg.setAttribute('width', W);
   svg.setAttribute('height', H);
@@ -3019,43 +3395,41 @@ function renderResolutionNotation(sourceMidi, info) {
   renderer.resize(W, H);
   const ctx = renderer.getContext();
 
-  // Spell a midi note (source notes use current chord context; target notes use generic)
-  function spellSrc(midi) {
-    const sym = currentChord?.invIndex !== undefined ? currentChord.baseChord.symbol : (currentChord?.symbol || '');
-    let rootPc;
-    if (currentChord?.family === 'poly')  rootPc = (currentPolyLowerRootMidi % 12 + 12) % 12;
-    else if (currentChord?.family === 'ust') rootPc = (currentUSTRootMidi % 12 + 12) % 12;
-    else if (currentChord?.family === 'slash') rootPc = (currentUpperRootMidi % 12 + 12) % 12;
-    else rootPc = ((currentChordRootMidi || 0) % 12 + 12) % 12;
-    return midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, sym);
+  const STAVE_X = 15;
+  const STAVE_W = W - 25;
+
+  function splitTrebleBass(midiArr) {
+    const sorted = [...midiArr].sort((a, b) => a - b);
+    return {
+      treble: sorted.filter(m => m >= 55 || (!needsBass && !grandStaff)),
+      bass:   sorted.filter(m => m <  55 || (!needsTreble && !grandStaff)),
+    };
   }
-  function spellTgt(midi) {
-    const rootPc = (info.targetRootMidi % 12 + 12) % 12;
-    return midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, 'maj');
-  }
-  function addAcc(sn, keys) {
-    keys.forEach((key, i) => {
-      const acc = vexAccidental(key);
-      if (acc) sn.addModifier(new VF.Accidental(acc), i);
-    });
+
+  function makeChordNote(midiArr, clef, rootPc, symbol, noteType) {
+    if (!midiArr.length) {
+      const restKey = clef === 'bass' ? 'd/3' : 'b/4';
+      return new StaveNote({ keys: [restKey], duration: noteType + 'r', clef });
+    }
+    const spells = midiArr.map(m => spellMidiWithKeySig(m, rootPc, symbol));
+    const keys = spells.map(s => s.key);
+    const sn = new StaveNote({ keys, duration: noteType, clef });
+    addAccFiltered(sn, spells);
+    return sn;
   }
 
   try {
-    // Build staves for measure 1 (source) and measure 2 (target)
-    // Each stave spans the full width; we use a single stave per clef with two voices
-    // Actually: draw one stave per clef, put both chords as separate StaveNotes in one voice with a BarNote between
-    const STAVE_X = 15;
-    const STAVE_W = W - 25;
-
     let trebleStave, bassStave;
     if (needsTreble || grandStaff) {
       trebleStave = new Stave(STAVE_X, trebleY, STAVE_W);
       trebleStave.addClef('treble');
+      if (keySigStr) trebleStave.addKeySignature(keySigStr);
       trebleStave.setContext(ctx).draw();
     }
     if (needsBass || grandStaff) {
       bassStave = new Stave(STAVE_X, bassY, STAVE_W);
       bassStave.addClef('bass');
+      if (keySigStr) bassStave.addKeySignature(keySigStr);
       bassStave.setContext(ctx).draw();
     }
     if (grandStaff && trebleStave && bassStave) {
@@ -3065,36 +3439,15 @@ function renderResolutionNotation(sourceMidi, info) {
       } catch(e) {}
     }
 
-    // Split notes into treble and bass for both chords
-    function splitTrebleBass(midiArr) {
-      const sorted = [...midiArr].sort((a, b) => a - b);
-      return {
-        treble: sorted.filter(m => m >= 55 || (!needsBass && !grandStaff)),
-        bass:   sorted.filter(m => m <  55 || (!needsTreble && !grandStaff)),
-      };
-    }
-
-    // Build a single-note StaveNote for a given midi array + clef + spell function
-    function makeChordNote(midiArr, clef, spellFn, noteType) {
-      if (!midiArr.length) {
-        const restKey = clef === 'bass' ? 'd/3' : 'b/4';
-        return new StaveNote({ keys: [restKey], duration: noteType + 'r', clef });
-      }
-      const keys = midiArr.map(m => spellFn(m));
-      const sn = new StaveNote({ keys, duration: noteType, clef });
-      addAcc(sn, keys);
-      return sn;
-    }
-
+    const tgtRootPc = (resolutionRootMidi % 12 + 12) % 12;
     const srcSplit = splitTrebleBass(sourceMidi);
     const tgtSplit = splitTrebleBass(info.targetMidi);
 
-    // For each clef, build: [srcNote, BarNote, tgtNote] in a voice (2+2 beats half notes)
-    function drawClef(clef, stave, srcMidi, tgtMidi, spellSrcFn, spellTgtFn) {
+    function drawClef(clef, stave, srcMidi, tgtMidi) {
       if (!stave) return;
-      const srcNote = makeChordNote(srcMidi, clef, spellSrcFn, 'h');
+      const srcNote = makeChordNote(srcMidi, clef, srcRootPc, sym, 'h');
       const bar     = new BarNote();
-      const tgtNote = makeChordNote(tgtMidi, clef, spellTgtFn, 'h');
+      const tgtNote = makeChordNote(tgtMidi, clef, tgtRootPc, 'maj', 'h');
       const voice = new Voice({ num_beats: 4, beat_value: 4 }).setMode(Voice.Mode.SOFT);
       voice.addTickables([srcNote, bar, tgtNote]);
       new Formatter().joinVoices([voice]).format([voice], STAVE_W - HEADER_W);
@@ -3102,19 +3455,24 @@ function renderResolutionNotation(sourceMidi, info) {
     }
 
     if (grandStaff) {
-      drawClef('treble', trebleStave, srcSplit.treble, tgtSplit.treble, spellSrc, spellTgt);
-      drawClef('bass',   bassStave,   srcSplit.bass,   tgtSplit.bass,   spellSrc, spellTgt);
+      drawClef('treble', trebleStave, srcSplit.treble, tgtSplit.treble);
+      drawClef('bass',   bassStave,   srcSplit.bass,   tgtSplit.bass);
     } else if (needsBass) {
-      drawClef('bass', bassStave, sourceMidi, info.targetMidi, spellSrc, spellTgt);
+      drawClef('bass', bassStave, sourceMidi, info.targetMidi);
     } else {
-      drawClef('treble', trebleStave, sourceMidi, info.targetMidi, spellSrc, spellTgt);
+      drawClef('treble', trebleStave, sourceMidi, info.targetMidi);
     }
 
-    // Draw chord name labels above the stave
+    // ── Chord name labels above the stave ─────────────────────────────────────
     const svgNS = 'http://www.w3.org/2000/svg';
     const labelY = (trebleY !== undefined ? trebleY : bassY) - 4;
 
-    // Source label — center of first half
+    let srcLabel = '';
+    if (currentChord?.family === 'poly') srcLabel = getPolyChordLabel();
+    else if (currentChord?.family === 'ust') srcLabel = getUSTLabel().split(' → ')[0];
+    else if (currentChord?.family === 'slash') srcLabel = getSlashResolvedName();
+    else srcLabel = getChordRootName() + ' ' + (currentChord?.name || '');
+
     const srcLabelX = STAVE_X + HEADER_W + MEASURE_W * 0.3;
     const srcLabelEl = document.createElementNS(svgNS, 'text');
     srcLabelEl.setAttribute('x', srcLabelX);
@@ -3124,17 +3482,9 @@ function renderResolutionNotation(sourceMidi, info) {
     srcLabelEl.setAttribute('fill', '#4a9e8e');
     srcLabelEl.setAttribute('font-family', 'Inter, sans-serif');
     srcLabelEl.setAttribute('font-weight', '600');
-
-    // Build source label
-    let srcLabel = '';
-    if (currentChord?.family === 'poly') srcLabel = getPolyChordLabel();
-    else if (currentChord?.family === 'ust') srcLabel = getUSTLabel().split(' → ')[0];
-    else if (currentChord?.family === 'slash') srcLabel = getSlashResolvedName();
-    else srcLabel = getChordRootName() + ' ' + (currentChord?.name || '');
     srcLabelEl.textContent = srcLabel.length > 16 ? srcLabel.slice(0, 15) + '…' : srcLabel;
     svg.appendChild(srcLabelEl);
 
-    // Target label — center of second half
     const tgtLabelX = STAVE_X + HEADER_W + MEASURE_W + MEASURE_W * 0.5;
     const tgtLabelEl = document.createElementNS(svgNS, 'text');
     tgtLabelEl.setAttribute('x', tgtLabelX);
@@ -3149,9 +3499,9 @@ function renderResolutionNotation(sourceMidi, info) {
 
   } catch(e) { console.error('VexFlow resolution render error:', e); }
 
-  // Update the notation chord name line
-  const nameEl = document.getElementById('notationChordName');
-  if (nameEl) nameEl.textContent += '  →  ' + info.targetName;
+  // ── Show the notation panel ───────────────────────────────────────────────────
+  document.getElementById('notationArea').style.display = 'block';
+  document.getElementById('notationPanel').style.display = 'block';
 }
 
 // Compute a chord name purely from interval logic — no library lookup.
@@ -3850,16 +4200,23 @@ function renderPolyNotation(keySigStr) {
   const keySigCount = keySigStr ? keySigAccidentalCount(keySigStr) : 0;
   const coveredLetters = keySigStr ? keySigCoveredLetters(keySigStr) : new Set();
 
-  // Spell a midi note relative to a given root pc and symbol
+  // Spell a midi note relative to a given root pc and symbol.
+  // Returns { key, forcedAcc } — same contract as spellMidi in renderNotation.
   function spellMidiRelative(midi, rootPc, symbol) {
-    let key = midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, symbol);
-    if (keySigStr) key = respellForKeySig(midi, key, coveredLetters, keySigStr);
-    return key;
+    const raw = midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, symbol);
+    if (!keySigStr) return { key: raw, forcedAcc: false };
+    const respelled = respellForKeySig(midi, raw, coveredLetters, keySigStr);
+    const rawLetter      = raw.split('/')[0];
+    const respelledLetter = respelled.split('/')[0];
+    const wasDouble  = rawLetter.endsWith('##') || (rawLetter.endsWith('bb') && rawLetter.length > 2);
+    const isSameLetter = rawLetter[0] === respelledLetter[0];
+    const forcedAcc  = wasDouble && isSameLetter && respelled !== raw;
+    return { key: respelled, forcedAcc };
   }
 
   function addAccidentalsFiltered(sn, keys) {
-    keys.forEach((key, i) => {
-      if (isCoveredByKeySig(key, coveredLetters)) return;
+    keys.forEach(({ key, forcedAcc }, i) => {
+      if (!forcedAcc && isCoveredByKeySig(key, coveredLetters)) return;
       const acc = vexAccidental(key);
       if (acc) sn.addModifier(new VF.Accidental(acc), i);
     });
@@ -3882,9 +4239,10 @@ function renderPolyNotation(keySigStr) {
     function drawStaff(midiArr, rootPc, symbol, clef, stave) {
       const sorted = [...midiArr].sort((a, b) => a - b);
       if (!sorted.length || !stave) return;
-      const keys = sorted.map(m => spellMidiRelative(m, rootPc, symbol));
+      const spelled = sorted.map(m => spellMidiRelative(m, rootPc, symbol));
+      const keys = spelled.map(s => s.key);
       const sn = new StaveNote({ keys, duration: 'w', clef });
-      addAccidentalsFiltered(sn, keys);
+      addAccidentalsFiltered(sn, spelled);
       const voice = new Voice({ num_beats: 4, beat_value: 4 }).setMode(Voice.Mode.SOFT);
       voice.addTickables([sn]);
       new Formatter().joinVoices([voice]).format([voice], STAVE_W - 60);
@@ -4239,9 +4597,626 @@ function submitScaleAnswer(chosen, _el) {
 
 // ─── Shared quiz helpers ──────────────────────────────────────────────────────
 
+// ─── POINT 38: Progression playback ──────────────────────────────────────────
+
+// Build block chord MIDI notes for one progression chord
+function progChordMidi(rootMidi, qualSym) {
+  // Find the chord type from CHORD_TYPES by matching symbol
+  const allChords = [
+    ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
+    ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended
+  ];
+  const ct = allChords.find(c => c.symbol === qualSym);
+  const intervals = ct ? ct.intervals : [0, 4, 7]; // fallback: major triad
+  return intervals.map(i => rootMidi + i);
+}
+
+// Play the current progression — ~0.5s gap between chords
+function playProgression() {
+  if (!piano || !currentProgression) return;
+  const btn = document.getElementById('playBtn');
+  btn.disabled = true;
+
+  const gapMs  = 500;   // gap between chord onsets
+  const durSec = 1.2;   // how long each chord sustains
+
+  currentProgression.degrees.forEach((degSemis, i) => {
+    setTimeout(() => {
+      const rootMidi = currentProgRootMidi + degSemis;
+      const midiNotes = progChordMidi(rootMidi, currentProgression.qualities[i]);
+      midiNotes.forEach(m => {
+        const noteName = NOTE_NAMES[m % 12] + Math.floor(m / 12 - 1);
+        piano.play(noteName, audioCtx.currentTime, { duration: durSec, gain: 0.7 });
+      });
+    }, i * (gapMs + durSec * 200)); // stagger onsets
+  });
+
+  const totalMs = currentProgression.degrees.length * (gapMs + durSec * 200) + durSec * 1000;
+  setTimeout(() => { btn.disabled = false; }, totalMs);
+}
+
+// Play slowly (double gaps)
+function playProgressionSlowly() {
+  if (!piano || !currentProgression) return;
+  const btn = document.getElementById('playBtn');
+  btn.disabled = true;
+  const gapMs = 1000;
+  const durSec = 2.0;
+
+  currentProgression.degrees.forEach((degSemis, i) => {
+    setTimeout(() => {
+      const rootMidi = currentProgRootMidi + degSemis;
+      const midiNotes = progChordMidi(rootMidi, currentProgression.qualities[i]);
+      midiNotes.forEach(m => {
+        const noteName = NOTE_NAMES[m % 12] + Math.floor(m / 12 - 1);
+        piano.play(noteName, audioCtx.currentTime, { duration: durSec, gain: 0.65 });
+      });
+    }, i * (gapMs + durSec * 200));
+  });
+
+  const totalMs = currentProgression.degrees.length * (gapMs + durSec * 200) + durSec * 1000;
+  setTimeout(() => { btn.disabled = false; }, totalMs);
+}
+
+// ─── POINT 38: Progression question generation ───────────────────────────────
+
+function generateProgressionQuestion() {
+  const pool = PROGRESSIONS.filter(p => selectedProgressions.has(p.symbol));
+  if (!pool.length) {
+    document.getElementById('chordHint').textContent = 'No progressions selected — pick some below.';
+    document.getElementById('playBtn').disabled = true;
+    return;
+  }
+
+  currentProgression = pool[Math.floor(Math.random() * pool.length)];
+  progKeySigMode = 'C'; // reset key sig chip each new question
+
+  // Tonic root — use pinnedRoot if set
+  const pc = pinnedRoot !== null ? pinnedRoot : Math.floor(Math.random() * 12);
+  currentProgRootPc   = pc;
+  currentProgRootMidi = 12 + pc + 4 * 12; // octave 4 — comfortable range
+
+  progSlotAnswers = currentProgression.degrees.map(() => ({ degreeIdx: null, qualityIdx: null }));
+  progAnswered = false;
+
+  resetQuizUI();
+  document.getElementById('playLabel').textContent = 'Play progression';
+  document.getElementById('playBtn').disabled = false;
+  document.getElementById('chordHint').textContent = '';
+  updateRootBadge(showRoot ? NOTE_NAMES[pc] : null);
+
+  renderProgressionAnswerUI();
+}
+
+// ─── POINT 38: Progression answer UI ─────────────────────────────────────────
+
+function renderProgressionAnswerUI() {
+  const statusEl = document.getElementById('statusMsg');
+  statusEl.textContent = '';
+
+  // Hide irrelevant panels
+  document.getElementById('answerDropdownWrap').style.display = 'none';
+  document.getElementById('notationPanel').style.display = 'none';
+  document.getElementById('breakdownWrapper').style.display = 'none';
+
+  const ctrl = document.getElementById('controls');
+  ctrl.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.id = 'progSlotsWrap';
+  wrap.className = 'prog-slots-wrap';
+
+  currentProgression.degrees.forEach((_, slotIdx) => {
+    const slot = document.createElement('div');
+    slot.className = 'prog-slot';
+    slot.id = `prog-slot-${slotIdx}`;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'prog-slot-label';
+    lbl.textContent = `Chord ${slotIdx + 1}`;
+    slot.appendChild(lbl);
+
+    // Degree row
+    const degRow = document.createElement('div');
+    degRow.className = 'prog-slot-row';
+    PROG_DEGREES.forEach((deg, di) => {
+      const chip = document.createElement('button');
+      chip.className = 'prog-chip';
+      chip.textContent = deg.label;
+      chip.dataset.slot  = slotIdx;
+      chip.dataset.di    = di;
+      chip.addEventListener('click', () => {
+        if (progAnswered) return;
+        progSlotAnswers[slotIdx].degreeIdx = di;
+        // Deactivate siblings in this row
+        degRow.querySelectorAll('.prog-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        updateSubmitBtn();
+      });
+      degRow.appendChild(chip);
+    });
+    slot.appendChild(degRow);
+
+    // Quality row
+    const qualRow = document.createElement('div');
+    qualRow.className = 'prog-slot-row';
+    PROG_QUALITIES.forEach((q, qi) => {
+      const chip = document.createElement('button');
+      chip.className = 'prog-chip';
+      chip.textContent = q.label;
+      chip.dataset.slot = slotIdx;
+      chip.dataset.qi   = qi;
+      chip.addEventListener('click', () => {
+        if (progAnswered) return;
+        progSlotAnswers[slotIdx].qualityIdx = qi;
+        qualRow.querySelectorAll('.prog-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        updateSubmitBtn();
+      });
+      qualRow.appendChild(chip);
+    });
+    slot.appendChild(qualRow);
+
+    wrap.appendChild(slot);
+  });
+
+  ctrl.appendChild(wrap);
+
+  // Submit button
+  const submitRow = document.createElement('div');
+  submitRow.className = 'prog-submit-row';
+  const submitBtn = document.createElement('button');
+  submitBtn.className = 'prog-submit-btn';
+  submitBtn.id = 'progSubmitBtn';
+  submitBtn.textContent = 'Submit';
+  submitBtn.disabled = true;
+  submitBtn.addEventListener('click', submitProgressionAnswer);
+  submitRow.appendChild(submitBtn);
+  ctrl.appendChild(submitRow);
+
+  // Slow button
+  const sb = document.createElement('button');
+  sb.className = 'ctrl-btn slow';
+  sb.style.marginTop = '0.5rem';
+  sb.textContent = '🐢 Hear slowly';
+  sb.addEventListener('click', playProgressionSlowly);
+  ctrl.appendChild(sb);
+}
+
+function updateSubmitBtn() {
+  const allFilled = progSlotAnswers.every(s => s.degreeIdx !== null && s.qualityIdx !== null);
+  const btn = document.getElementById('progSubmitBtn');
+  if (btn) btn.disabled = !allFilled;
+}
+
+// ─── POINT 38: Grade answer ───────────────────────────────────────────────────
+
+function submitProgressionAnswer() {
+  progAnswered = true;
+
+  let allCorrect = true;
+
+  currentProgression.degrees.forEach((degSemis, i) => {
+    const correctDegIdx  = PROG_DEGREES.findIndex(d => d.semi === degSemis);
+    const correctQualSym = currentProgression.qualities[i];
+    const correctQualIdx = PROG_QUALITIES.findIndex(q => q.sym === correctQualSym);
+
+    const ans = progSlotAnswers[i];
+    const degOk  = ans.degreeIdx  === correctDegIdx;
+    const qualOk = ans.qualityIdx === correctQualIdx;
+    const slotOk = degOk && qualOk;
+
+    if (!slotOk) allCorrect = false;
+
+    const slotEl = document.getElementById(`prog-slot-${i}`);
+    slotEl.classList.add(slotOk ? 'correct' : 'wrong');
+
+    // Disable all chips in this slot
+    slotEl.querySelectorAll('.prog-chip').forEach(c => c.classList.add('disabled'));
+
+    // Reveal correct answer in red slots
+    if (!slotOk) {
+      const lbl = slotEl.querySelector('.prog-slot-label');
+      const revealed = document.createElement('span');
+      revealed.className = 'prog-slot-revealed';
+      const correctDegLabel  = correctDegIdx  >= 0 ? PROG_DEGREES[correctDegIdx].label   : '?';
+      const correctQualLabel = correctQualIdx >= 0 ? PROG_QUALITIES[correctQualIdx].label : correctQualSym;
+      revealed.textContent = `→ ${correctDegLabel} ${correctQualLabel}`;
+      lbl.appendChild(revealed);
+    }
+  });
+
+  // Score — all-or-nothing
+  total++;
+  document.getElementById('total').textContent = total;
+  const statKey = currentProgression.symbol;
+  if (!sessionStats[statKey]) sessionStats[statKey] = { name: currentProgression.name, correct: 0, total: 0 };
+  sessionStats[statKey].total++;
+
+  if (allCorrect) {
+    correct++;
+    streak++;
+    sessionStats[statKey].correct++;
+    document.getElementById('correct').textContent = correct;
+    document.getElementById('streak').textContent  = streak;
+    const statusEl = document.getElementById('statusMsg');
+    statusEl.textContent = '✓ Correct!';
+    statusEl.className   = 'status-msg correct';
+  } else {
+    streak = 0;
+    document.getElementById('streak').textContent = 0;
+    const statusEl = document.getElementById('statusMsg');
+    statusEl.textContent = '✗ Not quite';
+    statusEl.className   = 'status-msg wrong';
+  }
+  updateStatsTable();
+
+  // Hide submit, show Next
+  const submitBtnEl = document.getElementById('progSubmitBtn');
+  if (submitBtnEl) submitBtnEl.style.display = 'none';
+
+  showProgressionNotation();
+
+  // Add Next progression button
+  const submitRowEl = document.querySelector('.prog-submit-row');
+  if (submitRowEl) {
+    const nb = document.createElement('button');
+    nb.className = 'prog-submit-btn';
+    nb.id = 'nextBtn';
+    nb.textContent = 'Next progression';
+    nb.addEventListener('click', generateProgressionQuestion);
+    submitRowEl.appendChild(nb);
+  }
+
+}
+
+// ─── POINT 38: Post-answer notation ──────────────────────────────────────────
+
+function showProgressionNotation() {
+  // Show the notation panel with a label per chord
+  const panel  = document.getElementById('notationPanel');
+  const nameEl = document.getElementById('notationChordName');
+
+  panel.style.display = 'block';
+  nameEl.textContent  = currentProgression.symbol + ' — ' + currentProgression.name;
+
+  // Show keysig chips (C = no key sig, Key = tonic major key sig); hide inversion chips
+  const keysigRow = document.getElementById('keysigChipRow');
+  keysigRow.style.display = 'flex';
+  document.getElementById('keysigChipC').classList.toggle('active',   progKeySigMode === 'C');
+  document.getElementById('keysigChipKey').classList.toggle('active', progKeySigMode === 'key');
+  document.getElementById('inversionChipRow').style.display = 'none';
+
+  // Resolve key signature string: tonic major key when mode='key', null for 'C'
+  const keySigStr = progKeySigMode === 'key' ? vexKeyMajor(currentProgRootPc) : null;
+  const coveredLetters = keySigStr ? keySigCoveredLetters(keySigStr) : new Set();
+
+  // Render each chord's mini notation into the notation area
+  const notationArea = document.getElementById('notationArea');
+  notationArea.style.display = 'block';
+
+  // Clear existing SVG (standard single-chord canvas — not used in prog mode)
+  document.getElementById('notation-svg').innerHTML = '';
+
+  // Remove any previous prog notation row, then build a fresh one
+  const scrollEl = notationArea.querySelector('.notation-scroll');
+  notationArea.querySelectorAll('.prog-notation-row').forEach(el => el.remove());
+
+  const row = document.createElement('div');
+  row.className = 'prog-notation-row';
+
+  const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = Vex.Flow;
+
+  currentProgression.degrees.forEach((degSemis, i) => {
+    const chordRootMidi = currentProgRootMidi + degSemis;
+    const chordRootPc   = ((chordRootMidi % 12) + 12) % 12;
+    const qualSym       = currentProgression.qualities[i];
+
+    // Find chord intervals from library
+    const allChords = [
+      ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
+      ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended
+    ];
+    const ct        = allChords.find(c => c.symbol === qualSym);
+    const intervals = ct ? ct.intervals : [0, 4, 7];
+    const midiNotes = intervals.map(iv => chordRootMidi + iv);
+
+    // Chord label above stave: degree + quality
+    const degObj  = PROG_DEGREES.find(d => d.semi === degSemis) || { label: '?' };
+    const qualObj = PROG_QUALITIES.find(q => q.sym === qualSym) || { label: qualSym };
+    const chordLabel = degObj.label + ' ' + qualObj.label;
+
+    // Cell container
+    const cell = document.createElement('div');
+    cell.className = 'prog-notation-cell';
+
+    const labelEl = document.createElement('div');
+    labelEl.className = 'prog-notation-cell-label';
+    labelEl.textContent = chordLabel;
+    cell.appendChild(labelEl);
+
+    const svgWrap = document.createElement('div');
+    svgWrap.style.width  = '90px';
+    svgWrap.style.height = '100px';
+    cell.appendChild(svgWrap);
+    row.appendChild(cell);
+
+    try {
+      const renderer = new Renderer(svgWrap, Renderer.Backends.SVG);
+      renderer.resize(90, 100);
+      const vexCtx = renderer.getContext();
+      vexCtx.setFont('Arial', 10);
+
+      // Stave width: wider when there's a key signature (needs room for accidentals)
+      const staveW = keySigStr ? 78 : 80;
+      const stave  = new Stave(2, 10, staveW);
+      if (keySigStr) stave.addKeySignature(keySigStr);
+      stave.setContext(vexCtx).draw();
+
+      // Spell each note using the same pipeline as all other modes:
+      // midiToVexKeySpelled → respellForKeySig → forcedAcc for same-letter simplification
+      const spelled = midiNotes.map(m => {
+        const intervalSemi = pcInterval(m % 12, chordRootPc);
+        const raw = midiToVexKeySpelled(m, intervalSemi, chordRootPc, qualSym);
+        if (!keySigStr) return { key: raw, forcedAcc: false };
+        const respelled = respellForKeySig(m, raw, coveredLetters, keySigStr);
+        const rawLetter       = raw.split('/')[0];
+        const respelledLetter = respelled.split('/')[0];
+        const wasDouble   = rawLetter.endsWith('##') || (rawLetter.endsWith('bb') && rawLetter.length > 2);
+        const isSameLetter = rawLetter[0] === respelledLetter[0];
+        const forcedAcc   = wasDouble && isSameLetter && respelled !== raw;
+        return { key: respelled, forcedAcc };
+      });
+      const keys = spelled.map(s => s.key);
+
+      const staveNote = new StaveNote({ keys, duration: 'w', clef: 'treble' });
+
+      // Add accidentals — forcedAcc overrides key sig coverage for same-letter simplifications
+      spelled.forEach(({ key, forcedAcc }, ki) => {
+        if (!forcedAcc && keySigStr && isCoveredByKeySig(key, coveredLetters)) return;
+        const acc = vexAccidental(key);
+        if (acc) staveNote.addModifier(new Accidental(acc), ki);
+      });
+
+      const voice = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
+      voice.addTickables([staveNote]);
+      new Formatter().joinVoices([voice]).format([voice], staveW - 20);
+      voice.draw(vexCtx, stave);
+    } catch(e) {
+      console.warn('Progression stave render error (chord ' + i + '):', e);
+    }
+  });
+
+  // Insert row before the standard scroll div (which we hide)
+  if (scrollEl) notationArea.insertBefore(row, scrollEl);
+  else notationArea.appendChild(row);
+
+  // Hide the standard single-chord SVG scroll area
+  if (scrollEl) scrollEl.style.display = 'none';
+}
+
+// ─── POINT 38: Pool panels ────────────────────────────────────────────────────
+
+function renderProgressionPoolPanel(panel) {
+  const { body, updateMeta } = makePoolPanelShell(panel, 'Training pool — Progressions',
+    () => `${PROGRESSIONS.filter(p => selectedProgressions.has(p.symbol)).length} / ${PROGRESSIONS.length}`);
+
+  const onChangeFn = () => { updateMeta(); };
+
+  PROG_GROUPS.forEach(group => {
+    const items = PROGRESSIONS.filter(p => p.group === group);
+    const collapsed = PROG_GROUP_COLLAPSED[group] ?? false;
+    makeProgSection(body, group, items, collapsed, onChangeFn);
+  });
+
+  updateMeta();
+}
+
+// Two-line chip section for progressions quiz pool (symbol + name, multi-select + All/None)
+function makeProgSection(body, title, items, collapsed = false, onChangeFn = () => {}) {
+  const sec = document.createElement('div');
+  sec.className = 'pool-section';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'pool-section-header';
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'pool-section-title';
+  const chevron = document.createElement('span');
+  chevron.className = 'pool-section-chevron';
+  chevron.textContent = collapsed ? '▸' : '▾';
+  titleEl.appendChild(chevron);
+  titleEl.appendChild(document.createTextNode(title));
+
+  const right = document.createElement('span');
+  right.style.display = 'flex';
+  right.style.alignItems = 'center';
+  right.style.gap = '8px';
+
+  const countEl = document.createElement('span');
+  countEl.className = 'pool-section-count';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'pool-all-btn';
+  allBtn.textContent = 'All';
+
+  const noneBtn = document.createElement('button');
+  noneBtn.className = 'pool-all-btn';
+  noneBtn.textContent = 'None';
+
+  right.appendChild(countEl);
+  right.appendChild(allBtn);
+  right.appendChild(noneBtn);
+  hdr.appendChild(titleEl);
+  hdr.appendChild(right);
+
+  const sectionBody = document.createElement('div');
+  sectionBody.className = 'pool-section-body' + (collapsed ? ' collapsed' : '');
+
+  const chipsEl = document.createElement('div');
+  chipsEl.className = 'pool-chips';
+  chipsEl.style.marginBottom = '0.4rem';
+
+  hdr.addEventListener('click', (e) => {
+    if (e.target === allBtn || e.target === noneBtn) return;
+    const isCollapsed = sectionBody.classList.toggle('collapsed');
+    chevron.textContent = isCollapsed ? '▸' : '▾';
+  });
+
+  const chips = [];
+
+  function updateCount() {
+    const active = items.filter(it => selectedProgressions.has(it.symbol)).length;
+    countEl.textContent = active + ' / ' + items.length;
+  }
+
+  allBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    items.forEach(it => selectedProgressions.add(it.symbol));
+    chips.forEach(c => c.classList.add('active'));
+    updateCount();
+    onChangeFn();
+  });
+
+  noneBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    items.forEach(it => selectedProgressions.delete(it.symbol));
+    chips.forEach(c => c.classList.remove('active'));
+    updateCount();
+    onChangeFn();
+  });
+
+  items.forEach(item => {
+    const chip = document.createElement('button');
+    chip.className = 'pool-chip prog-pool-chip' + (selectedProgressions.has(item.symbol) ? ' active' : '');
+    chip.innerHTML = `<span class="prog-chip-sym">${item.symbol}</span><span class="prog-chip-name">${item.name}</span>`;
+    chip.addEventListener('click', () => {
+      if (selectedProgressions.has(item.symbol)) selectedProgressions.delete(item.symbol);
+      else selectedProgressions.add(item.symbol);
+      chip.classList.toggle('active', selectedProgressions.has(item.symbol));
+      updateCount();
+      onChangeFn();
+    });
+    chips.push(chip);
+    chipsEl.appendChild(chip);
+  });
+
+  updateCount();
+  sectionBody.appendChild(chipsEl);
+  sec.appendChild(hdr);
+  sec.appendChild(sectionBody);
+  body.appendChild(sec);
+}
+
+function renderDictProgressionPoolPanel() {
+  const panel = document.getElementById('poolPanel');
+  panel.innerHTML = '';
+  const { body } = makePoolPanelShell(panel, 'Dictionary — Progressions', null);
+
+  PROG_GROUPS.forEach(group => {
+    const items = PROGRESSIONS.filter(p => p.group === group);
+    const collapsed = PROG_GROUP_COLLAPSED[group] ?? false;
+    makeDictProgSection(body, group, items, collapsed);
+  });
+}
+
+function makeDictProgSection(body, title, items, collapsed = false) {
+  const sec = document.createElement('div');
+  sec.className = 'pool-section';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'pool-section-header';
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'pool-section-title';
+  const chevron = document.createElement('span');
+  chevron.className = 'pool-section-chevron';
+  chevron.textContent = collapsed ? '▸' : '▾';
+  titleEl.appendChild(chevron);
+  titleEl.appendChild(document.createTextNode(title));
+  hdr.appendChild(titleEl);
+
+  const sectionBody = document.createElement('div');
+  sectionBody.className = 'pool-section-body' + (collapsed ? ' collapsed' : '');
+
+  hdr.addEventListener('click', () => {
+    const isCollapsed = sectionBody.classList.toggle('collapsed');
+    chevron.textContent = isCollapsed ? '▸' : '▾';
+  });
+
+  const chipsEl = document.createElement('div');
+  chipsEl.className = 'pool-chips';
+  chipsEl.style.marginBottom = '0.4rem';
+
+  items.forEach(item => {
+    const chip = document.createElement('button');
+    chip.className = 'pool-chip prog-pool-chip' + (dictProgSymbol === item.symbol ? ' active' : '');
+    chip.innerHTML = `<span class="prog-chip-sym">${item.symbol}</span><span class="prog-chip-name">${item.name}</span>`;
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#poolPanel .pool-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      dictProgSymbol = item.symbol;
+      dictShowProgression(item);
+    });
+    chipsEl.appendChild(chip);
+  });
+
+  sectionBody.appendChild(chipsEl);
+  sec.appendChild(hdr);
+  sec.appendChild(sectionBody);
+  body.appendChild(sec);
+}
+
+// ─── POINT 38: Dictionary mode for progressions ───────────────────────────────
+
+let dictProgSymbol = null;
+
+function dictShowProgression(prog) {
+  currentProgression = prog;
+  const pc = pinnedRoot !== null ? pinnedRoot : 0;
+  currentProgRootPc   = pc;
+  currentProgRootMidi = 12 + pc + 4 * 12;
+  progAnswered = true; // allows notation to show
+
+  updateRootBadge(NOTE_NAMES[pc]);
+
+  // Reset UI
+  document.getElementById('statusMsg').textContent = '';
+  document.getElementById('answerDropdownWrap').style.display = 'none';
+  document.getElementById('breakdownWrapper').style.display   = 'none';
+
+  const ctrl = document.getElementById('controls');
+  ctrl.innerHTML = '';
+
+  // Show notation immediately
+  showProgressionNotation();
+
+  // Hear slowly + play buttons
+  const sb = document.createElement('button');
+  sb.className = 'ctrl-btn slow';
+  sb.textContent = '🐢 Hear slowly';
+  sb.addEventListener('click', playProgressionSlowly);
+  ctrl.appendChild(sb);
+}
+
+// ─── POINT 38: setAppMode / switchMode / generateQuestion patches ─────────────
+
+function generateProgressionQuestion_entry() {
+  if (appMode === 'dict') {
+    // Dict: show first item by default
+    if (!dictProgSymbol) dictProgSymbol = PROGRESSIONS[0].symbol;
+    const prog = PROGRESSIONS.find(p => p.symbol === dictProgSymbol) || PROGRESSIONS[0];
+    renderDictProgressionPoolPanel();
+    dictShowProgression(prog);
+  } else {
+    generateProgressionQuestion();
+  }
+}
+
 function generateQuestion() {
   if (currentMode === 'intervals') generateIntervalQuestion();
   else if (currentMode === 'scales') generateScaleQuestion();
+  else if (currentMode === 'progressions') generateProgressionQuestion_entry();
   else generateChordQuestion();
 }
 
@@ -4375,8 +5350,8 @@ function recomputeCurrentNotes() {
 
   // ── Always refresh UI ────────────────────────────────────────────────────────
   // In dict mode: always. In quiz mode: only after answering.
-  // showNotation() already calls showBreakdown() internally.
-  if (appMode === 'dict' || answered) showNotation();
+  // showCurrentView() dispatches to chord or resolution view as appropriate.
+  if (appMode === 'dict' || answered) showCurrentView();
   // Always update the root badge to reflect the new pitch
   if (currentMode === 'chords' && currentChord) {
     updateRootBadge(appMode === 'dict' || answered ? getChordRootName() : (showRoot ? getChordRootName() : null));
@@ -4389,10 +5364,33 @@ function recomputeCurrentNotes() {
   }
 }
 
+// ─── POINT 38: Progression DOM teardown ──────────────────────────────────────
+// Restores every DOM element that showProgressionNotation() mutates.
+// Must be called on any mode switch or new question so other modes
+// don't inherit broken state from a previous progression visit.
+function teardownProgressionUI() {
+  // Restore .notation-scroll (hidden by showProgressionNotation)
+  const scrollEl = document.querySelector('.notation-scroll');
+  if (scrollEl) scrollEl.style.display = '';
+  // Remove any injected .prog-notation-row
+  document.querySelectorAll('.prog-notation-row').forEach(el => el.remove());
+  // Restore keysig chip row (hidden by showProgressionNotation)
+  const keysigRow = document.getElementById('keysigChipRow');
+  if (keysigRow) keysigRow.style.display = '';
+  // Clear SVG so stale progression mini-staves don't bleed through
+  const svg = document.getElementById('notation-svg');
+  if (svg) svg.innerHTML = '';
+  // Clear controls area (progression injects Submit / Next / Hear Slowly buttons)
+  const ctrl = document.getElementById('controls');
+  if (ctrl) ctrl.innerHTML = '';
+}
+
 function resetQuizUI() {
   answered = false;
   resolutionActive = false; // POINT 37: reset resolution state
+  resolutionRootMidi = null; // reset stored resolution root for new question
   dictInversionIndex = 0; // reset; will be set to quizzed inversion after answering
+  teardownProgressionUI(); // POINT 38: clean up any progression DOM residue first
   document.getElementById('notationArea').style.display = 'none';
   document.getElementById('notationPanel').style.display = 'none';
   document.getElementById('inversionChipRow').style.display = 'none';
@@ -4491,17 +5489,13 @@ function renderControls(nextFn, playFn) {
     const nb = document.createElement('button');
     nb.className = 'ctrl-btn primary';
     nb.id = 'nextBtn';
-    nb.textContent = currentMode === 'intervals' ? 'Next interval'
-                   : currentMode === 'scales'    ? 'Next scale'
+    nb.textContent = currentMode === 'intervals'    ? 'Next interval'
+                   : currentMode === 'scales'       ? 'Next scale'
+                   : currentMode === 'progressions' ? 'Next progression'
                    : 'Next chord';
     nb.addEventListener('click', nextFn);
     c.appendChild(nb);
   }
-  const rb = document.createElement('button');
-  rb.className = 'ctrl-btn';
-  rb.textContent = 'Play again';
-  rb.addEventListener('click', playFn);
-  c.appendChild(rb);
   // POINT 8: Hear slowly — only shown after answering
   if (answered) {
     const sb = document.createElement('button');
@@ -4510,11 +5504,12 @@ function renderControls(nextFn, playFn) {
     sb.addEventListener('click', playSlowly);
     c.appendChild(sb);
   }
-  // POINT 37: Resolve → — only shown after answering, only in chord mode
+  // POINT 37: Resolve ↔ Chord toggle — only shown after answering, only in chord mode
   if (answered && currentMode === 'chords') {
     const rb = document.createElement('button');
     rb.className = 'ctrl-btn resolve';
-    rb.textContent = 'Resolve →';
+    rb.id = 'resolveBtn';
+    rb.textContent = resolutionActive ? '← Chord' : 'Resolve →';
     rb.addEventListener('click', playResolution);
     c.appendChild(rb);
   }
@@ -4529,6 +5524,7 @@ function renderPoolPanel() {
 
   if (currentMode === 'chords') renderChordPoolPanel(panel);
   else if (currentMode === 'intervals') renderIntervalPoolPanel(panel);
+  else if (currentMode === 'progressions') renderProgressionPoolPanel(panel);
   else renderScalePoolPanel(panel);
 }
 
@@ -4843,7 +5839,7 @@ function renderChordStyleChips() {
       // last-played until Play is hit — nothing to show until resolved.
       if (s.symbol !== 'random') {
         currentChordPlayStyle = s.symbol;
-        if (appMode === 'dict' || answered) showNotation();
+        if (appMode === 'dict' || answered) showCurrentView();
       }
     });
     row.appendChild(chip);
@@ -4907,6 +5903,7 @@ function renderScaleDirChips() {
 
 // POINT 5 / POINT 7: Switch between chord, interval, and scale modes
 function switchMode(mode) {
+  teardownProgressionUI(); // POINT 38: always clean up progression DOM before switching
   currentMode = mode;
 
   // Reset streak on mode switch
@@ -4920,15 +5917,16 @@ function switchMode(mode) {
 
   // POINT 10: Rebuild pool panel for new mode; show/hide playback style rows
   renderPoolPanel();
-  document.getElementById('chordStyleSection').style.display    = mode === 'chords'    ? '' : 'none';
-  document.getElementById('voicingModeSection').style.display   = mode === 'chords'    ? '' : 'none'; // POINT 23
-  document.getElementById('intervalStyleSection').style.display = mode === 'intervals' ? '' : 'none';
-  document.getElementById('scaleDirSection').style.display      = mode === 'scales'    ? '' : 'none';
+  document.getElementById('chordStyleSection').style.display    = mode === 'chords'       ? '' : 'none';
+  document.getElementById('voicingModeSection').style.display   = mode === 'chords'       ? '' : 'none'; // POINT 23
+  document.getElementById('intervalStyleSection').style.display = mode === 'intervals'    ? '' : 'none';
+  document.getElementById('scaleDirSection').style.display      = mode === 'scales'       ? '' : 'none';
 
   // Play label
   document.getElementById('playLabel').textContent =
-    mode === 'intervals' ? 'Play interval (together)'
-    : mode === 'scales'  ? 'Play scale (ascending)'
+    mode === 'intervals'   ? 'Play interval (together)'
+    : mode === 'scales'    ? 'Play scale (ascending)'
+    : mode === 'progressions' ? 'Play progression'
     : 'Play chord';
 
   updateRootBadge(null);  // clear badge until new question sets it
@@ -5308,6 +6306,7 @@ function dictShow() {
 
   answered = true; // so showNotation + showBreakdown render without restriction
   resolutionActive = false; // POINT 37: reset so notation shows current chord, not resolution
+  resolutionRootMidi = null; // reset stored root so new chord computes fresh
   showNotation();
   renderInversionChips();
   showBreakdown();
@@ -5322,21 +6321,20 @@ function dictShow() {
   sb.textContent = '🐢 Hear slowly';
   sb.addEventListener('click', playSlowly);
   c.appendChild(sb);
-  // POINT 37: Resolve → button in dict mode (chord mode only)
+  // POINT 37: Resolve ↔ Chord toggle in dict mode (chord mode only)
   if (currentMode === 'chords') {
     const rb = document.createElement('button');
     rb.className = 'ctrl-btn resolve';
-    rb.textContent = 'Resolve →';
-    rb.addEventListener('click', () => {
-      resolutionActive = false; // allow fresh render each time in dict mode
-      playResolution();
-    });
+    rb.id = 'resolveBtn';
+    rb.textContent = resolutionActive ? '← Chord' : 'Resolve →';
+    rb.addEventListener('click', playResolution);
     c.appendChild(rb);
   }
 }
 
 // Switch between quiz and dictionary app modes
 function setAppMode(mode) {
+  teardownProgressionUI(); // POINT 38: always clean up progression DOM before switching
   appMode = mode;
 
   document.getElementById('qdQuiz').classList.toggle('active', mode === 'quiz');
@@ -5348,10 +6346,17 @@ function setAppMode(mode) {
   document.getElementById('newSessionBtn').style.display = show ? '' : 'none';
 
   if (mode === 'dict') {
-    if (!dictSymbol) dictSymbol = dictDefaultSymbol();
-    dictLoadSymbol(dictSymbol);
-    renderDictPoolPanel();
-    dictShow();
+    if (currentMode === 'progressions') {
+      if (!dictProgSymbol) dictProgSymbol = PROGRESSIONS[0].symbol;
+      const prog = PROGRESSIONS.find(p => p.symbol === dictProgSymbol) || PROGRESSIONS[0];
+      renderDictProgressionPoolPanel();
+      dictShowProgression(prog);
+    } else {
+      if (!dictSymbol) dictSymbol = dictDefaultSymbol();
+      dictLoadSymbol(dictSymbol);
+      renderDictPoolPanel();
+      dictShow();
+    }
   } else {
     document.getElementById('inversionChipRow').style.display = 'none';
     renderPoolPanel();
@@ -5379,8 +6384,22 @@ makeCollapsible('breakdownPanelHeader', 'breakdownPanelBody', 'breakdownPanelArr
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 document.getElementById('playBtn').addEventListener('click', () => {
-  if (currentMode === 'intervals') playInterval();
-  else if (currentMode === 'scales') playScale();
+  if (currentMode === 'intervals')    playInterval();
+  else if (currentMode === 'scales')  playScale();
+  else if (currentMode === 'progressions') playProgression();
+  else if (currentMode === 'chords' && resolutionActive) {
+    // In resolution view: play source → pause → resolution (same as entering resolution)
+    const info = getResolutionInfo();
+    if (!info || !piano) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const sourceMidi = getSourceMidi().sort((a, b) => a - b);
+    setPlayingState(true);
+    const now = audioCtx.currentTime;
+    const srcDuration = 1.8, pause = 0.7;
+    sourceMidi.forEach(m => piano.play(midiToSoundFontName(m), now, { duration: srcDuration, gain: 1.4 }));
+    info.targetMidi.forEach(m => piano.play(midiToSoundFontName(m), now + srcDuration + pause, { duration: 2.2, gain: 1.4 }));
+    setTimeout(() => setPlayingState(false), (srcDuration + pause + 2.2) * 1000);
+  }
   else playChord();
 });
 
@@ -5432,8 +6451,9 @@ document.addEventListener('keydown', e => {
 
   if (e.code === 'Space') {
     e.preventDefault();
-    if (currentMode === 'intervals') playInterval();
-    else if (currentMode === 'scales') playScale();
+    if (currentMode === 'intervals')        playInterval();
+    else if (currentMode === 'scales')      playScale();
+    else if (currentMode === 'progressions') playProgression();
     else playChord();
   } else if (e.key === 'Enter') {
     e.preventDefault();
