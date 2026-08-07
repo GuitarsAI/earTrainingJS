@@ -156,6 +156,11 @@ function playSlowly() {
   setPlayingState(true);
   const now = audioCtx.currentTime;
 
+  if (currentMode === 'progressions') {
+    playProgressionSlowly();
+    return;
+  }
+
   if (currentMode === 'scales') {
     const ascNotes  = currentScale.intervals.map(i => currentScaleRootMidi + i);
     const descNotes = [...ascNotes].reverse();

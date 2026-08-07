@@ -144,7 +144,7 @@ const PROG_GROUP_COLLAPSED = { Diminished: true, Short: false, 'Pop & Rock': fal
 
 // ─── Progression state ────────────────────────────────────────────────────────
 const selectedProgressions = new Set(
-  PROGRESSIONS.filter(p => ['I-V-I', 'I-V-vi-IV', 'ii-V-I-VI', 'V-I', 'V7-I', 'IV-I', 'I-IV-V', 'i-VII-VI-VII'].includes(p.symbol)).map(p => p.symbol)
+  PROGRESSIONS.filter(p => ['I-V-vi-IV', 'ii-V-I-VI', 'V-I', 'V7-I', 'IV-I', 'I-IV-V', 'i-VII-VI-VII'].includes(p.symbol)).map(p => p.symbol)
 );
 // Default: a handful of common ones across cadences + short + pop
 // If none match, fall back to first 8
