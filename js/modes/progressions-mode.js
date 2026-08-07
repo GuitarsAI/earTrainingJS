@@ -675,7 +675,7 @@ function dictShowProgression(prog) {
   currentProgRootMidi = 12 + pc + 4 * 12;
   progAnswered = true; // allows notation to show
 
-  updateRootBadge(NOTE_NAMES[pc]);
+  updateRootBadge(spelledRoot(pc));
 
   // Reset UI
   document.getElementById('statusMsg').textContent = '';
@@ -748,7 +748,7 @@ function recomputeCurrentNotes() {
     const pc = pinnedRoot !== null ? pinnedRoot : currentProgRootPc ?? 0;
     currentProgRootPc   = pc;
     currentProgRootMidi = 12 + pc + 4 * 12;
-    updateRootBadge(NOTE_NAMES[pc]);
+    updateRootBadge(spelledRoot(pc));
     if (appMode === 'dict' || progAnswered) {
       showProgressionNotation();
       showBreakdown();

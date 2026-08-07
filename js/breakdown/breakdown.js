@@ -1238,11 +1238,13 @@ const HARMONIC_FUNCTION = {
     default: 'Mediant. Bridges tonic and subdominant; softens and colours major progressions.',
     m:       'Mediant minor. Tonic substitute — shares two notes with I major; gentle, introspective.',
     m7:      'Mediant minor seventh. Tonic-function colour chord, common in jazz and neo-soul.',
+    7:       'Secondary dominant (V7/vi). Dominant seventh on the mediant — pulls to the submediant (vi); ubiquitous in jazz turnarounds and circle-of-fifths sequences.',
   },
   9: {
     default: 'Submediant. Relative minor of the tonic — tonic substitute, often follows V in a deceptive cadence.',
     m:       'Submediant minor. Relative minor of the tonic — pulls toward subdominant or back to tonic.',
     m7:      'Submediant minor seventh. Tonic substitute with jazz colour; common in turnarounds.',
+    7:       'Secondary dominant (V7/ii). Dominant seventh on the submediant — pulls strongly to the supertonic (ii), common in jazz turnarounds and circle-of-fifths sequences.',
   },
   5: {
     default: 'Subdominant. Moves away from the tonic, typically toward the dominant.',
@@ -1275,16 +1277,19 @@ const HARMONIC_FUNCTION = {
   },
   1: {
     default: '♭II (Neapolitan). Chromatic substitute for the subdominant — dramatic colour, common in classical and flamenco.',
+    7:       'Secondary dominant (V7/IV) or Neapolitan dominant. Tritone sub territory — resolves down a semitone to I or up to IV.',
   },
   3: {
     default: '♭III major. Borrowed from the parallel minor. Bright yet modal — common in rock and pop.',
+    7:       'Secondary dominant (V7/♭VI). Dominant seventh on ♭III — pulls to the flattened submediant; common in rock and pop chromatic motion.',
   },
   6: {
     default: '♯IV diminished. Chromatic passing chord — approaches V from below with strong voice-leading.',
+    7:       'Secondary dominant (V7/iii) or tritone substitute. Dominant seventh on ♯IV — resolves to the mediant or substitutes for V7.',
   },
   8: {
     default: '♭VI major. Borrowed from the parallel minor — one of the most common borrowed chords in rock and pop.',
-    7:       '♭VI dominant seventh. Tritone substitute for II7 — slides chromatically into V or I.',
+    7:       'Secondary dominant (V7/ii) or tritone sub for V7/V. Slides chromatically into V or resolves down to the supertonic.',
   },
 };
 
