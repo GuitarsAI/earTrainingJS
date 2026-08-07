@@ -60,9 +60,4 @@ let pinnedRootSpelling = null;   // null = auto, 'sharp' | 'flat' = user chose a
 let pinnedOctave       = null;   // null = random, 'low'|'mid'|'high' = band
 
 
-// POINT 38: Progression mode state
-let currentProgression  = null;
-let currentProgRootPc   = 0;
-let currentProgRootMidi = null;
-let progSlotAnswers     = [];
-let progAnswered        = false;
+// POINT 38: Progression mode state — declared in js/data/progressions.js

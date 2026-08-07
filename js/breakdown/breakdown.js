@@ -1479,6 +1479,73 @@ function showBreakdown() {
     return;
   }
 
+  // ── BUG-6 FIX: PROGRESSIONS ───────────────────────────────────────────────
+  if (currentMode === 'progressions') {
+    if (!currentProgression) return;
+
+    const hdr = document.createElement('div');
+    hdr.className = 'breakdown-header';
+    hdr.textContent = currentProgression.symbol + ' — ' + currentProgression.name;
+    panel.appendChild(hdr);
+
+    const rootName = spelledRoot(currentProgRootPc);
+    makeBDRow(panel, 'Key',   rootName + ' major');
+    makeBDRow(panel, 'Style', currentProgression.group);
+
+    addDivider();
+
+    currentProgression.degrees.forEach((degSemis, i) => {
+      const qualSym = currentProgression.qualities[i];
+
+      const degObj  = PROG_DEGREES.find(d => d.semi === degSemis)   || { label: '?' };
+      const qualObj = PROG_QUALITIES.find(q => q.sym === qualSym)   || { label: qualSym };
+
+      const chordRootPc   = (currentProgRootPc + degSemis + 12) % 12;
+      const chordRootName = spelledRoot(chordRootPc);
+
+      const chordRootMidi = currentProgRootMidi + degSemis;
+      const midiNotes     = progChordMidi(chordRootMidi, qualSym);
+
+      const noteNames = midiNotes.map(m => {
+        const semi = ((m % 12) - chordRootPc + 12) % 12;
+        return spelledNote(semi, chordRootPc, qualSym);
+      });
+
+      const chordHdr = document.createElement('div');
+      chordHdr.className = 'breakdown-row';
+      chordHdr.style.cssText = 'font-weight:600; padding-top:0.5rem;';
+      chordHdr.innerHTML =
+        `<span class="breakdown-key" style="color:var(--accent)">${degObj.label}</span>` +
+        `<span class="breakdown-val">${chordRootName} ${qualityFullName(qualSym)}</span>`;
+      panel.appendChild(chordHdr);
+
+      makeBDRow(panel, 'Notes', joinSep(noteNames));
+
+      const allChordTypes = [
+        ...CHORD_TYPES.major,    ...CHORD_TYPES.minor,
+        ...CHORD_TYPES.dominant, ...CHORD_TYPES.diminished,
+        ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
+      ];
+      const ct = allChordTypes.find(c => c.symbol === qualSym);
+      if (ct && ct.intervals.length > 1) {
+        const fromRoot = ct.intervals.slice(1).map(semi => intervalAbbr(semi, qualSym));
+        makeBDRow(panel, 'From root', joinSep(fromRoot));
+      }
+
+      const fnNote = progFunctionNote(degSemis, qualSym);
+      if (fnNote) makeBDRow(panel, 'Function', fnNote);
+
+      const chordPcs = new Set(midiNotes.map(m => ((m % 12) + 12) % 12));
+      makeChordScalesRow(panel, chordRootPc, chordPcs);
+
+      if (i < currentProgression.degrees.length - 1) addDivider();
+    });
+
+    panel.style.display = 'block';
+    document.getElementById('breakdownWrapper').style.display = 'block';
+    return;
+  }
+
   // ── POINT 26: POLYCHORDS ────────────────────────────────────────────────────
   if (currentChord.family === 'poly' && currentPolyUpperRootMidi !== null) {
     const upPc  = currentPolyUpperRootMidi % 12;
@@ -1616,73 +1683,6 @@ function showBreakdown() {
     // POINT 37: Voice leading
     addDivider();
     makeVoiceLeadingRow(panel);
-
-    panel.style.display = 'block';
-    document.getElementById('breakdownWrapper').style.display = 'block';
-    return;
-  }
-
-  // ── BUG-6 FIX: PROGRESSIONS ───────────────────────────────────────────────
-  if (currentMode === 'progressions') {
-    if (!currentProgression) return;
-
-    const hdr = document.createElement('div');
-    hdr.className = 'breakdown-header';
-    hdr.textContent = currentProgression.symbol + ' — ' + currentProgression.name;
-    panel.appendChild(hdr);
-
-    const rootName = spelledRoot(currentProgRootPc);
-    makeBDRow(panel, 'Key',   rootName + ' major');
-    makeBDRow(panel, 'Style', currentProgression.group);
-
-    addDivider();
-
-    currentProgression.degrees.forEach((degSemis, i) => {
-      const qualSym = currentProgression.qualities[i];
-
-      const degObj  = PROG_DEGREES.find(d => d.semi === degSemis)   || { label: '?' };
-      const qualObj = PROG_QUALITIES.find(q => q.sym === qualSym)   || { label: qualSym };
-
-      const chordRootPc   = (currentProgRootPc + degSemis + 12) % 12;
-      const chordRootName = spelledRoot(chordRootPc);
-
-      const chordRootMidi = currentProgRootMidi + degSemis;
-      const midiNotes     = progChordMidi(chordRootMidi, qualSym);
-
-      const noteNames = midiNotes.map(m => {
-        const semi = ((m % 12) - chordRootPc + 12) % 12;
-        return spelledNote(semi, chordRootPc, qualSym);
-      });
-
-      const chordHdr = document.createElement('div');
-      chordHdr.className = 'breakdown-row';
-      chordHdr.style.cssText = 'font-weight:600; padding-top:0.5rem;';
-      chordHdr.innerHTML =
-        `<span class="breakdown-key" style="color:var(--accent)">${degObj.label}</span>` +
-        `<span class="breakdown-val">${chordRootName} ${qualityFullName(qualSym)}</span>`;
-      panel.appendChild(chordHdr);
-
-      makeBDRow(panel, 'Notes', joinSep(noteNames));
-
-      const allChordTypes = [
-        ...CHORD_TYPES.major,    ...CHORD_TYPES.minor,
-        ...CHORD_TYPES.dominant, ...CHORD_TYPES.diminished,
-        ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
-      ];
-      const ct = allChordTypes.find(c => c.symbol === qualSym);
-      if (ct && ct.intervals.length > 1) {
-        const fromRoot = ct.intervals.slice(1).map(semi => intervalAbbr(semi, qualSym));
-        makeBDRow(panel, 'From root', joinSep(fromRoot));
-      }
-
-      const fnNote = progFunctionNote(degSemis, qualSym);
-      if (fnNote) makeBDRow(panel, 'Function', fnNote);
-
-      const chordPcs = new Set(midiNotes.map(m => ((m % 12) + 12) % 12));
-      makeChordScalesRow(panel, chordRootPc, chordPcs);
-
-      if (i < currentProgression.degrees.length - 1) addDivider();
-    });
 
     panel.style.display = 'block';
     document.getElementById('breakdownWrapper').style.display = 'block';

@@ -278,126 +278,218 @@ function submitProgressionAnswer() {
 // ─── POINT 38: Post-answer notation ──────────────────────────────────────────
 
 function showProgressionNotation() {
-  // Show the notation panel with a label per chord
+  // ── BUG-7 FIX: single continuous score replacing per-chord mini staves ────────
+
   const panel  = document.getElementById('notationPanel');
   const nameEl = document.getElementById('notationChordName');
-
   panel.style.display = 'block';
   nameEl.textContent  = currentProgression.symbol + ' — ' + currentProgression.name;
 
-  // Show keysig chips (C = no key sig, Key = tonic major key sig); hide inversion chips
+  // Key/C chips
   const keysigRow = document.getElementById('keysigChipRow');
   keysigRow.style.display = 'flex';
   document.getElementById('keysigChipC').classList.toggle('active',   progKeySigMode === 'C');
   document.getElementById('keysigChipKey').classList.toggle('active', progKeySigMode === 'key');
   document.getElementById('inversionChipRow').style.display = 'none';
 
-  // Resolve key signature string: tonic major key when mode='key', null for 'C'
-  const keySigStr = progKeySigMode === 'key' ? vexKeyMajor(currentProgRootPc) : null;
+  const keySigStr      = progKeySigMode === 'key' ? vexKeyMajor(currentProgRootPc) : null;
   const coveredLetters = keySigStr ? keySigCoveredLetters(keySigStr) : new Set();
 
-  // Render each chord's mini notation into the notation area
+  // Show notation area; use the standard #notation-svg canvas
   const notationArea = document.getElementById('notationArea');
   notationArea.style.display = 'block';
 
-  // Clear existing SVG (standard single-chord canvas — not used in prog mode)
-  document.getElementById('notation-svg').innerHTML = '';
-
-  // Remove any previous prog notation row, then build a fresh one
-  const scrollEl = notationArea.querySelector('.notation-scroll');
+  // Remove any legacy per-chord cell rows from old implementation
   notationArea.querySelectorAll('.prog-notation-row').forEach(el => el.remove());
 
-  const row = document.createElement('div');
-  row.className = 'prog-notation-row';
+  // Restore the standard scroll wrapper (may have been hidden by old code)
+  const scrollEl = notationArea.querySelector('.notation-scroll');
+  if (scrollEl) scrollEl.style.display = '';
 
-  const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = Vex.Flow;
+  const svg = document.getElementById('notation-svg');
+  svg.innerHTML = '';
 
-  currentProgression.degrees.forEach((degSemis, i) => {
+  const VF = (typeof Vex !== 'undefined' && Vex.Flow) ? Vex.Flow
+           : (typeof VexFlow !== 'undefined') ? VexFlow : null;
+  if (!VF) return;
+  const { Renderer, Stave, StaveNote, StaveConnector, Voice, Formatter } = VF;
+
+  // ── Build per-chord data ──────────────────────────────────────────────────────
+  const allChordTypes = [
+    ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
+    ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
+  ];
+
+  const chords = currentProgression.degrees.map((degSemis, i) => {
+    const qualSym       = currentProgression.qualities[i];
     const chordRootMidi = currentProgRootMidi + degSemis;
     const chordRootPc   = ((chordRootMidi % 12) + 12) % 12;
-    const qualSym       = currentProgression.qualities[i];
-
-    // Find chord intervals from library
-    const allChords = [
-      ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
-      ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended
-    ];
-    const ct        = allChords.find(c => c.symbol === qualSym);
-    const intervals = ct ? ct.intervals : [0, 4, 7];
-    const midiNotes = intervals.map(iv => chordRootMidi + iv);
-
-    // Chord label above stave: degree + quality
-    const degObj  = PROG_DEGREES.find(d => d.semi === degSemis) || { label: '?' };
-    const qualObj = PROG_QUALITIES.find(q => q.sym === qualSym) || { label: qualSym };
-    const chordLabel = degObj.label + ' ' + qualObj.label;
-
-    // Cell container
-    const cell = document.createElement('div');
-    cell.className = 'prog-notation-cell';
-
-    const labelEl = document.createElement('div');
-    labelEl.className = 'prog-notation-cell-label';
-    labelEl.textContent = chordLabel;
-    cell.appendChild(labelEl);
-
-    const svgWrap = document.createElement('div');
-    svgWrap.style.width  = '90px';
-    svgWrap.style.height = '100px';
-    cell.appendChild(svgWrap);
-    row.appendChild(cell);
-
-    try {
-      const renderer = new Renderer(svgWrap, Renderer.Backends.SVG);
-      renderer.resize(90, 100);
-      const vexCtx = renderer.getContext();
-      vexCtx.setFont('Arial', 10);
-
-      // Stave width: wider when there's a key signature (needs room for accidentals)
-      const staveW = keySigStr ? 78 : 80;
-      const stave  = new Stave(2, 10, staveW);
-      if (keySigStr) stave.addKeySignature(keySigStr);
-      stave.setContext(vexCtx).draw();
-
-      // Spell each note using the same pipeline as all other modes:
-      // midiToVexKeySpelled → respellForKeySig → forcedAcc for same-letter simplification
-      const spelled = midiNotes.map(m => {
-        const intervalSemi = pcInterval(m % 12, chordRootPc);
-        const raw = midiToVexKeySpelled(m, intervalSemi, chordRootPc, qualSym);
-        if (!keySigStr) return { key: raw, forcedAcc: false };
-        const respelled = respellForKeySig(m, raw, coveredLetters, keySigStr);
-        const rawLetter       = raw.split('/')[0];
-        const respelledLetter = respelled.split('/')[0];
-        const wasDouble   = rawLetter.endsWith('##') || (rawLetter.endsWith('bb') && rawLetter.length > 2);
-        const isSameLetter = rawLetter[0] === respelledLetter[0];
-        const forcedAcc   = wasDouble && isSameLetter && respelled !== raw;
-        return { key: respelled, forcedAcc };
-      });
-      const keys = spelled.map(s => s.key);
-
-      const staveNote = new StaveNote({ keys, duration: 'w', clef: 'treble' });
-
-      // Add accidentals — forcedAcc overrides key sig coverage for same-letter simplifications
-      spelled.forEach(({ key, forcedAcc }, ki) => {
-        if (!forcedAcc && keySigStr && isCoveredByKeySig(key, coveredLetters)) return;
-        const acc = vexAccidental(key);
-        if (acc) staveNote.addModifier(new Accidental(acc), ki);
-      });
-
-      const voice = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
-      voice.addTickables([staveNote]);
-      new Formatter().joinVoices([voice]).format([voice], staveW - 20);
-      voice.draw(vexCtx, stave);
-    } catch(e) {
-      console.warn('Progression stave render error (chord ' + i + '):', e);
-    }
+    const ct            = allChordTypes.find(c => c.symbol === qualSym);
+    const intervals     = ct ? ct.intervals : [0, 4, 7];
+    const midiNotes     = intervals.map(iv => chordRootMidi + iv);
+    const degObj        = PROG_DEGREES.find(d => d.semi === degSemis)  || { label: '?' };
+    const qualObj       = PROG_QUALITIES.find(q => q.sym === qualSym)  || { label: qualSym };
+    const rootName      = spelledRoot(chordRootPc);
+    return { degSemis, qualSym, chordRootMidi, chordRootPc, midiNotes,
+             degLabel: degObj.label, qualLabel: qualObj.label, rootName };
   });
 
-  // Insert row before the standard scroll div (which we hide)
-  if (scrollEl) notationArea.insertBefore(row, scrollEl);
-  else notationArea.appendChild(row);
+  // ── Clef decision: union of all MIDI notes across whole progression ───────────
+  const allMidi     = chords.flatMap(c => c.midiNotes);
+  const lowestMidi  = Math.min(...allMidi);
+  const highestMidi = Math.max(...allMidi);
+  const needsBass   = lowestMidi  < 55;
+  const needsTreble = highestMidi >= 55;
+  const grandStaff  = needsBass && needsTreble;
 
-  // Hide the standard single-chord SVG scroll area
-  if (scrollEl) scrollEl.style.display = 'none';
+  // ── Layout ───────────────────────────────────────────────────────────────────
+  const keySigCount  = keySigStr ? keySigAccidentalCount(keySigStr) : 0;
+  const headerPx     = 36 + keySigCount * 14;   // clef + key sig
+  const chordWidth   = 80;                        // px per chord slot
+  const numChords    = chords.length;
+  const W            = headerPx + chordWidth * numChords + 20;
+  let H, trebleY, bassY;
+  if (grandStaff) { H = 240; trebleY = 20; bassY = 120; }
+  else            { H = 140; trebleY = 30; bassY = 30;  }
+
+  svg.setAttribute('width',  W);
+  svg.setAttribute('height', H);
+  const renderer = new Renderer(svg, Renderer.Backends.SVG);
+  renderer.resize(W, H);
+  const ctx = renderer.getContext();
+
+  // ── Spelling helpers (same contract as renderNotation) ────────────────────────
+  function spellMidi(midi, chordRootPc, qualSym) {
+    const raw = midiToVexKeySpelled(midi, pcInterval(midi % 12, chordRootPc), chordRootPc, qualSym);
+    if (!keySigStr) return { key: raw, forcedAcc: false };
+    const respelled       = respellForKeySig(midi, raw, coveredLetters, keySigStr);
+    const rawLetter       = raw.split('/')[0];
+    const respelledLetter = respelled.split('/')[0];
+    const wasDouble       = rawLetter.endsWith('##') || (rawLetter.endsWith('bb') && rawLetter.length > 2);
+    const isSameLetter    = rawLetter[0] === respelledLetter[0];
+    const forcedAcc       = wasDouble && isSameLetter && respelled !== raw;
+    return { key: respelled, forcedAcc };
+  }
+
+  function addAccidentalsFiltered(sn, spelledArr) {
+    spelledArr.forEach(({ key, forcedAcc }, i) => {
+      if (!forcedAcc && isCoveredByKeySig(key, coveredLetters)) return;
+      const acc = vexAccidental(key);
+      if (acc) sn.addModifier(new VF.Accidental(acc), i);
+    });
+  }
+
+  try {
+    const STAVE_X = 10;
+    const STAVE_W = W - STAVE_X - 10;
+    let trebleStave, bassStave;
+
+    if (needsTreble || grandStaff) {
+      trebleStave = new Stave(STAVE_X, trebleY, STAVE_W);
+      trebleStave.addClef('treble');
+      if (keySigStr) trebleStave.addKeySignature(keySigStr);
+      trebleStave.setContext(ctx).draw();
+    }
+    if (needsBass || grandStaff) {
+      bassStave = new Stave(STAVE_X, bassY, STAVE_W);
+      bassStave.addClef('bass');
+      if (keySigStr) bassStave.addKeySignature(keySigStr);
+      bassStave.setContext(ctx).draw();
+    }
+    if (grandStaff && trebleStave && bassStave) {
+      try {
+        new StaveConnector(trebleStave, bassStave).setType('brace').setContext(ctx).draw();
+        new StaveConnector(trebleStave, bassStave).setType('singleLeft').setContext(ctx).draw();
+      } catch(e) {}
+    }
+
+    // ── Build tickables for each stave ──────────────────────────────────────────
+    // Each chord becomes a whole note; barlines between chords.
+    function buildTickables(clef) {
+      const tickables = [];
+      chords.forEach((chord, i) => {
+        const { midiNotes, chordRootPc, qualSym } = chord;
+
+        // Split notes by clef when grand staff
+        let notesForClef;
+        if (grandStaff) {
+          notesForClef = clef === 'treble'
+            ? midiNotes.filter(m => m >= 55)
+            : midiNotes.filter(m => m  < 55);
+        } else {
+          notesForClef = [...midiNotes];
+        }
+        notesForClef.sort((a, b) => a - b);
+
+        let tickable;
+        if (notesForClef.length === 0) {
+          // Rest for this clef on this chord slot
+          const restKey = clef === 'bass' ? 'd/3' : 'b/4';
+          tickable = new StaveNote({ keys: [restKey], duration: 'wr', clef });
+        } else {
+          const spelled = notesForClef.map(m => spellMidi(m, chordRootPc, qualSym));
+          const keys    = spelled.map(s => s.key);
+          tickable = new StaveNote({ keys, duration: 'w', clef });
+          addAccidentalsFiltered(tickable, spelled);
+        }
+
+        if (i > 0) tickables.push(new VF.BarNote());
+        tickables.push(tickable);
+      });
+      return tickables;
+    }
+
+    // Formatter budget: full stave width minus header (clef + key sig)
+    const formatterBudget = STAVE_W - headerPx - 10;
+    const totalBeats = numChords * 4;
+
+    if (needsTreble || grandStaff) {
+      const tickables = buildTickables('treble');
+      const voice = new Voice({ num_beats: totalBeats, beat_value: 4 }).setMode(Voice.Mode.SOFT);
+      voice.addTickables(tickables);
+      new Formatter().joinVoices([voice]).format([voice], formatterBudget);
+      voice.draw(ctx, trebleStave);
+    }
+    if (needsBass || grandStaff) {
+      const tickables = buildTickables('bass');
+      const voice = new Voice({ num_beats: totalBeats, beat_value: 4 }).setMode(Voice.Mode.SOFT);
+      voice.addTickables(tickables);
+      new Formatter().joinVoices([voice]).format([voice], formatterBudget);
+      voice.draw(ctx, bassStave);
+    }
+
+    // ── Chord labels above the stave: "V 7" / "G dom" ──────────────────────────
+    // x positions come from the formatted tickables on the treble (or bass) stave.
+    // We compute evenly-spaced positions since VexFlow doesn't expose tickable x
+    // positions easily after formatting with BarNotes mixed in.
+    const labelY   = (needsTreble || grandStaff) ? trebleY - 4 : bassY - 4;
+    const slotW    = formatterBudget / numChords;
+    chords.forEach((chord, i) => {
+      const x = STAVE_X + headerPx + i * slotW + slotW / 2;
+      // Line 1: degree + quality (e.g. "V 7")
+      const t1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t1.setAttribute('x', x);
+      t1.setAttribute('y', labelY);
+      t1.setAttribute('text-anchor', 'middle');
+      t1.setAttribute('font-size', '11');
+      t1.setAttribute('font-family', 'Inter, Arial, sans-serif');
+      t1.setAttribute('font-weight', '600');
+      t1.setAttribute('fill', 'currentColor');
+      t1.textContent = chord.degLabel + ' ' + chord.qualLabel;
+      svg.appendChild(t1);
+      // Line 2: root name (e.g. "G")
+      const t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t2.setAttribute('x', x);
+      t2.setAttribute('y', labelY - 14);
+      t2.setAttribute('text-anchor', 'middle');
+      t2.setAttribute('font-size', '10');
+      t2.setAttribute('font-family', 'Inter, Arial, sans-serif');
+      t2.setAttribute('fill', 'var(--accent, #2a9d8f)');
+      t2.textContent = chord.rootName;
+      svg.appendChild(t2);
+    });
+
+  } catch(e) { console.error('Progression notation render error:', e); }
 }
 
 // ─── POINT 38: Pool panels ────────────────────────────────────────────────────
@@ -648,6 +740,20 @@ function recomputeCurrentNotes() {
       ? existingOct
       : Math.floor((lo + hi) / 2);
     return 12 + pc + oct * 12;
+  }
+
+  // ── Progressions ─────────────────────────────────────────────────────────────
+  if (currentMode === 'progressions') {
+    if (!currentProgression) return;
+    const pc = pinnedRoot !== null ? pinnedRoot : currentProgRootPc ?? 0;
+    currentProgRootPc   = pc;
+    currentProgRootMidi = 12 + pc + 4 * 12;
+    updateRootBadge(NOTE_NAMES[pc]);
+    if (appMode === 'dict' || progAnswered) {
+      showProgressionNotation();
+      showBreakdown();
+    }
+    return;
   }
 
   // ── Chords ───────────────────────────────────────────────────────────────────

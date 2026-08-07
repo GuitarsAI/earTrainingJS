@@ -136,10 +136,27 @@ visible problems in practice before prioritising the fix.
 
 #### BUG-6 — Progression: breakdown panel not shown post-answer
 **Symptom:** After submitting an answer in Progressions quiz mode, the breakdown panel
-never appears.
-**Root cause:** `showBreakdown()` has no `progressions` branch. It falls through to the
-chord branch which crashes silently because `currentChord` is null during progressions.
-**Status:** Not yet fixed. Will be addressed as part of the Point 38 remaining work.
+never appeared. Dictionary mode also showed no breakdown for progressions.
+**Root cause (multi-part):**
+- `showBreakdown()` had no `progressions` branch — fell through to chord branches which
+  read `currentChord.family` without null guards, crashing silently
+- The progressions branch was initially inserted after the chord family branches (POLYCHORDS,
+  UST, SLASH) — crash happened before the branch was ever reached
+- `submitProgressionAnswer()` never called `showBreakdown()` — only `showProgressionNotation()`
+- `dictShowProgression()` also never called `showBreakdown()`
+- `submitProgressionAnswer()` set `progAnswered = true` but never set global `answered = true`
+- `updateStatsTable()` called at line 255 does not exist — correct call is `updateScore()`;
+  this crashed the submit handler before notation or breakdown were ever reached
+**Fix (Aug 2026):**
+- `js/modes/progressions-mode.js`: replaced `updateStatsTable()` with `updateScore()`;
+  added `answered = true` after scoring; added `showBreakdown()` after
+  `showProgressionNotation()` in both `submitProgressionAnswer()` and `dictShowProgression()`
+- `js/breakdown/breakdown.js`: added `progressions` branch to `showBreakdown()` with
+  per-chord rows (degree label, chord name, notes, intervals from root, harmonic function,
+  chord scales). Added `HARMONIC_FUNCTION` table, `progFunctionNote()`, `qualityFullName()`
+  helpers above `showBreakdown()`. Moved progressions branch above all chord family
+  branches so it fires before any `currentChord.family` access.
+**Status:** Fixed. ✓
 
 #### BUG-7 — Progression notation: staves missing clef, misaligned, cut off, treble only
 **Symptom:** Mini staves in progression notation render without a clef symbol. Cells are
@@ -306,9 +323,6 @@ The following is already working:
 #### Still to do:
 - **BUG-7 notation redesign**: rewrite `showProgressionNotation()` as a single continuous
   score (see BUG-7 above for full spec)
-- **BUG-6 progression breakdown**: add `progressions` branch to `showBreakdown()`.
-  Show: progression name + symbol header, per-chord row (degree label, chord name,
-  notes spelled at current root, one-line function note e.g. "dominant function")
 - **`recomputeCurrentNotes()` progressions branch**: changing the root chip in
   progressions mode does not retranspose and re-render. Add a progressions case
   that mirrors the other modes.
@@ -316,6 +330,14 @@ The following is already working:
   sharps). Should use `spelledRoot(pc)`.
 - **Expanded progression collection**: add all progressions from the genre reference
   (see full list below)
+
+#### Completed (Aug 2026):
+- ✓ `showProgressionNotation()` display bug fixed (was `display: ''` instead of `'block'`)
+- ✓ Key/C chip support for progression notation
+- ✓ Dictionary mode wired (`dictShowProgression`, `renderDictProgressionPoolPanel`)
+- ✓ Pool panel: collapsible sections, two-line chips, unified quiz + dict appearance
+- ✓ **BUG-6 fixed**: breakdown panel now appears in both quiz and dictionary mode
+  (see BUG-6 above for full details)
 
 #### Overview
 New **Progressions** tab added to the mode tab bar: Intervals | Chords | Scales | **Progressions**.
