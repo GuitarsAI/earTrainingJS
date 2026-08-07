@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a Chord Trainer — Interactive Tutorial</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:        #f7f6f2;
+    --surface:   #ffffff;
+    --border:    #e2e0d8;
+    --text:      #1c1b18;
+    --muted:     #7a7870;
+    --accent:    #2e5fa3;
+    --accent-lt: #e8eef8;
+    --green:     #1e7a42;
+    --green-lt:  #eaf5ee;
+    --red:       #c0392b;
+    --red-lt:    #fdf0ee;
+    --warn:      #7a5c00;
+    --warn-lt:   #fdf6e3;
+    --staff:     #3a3a3a;
+    --radius:    10px;
+    --mono:      'DM Mono', monospace;
+    --serif:     'Instrument Serif', Georgia, serif;
+    --sans:      'Inter', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 0 1rem 6rem;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4rem 0 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 400;
+    line-height: 1.15;
+    margin-bottom: 1.1rem;
+    letter-spacing: -0.01em;
+  }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero-desc {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.7;
+  }
+  .hero-meta {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* ── Layout ── */
+  .notebook { max-width: 760px; margin: 0 auto; }
+
+  /* ── Section headers ── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin: 3rem 0 1.5rem;
+  }
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    padding-top: 3px;
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: 1.55rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  /* ── Prose ── */
+  .prose {
+    font-size: 15px;
+    line-height: 1.75;
+    color: #2e2d2a;
+    margin-bottom: 1.25rem;
+  }
+  .prose + .prose { margin-top: -0.25rem; }
+  .prose code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: #eeede8;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #3a3832;
+  }
+  .prose strong { font-weight: 600; }
+
+  /* ── Callout ── */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-lt);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 0.85rem 1.1rem;
+    font-size: 14px;
+    margin: 1rem 0 1.25rem;
+    color: #1a3060;
+  }
+  .callout.exercise {
+    border-color: var(--green);
+    background: var(--green-lt);
+    color: #143328;
+  }
+  .callout-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+    opacity: 0.7;
+  }
+
+  /* ── Interval table ── */
+  .interval-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 1rem 0 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .interval-table th {
+    background: #f0efe9;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .interval-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid #f0efe9;
+    vertical-align: middle;
+  }
+  .interval-table tr:last-child td { border-bottom: none; }
+  .interval-table .semitones {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .interval-table .intervals-col {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ── Cell ── */
+  .cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  .cell-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px 8px 14px;
+    background: #f5f4f0;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+  .cell-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex-grow: 1;
+  }
+  .cell-actions { display: flex; gap: 6px; align-items: center; }
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #eeecea; }
+  .btn.run {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .btn.run:hover { background: #2550899; filter: brightness(1.1); }
+  .btn.reset { color: var(--muted); }
+  .btn.reset:hover { color: var(--red); border-color: #e0b0b0; background: var(--red-lt); }
+
+  .cell-editor {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 1rem;
+    border: none;
+    outline: none;
+    resize: vertical;
+    min-height: 80px;
+    background: #fafaf8;
+    color: var(--text);
+    tab-size: 2;
+  }
+  .cell-editor:focus { background: #fff; }
+
+  .cell-output {
+    border-top: 1px solid var(--border);
+    min-height: 0;
+    transition: min-height 0.15s;
+  }
+  .cell-output.empty { display: none; }
+  .cell-output iframe {
+    width: 100%;
+    border: none;
+    display: block;
+    background: transparent;
+  }
+  .cell-output .out-error {
+    padding: 0.75rem 1rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--red);
+    background: var(--red-lt);
+    white-space: pre-wrap;
+  }
+  .cell-output .out-text {
+    padding: 0.75rem 1rem;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: #3a3832;
+    white-space: pre-wrap;
+    background: #f7f6f2;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #ccc;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .status-dot.running { background: #f0a500; }
+  .status-dot.ok      { background: var(--green); }
+  .status-dot.error   { background: var(--red); }
+
+  /* ── Audio cell (special — runs in main page) ── */
+  .audio-cell-body { padding: 1rem; background: #fafaf8; }
+
+  /* ── Final app ── */
+  .final-app-frame {
+    width: 100%;
+    border: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    display: block;
+    min-height: 520px;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2.5rem;
+    font-size: 14px;
+  }
+  .toc-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .toc ol { padding-left: 1.2rem; }
+  .toc li { margin: 0.3rem 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Keyboard shortcut hint ── */
+  .kbd-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: -0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  kbd {
+    display: inline-block;
+    background: #eeecea;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="notebook">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">Interactive Tutorial · Music &amp; Code</div>
+    <h1>Building a<br><em>Chord Trainer</em><br>from scratch</h1>
+    <p class="hero-desc">We'll go from first principles — semitones, MIDI numbers, interval math — all the way to a working ear-training quiz with audio and sheet music notation. Every cell is editable and runnable.</p>
+    <div class="hero-meta">
+      <span>4 sections</span>
+      <span>JavaScript</span>
+      <span>VexFlow · Web Audio · Soundfont</span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#s1">Music Theory — notes, semitones, intervals</a></li>
+      <li><a href="#s2">Building chords in code</a></li>
+      <li><a href="#s3">Audio — Web Audio API &amp; piano samples</a></li>
+      <li><a href="#s4">Notation — rendering sheet music with VexFlow</a></li>
+      <li><a href="#s5">Putting it all together — the quiz</a></li>
+    </ol>
+  </div>
+
+  <p class="kbd-hint">Tip: click inside a cell and press <kbd>Shift</kbd>+<kbd>Enter</kbd> to run it.</p>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Music Theory
+  ═══════════════════════════════════════════════ -->
+  <div class="section-header" id="s1">
+    <span class="section-num">01 —</span>
+    <h2 class="section-title">Music Theory<br>Notes, semitones &amp; intervals</h2>
+  </div>
+
+  <p class="prose">Western music divides the octave into <strong>12 equal steps</strong> called semitones. If you sit at a piano and go up one key at a time (including the black keys), each step is one semitone.</p>
+
+  <p class="prose">We can number them 0–11, starting from C. This is called a <strong>pitch class</strong> — it tells us <em>which</em> note, regardless of which octave it's in.</p>
+
+  <div data-cell
+       data-label="1.1 — The chromatic scale"
+       data-code="const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// Print each note with its pitch-class number
+NOTE_NAMES.forEach((name, i) => {
+  console.log(i + '  →  ' + name);
+});"></div>
+
+  <p class="prose">To identify a specific note in a specific octave — like the C above middle C — we use <strong>MIDI numbers</strong>. MIDI is a standard that numbers every key on a piano from 0 to 127. Middle C is MIDI 60.</p>
+
+  <div data-cell
+       data-label="1.2 — MIDI numbers"
+       data-code="const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function midiToName(midi) {
+  const note = NOTE_NAMES[midi % 12];
+  const octave = Math.floor(midi / 12) - 1;
+  return note + octave;
+}
+
+// Middle C is 60, A440 is 69
+console.log('MIDI 60 =', midiToName(60));   // C4
+console.log('MIDI 69 =', midiToName(69));   // A4 (concert pitch, 440 Hz)
+console.log('MIDI 72 =', midiToName(72));   // C5
+
+// Try changing these numbers!
+console.log('MIDI 48 =', midiToName(48));
+console.log('MIDI 55 =', midiToName(55));"></div>
+
+  <p class="prose">An <strong>interval</strong> is the distance between two notes, measured in semitones. The intervals are what give chords their character — a major chord sounds bright because of its major third (4 semitones). A minor chord sounds darker because of its minor third (3 semitones).</p>
+
+  <table class="interval-table">
+    <thead>
+      <tr>
+        <th>Interval</th>
+        <th>Semitones</th>
+        <th>Example (from C)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Minor 2nd</td><td class="semitones">1</td><td>C → C#</td></tr>
+      <tr><td>Major 2nd</td><td class="semitones">2</td><td>C → D</td></tr>
+      <tr><td>Minor 3rd</td><td class="semitones">3</td><td>C → Eb</td></tr>
+      <tr><td>Major 3rd</td><td class="semitones">4</td><td>C → E</td></tr>
+      <tr><td>Perfect 4th</td><td class="semitones">5</td><td>C → F</td></tr>
+      <tr><td>Tritone</td><td class="semitones">6</td><td>C → F#</td></tr>
+      <tr><td>Perfect 5th</td><td class="semitones">7</td><td>C → G</td></tr>
+      <tr><td>Minor 6th</td><td class="semitones">8</td><td>C → Ab</td></tr>
+      <tr><td>Major 6th</td><td class="semitones">9</td><td>C → A</td></tr>
+      <tr><td>Minor 7th</td><td class="semitones">10</td><td>C → Bb</td></tr>
+      <tr><td>Major 7th</td><td class="semitones">11</td><td>C → B</td></tr>
+      <tr><td>Octave</td><td class="semitones">12</td><td>C → C (next octave)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout exercise">
+    <div class="callout-label">Exercise</div>
+    In cell 1.2, change the MIDI numbers to explore different notes. What is MIDI 57? What is MIDI 64? Can you find F#3?
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Building Chords
+  ═══════════════════════════════════════════════ -->
+  <hr class="divider">
+  <div class="section-header" id="s2">
+    <span class="section-num">02 —</span>
+    <h2 class="section-title">Building chords<br>in code</h2>
+  </div>
+
+  <p class="prose">A chord is just a set of intervals stacked on top of a <strong>root note</strong>. We represent a chord type as an array of semitone offsets from the root. The root itself is always 0.</p>
+
+  <p class="prose">A <strong>major triad</strong> is built with intervals <code>[0, 4, 7]</code> — root, major third, perfect fifth. That's it. Three numbers fully describe the sound of a major chord, regardless of what key it's in.</p>
+
+  <div data-cell
+       data-label="2.1 — Chord types as interval arrays"
+       data-code="const CHORD_TYPES = {
+  // Triads
+  'Major':      [0, 4, 7],
+  'Minor':      [0, 3, 7],
+  'Diminished': [0, 3, 6],
+  'Augmented':  [0, 4, 8],
+  // 7th chords
+  'Major 7th':    [0, 4, 7, 11],
+  'Minor 7th':    [0, 3, 7, 10],
+  'Dominant 7th': [0, 4, 7, 10],
+};
+
+// Print them all
+for (const [name, intervals] of Object.entries(CHORD_TYPES)) {
+  console.log(name.padEnd(15), JSON.stringify(intervals));
+}"></div>
+
+  <p class="prose">Now let's build a function that takes a root MIDI note and a chord type, and returns the MIDI numbers of all the notes in that chord.</p>
+
+  <div data-cell
+       data-label="2.2 — Building a chord from a root"
+       data-code="const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function buildChord(rootMidi, intervals) {
+  return intervals.map(semitones => rootMidi + semitones);
+}
+
+function midiToName(midi) {
+  return NOTE_NAMES[midi % 12] + (Math.floor(midi / 12) - 1);
+}
+
+// C major (root = MIDI 60 = C4)
+const cMajor = buildChord(60, [0, 4, 7]);
+console.log('C major:', cMajor.map(midiToName).join(' - '));
+
+// G minor (root = MIDI 67 = G4)
+const gMinor = buildChord(67, [0, 3, 7]);
+console.log('G minor:', gMinor.map(midiToName).join(' - '));
+
+// F dominant 7th (root = MIDI 65 = F4)
+const f7 = buildChord(65, [0, 4, 7, 10]);
+console.log('F dom7: ', f7.map(midiToName).join(' - '));
+
+// Try your own! Change the root or intervals below:
+const myChord = buildChord(64, [0, 4, 7, 11]);
+console.log('My chord:', myChord.map(midiToName).join(' - '));"></div>
+
+  <div data-cell
+       data-label="2.3 — Random chord generator"
+       data-code="const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+const CHORDS = [
+  { name: 'Major',       intervals: [0,4,7]    },
+  { name: 'Minor',       intervals: [0,3,7]    },
+  { name: 'Diminished',  intervals: [0,3,6]    },
+  { name: 'Augmented',   intervals: [0,4,8]    },
+  { name: 'Major 7th',   intervals: [0,4,7,11] },
+  { name: 'Minor 7th',   intervals: [0,3,7,10] },
+  { name: 'Dominant 7th',intervals: [0,4,7,10] },
+];
+
+function randomChord() {
+  const type  = CHORDS[Math.floor(Math.random() * CHORDS.length)];
+  const root  = Math.floor(Math.random() * 12);  // 0–11 = C through B
+  const octave = 4;
+  const rootMidi = 12 + root + octave * 12;
+  const notes = type.intervals.map(i => rootMidi + i);
+  const noteName = NOTE_NAMES[root];
+  return { name: noteName + ' ' + type.name, notes, type };
+}
+
+// Generate 5 random chords
+for (let i = 0; i < 5; i++) {
+  const chord = randomChord();
+  const noteNames = chord.notes.map(m =>
+    NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1)
+  );
+  console.log(chord.name.padEnd(22), noteNames.join(' - '));
+}"></div>
+
+  <div class="callout exercise">
+    <div class="callout-label">Exercise</div>
+    In cell 2.2, try building a <strong>B diminished 7th</strong> chord. B4 is MIDI 71. A diminished 7th has intervals <code>[0, 3, 6, 9]</code>. What notes do you get?
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Audio
+  ═══════════════════════════════════════════════ -->
+  <hr class="divider">
+  <div class="section-header" id="s3">
+    <span class="section-num">03 —</span>
+    <h2 class="section-title">Audio<br>Web Audio API &amp; piano samples</h2>
+  </div>
+
+  <p class="prose">Browsers have a built-in <strong>Web Audio API</strong> that lets us generate and play sound. For realistic piano sounds we use <strong>Soundfont-player</strong>, which loads pre-recorded piano samples from a public library and plays them at any pitch via the Web Audio API.</p>
+
+  <p class="prose">The samples are loaded once, then any MIDI note number can be played instantly. Soundfont-player expects note names like <code>"C4"</code> or <code>"F#3"</code> — so we need a function to convert MIDI numbers to that format.</p>
+
+  <div class="callout">
+    <div class="callout-label">Note</div>
+    Audio cells run directly in this page (not in an isolated sandbox) so that the browser allows sound. The first time you click <strong>Run</strong>, the browser may take a few seconds to download the piano samples.
+  </div>
+
+  <!-- Audio cell — special, runs in main page via a script injection approach -->
+  <div class="cell" id="audio-cell-1">
+    <div class="cell-header">
+      <span class="cell-label">3.1 — Load piano &amp; play a single note</span>
+      <div class="cell-actions">
+        <span class="status-dot" id="audio-dot-1"></span>
+        <button class="btn reset" onclick="resetAudioCell(1)">↺ Reset</button>
+        <button class="btn run" onclick="runAudioCell(1)">▶ Run</button>
+      </div>
+    </div>
+    <textarea class="cell-editor" id="audio-editor-1" spellcheck="false" rows="12">// This loads the piano samples (takes a moment on first run)
+// Then plays a middle C (MIDI 60)
+
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function midiToSFName(midi) {
+  return NOTE_NAMES[midi % 12] + (Math.floor(midi / 12) - 1);
+}
+
+const ctx = new AudioContext();
+Soundfont.instrument(ctx, 'acoustic_grand_piano', { soundfont: 'MusyngKite' })
+  .then(piano => {
+    window._tutorialPiano = piano;   // save for later cells
+    window._tutorialCtx   = ctx;
+    piano.play(midiToSFName(60), ctx.currentTime, { duration: 2, gain: 1.2 });
+    document.getElementById('audio-out-1').textContent = '✓ Piano loaded. Playing C4 (MIDI 60)…';
+  })
+  .catch(e => {
+    document.getElementById('audio-out-1').textContent = '✗ Error: ' + e.message;
+  });
+</textarea>
+    <div class="cell-output" id="audio-output-1">
+      <div class="out-text" id="audio-out-1"></div>
+    </div>
+  </div>
+
+  <div class="cell" id="audio-cell-2">
+    <div class="cell-header">
+      <span class="cell-label">3.2 — Play a chord</span>
+      <div class="cell-actions">
+        <span class="status-dot" id="audio-dot-2"></span>
+        <button class="btn reset" onclick="resetAudioCell(2)">↺ Reset</button>
+        <button class="btn run" onclick="runAudioCell(2)">▶ Run</button>
+      </div>
+    </div>
+    <textarea class="cell-editor" id="audio-editor-2" spellcheck="false" rows="18">// Requires cell 3.1 to have been run first (piano must be loaded)
+const piano = window._tutorialPiano;
+const ctx   = window._tutorialCtx;
+
+if (!piano) {
+  document.getElementById('audio-out-2').textContent =
+    '✗ Piano not loaded yet — run cell 3.1 first.';
+} else {
+  const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+  function midiToSFName(midi) {
+    return NOTE_NAMES[midi % 12] + (Math.floor(midi / 12) - 1);
+  }
+
+  // Build and play a C major chord: [0,4,7] from C4 (MIDI 60)
+  const rootMidi = 60;
+  const intervals = [0, 4, 7];   // ← try [0,3,7] for minor, [0,4,7,11] for major 7th
+  const notes = intervals.map(i => rootMidi + i);
+
+  const now = ctx.currentTime;
+  notes.forEach((midi, i) => {
+    piano.play(midiToSFName(midi), now + i * 0.03, { duration: 2, gain: 1.3 });
+  });
+
+  const names = notes.map(midiToSFName);
+  document.getElementById('audio-out-2').textContent =
+    '♪ Playing: ' + names.join(' + ');
+}
+</textarea>
+    <div class="cell-output" id="audio-output-2">
+      <div class="out-text" id="audio-out-2"></div>
+    </div>
+  </div>
+
+  <div class="callout exercise">
+    <div class="callout-label">Exercise</div>
+    In cell 3.2, change the <code>intervals</code> array to <code>[0, 3, 7]</code> and listen to the difference between major and minor. Then try <code>[0, 3, 6]</code> for diminished. Notice how darker each one sounds.
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Notation
+  ═══════════════════════════════════════════════ -->
+  <hr class="divider">
+  <div class="section-header" id="s4">
+    <span class="section-num">04 —</span>
+    <h2 class="section-title">Notation<br>Rendering sheet music with VexFlow</h2>
+  </div>
+
+  <p class="prose"><strong>VexFlow</strong> is a JavaScript library that renders music notation into SVG. We give it a list of notes (as strings like <code>"c/4"</code> or <code>"f#/3"</code>) and it draws them on a staff.</p>
+
+  <p class="prose">The tricky part is converting MIDI numbers to VexFlow's format. VexFlow wants <code>"noteName/octave"</code> in lowercase, e.g. <code>"c/4"</code>, <code>"f#/3"</code>, <code>"bb/5"</code>.</p>
+
+  <div data-cell
+       data-label="4.1 — MIDI to VexFlow key format"
+       data-code="function midiToVexKey(midi) {
+  const VEX_NOTES = ['c','c#','d','d#','e','f','f#','g','g#','a','a#','b'];
+  const note   = VEX_NOTES[midi % 12];
+  const octave = Math.floor(midi / 12) - 1;
+  return note + '/' + octave;
+}
+
+// Test it
+[60, 64, 67, 69, 71, 72].forEach(midi => {
+  console.log('MIDI ' + midi + '  →  ' + midiToVexKey(midi));
+});"></div>
+
+  <p class="prose">Now let's render an actual staff. VexFlow needs a target SVG element. Each cell below renders into its own SVG inside the output area.</p>
+
+  <div data-cell
+       data-label="4.2 — Render a C major chord on a treble staff"
+       data-vexflow="true"
+       data-code="// VexFlow 4 is already loaded on this page.
+// The variable 'outputEl' is the output div — put your SVG inside it.
+
+const VF = Vex.Flow;
+const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = VF;
+
+// Create SVG element
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+outputEl.appendChild(svg);
+
+const W = 300, H = 160;
+svg.setAttribute('width', W);
+svg.setAttribute('height', H);
+
+const renderer = new Renderer(svg, Renderer.Backends.SVG);
+renderer.resize(W, H);
+const ctx = renderer.getContext();
+ctx.setFont('Arial', 10);
+
+// Draw the stave
+const stave = new Stave(15, 35, W - 30);
+stave.addClef('treble').addTimeSignature('4/4');
+stave.setContext(ctx).draw();
+
+// C major chord: C4, E4, G4
+const keys = ['c/4', 'e/4', 'g/4'];
+const note = new StaveNote({ keys, duration: 'w', clef: 'treble' });
+
+const voice = new Voice({ num_beats: 4, beat_value: 4 }).setMode(Voice.Mode.SOFT);
+voice.addTickables([note]);
+new Formatter().joinVoices([voice]).format([voice], W - 80);
+voice.draw(ctx, stave);"></div>
+
+  <div data-cell
+       data-label="4.3 — Render a chord from MIDI numbers"
+       data-vexflow="true"
+       data-code="// This combines our MIDI-to-VexKey conversion with VexFlow rendering.
+// Try changing the midiNotes array!
+
+const VF = Vex.Flow;
+const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = VF;
+
+function midiToVexKey(midi) {
+  const VEX_NOTES = ['c','c#','d','d#','e','f','f#','g','g#','a','a#','b'];
+  return VEX_NOTES[midi % 12] + '/' + (Math.floor(midi / 12) - 1);
+}
+
+// ← Change these MIDI notes!
+// G minor: G4=67, Bb4=70, D5=74
+const midiNotes = [67, 70, 74];
+
+// Normalise into treble range
+const norm = midiNotes.map(m => { while(m < 48) m+=12; while(m > 84) m-=12; return m; });
+norm.sort((a,b) => a - b);
+const keys = norm.map(midiToVexKey);
+
+// Build SVG
+const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+outputEl.appendChild(svg);
+const W = 300, H = 160;
+svg.setAttribute('width', W); svg.setAttribute('height', H);
+const renderer = new VF.Renderer(svg, VF.Renderer.Backends.SVG);
+renderer.resize(W, H);
+const ctx = renderer.getContext();
+
+const stave = new Stave(15, 35, W - 30);
+stave.addClef('treble');
+stave.setContext(ctx).draw();
+
+const staveNote = new StaveNote({ keys, duration: 'w', clef: 'treble' });
+keys.forEach((key, i) => {
+  const n = key.split('/')[0];
+  if (n.includes('#')) staveNote.addModifier(new Accidental('#'), i);
+  if (n.includes('b')) staveNote.addModifier(new Accidental('b'), i);
+});
+
+const voice = new Voice({ num_beats:4, beat_value:4 }).setMode(Voice.Mode.SOFT);
+voice.addTickables([staveNote]);
+new Formatter().joinVoices([voice]).format([voice], W - 80);
+voice.draw(ctx, stave);"></div>
+
+  <div class="callout exercise">
+    <div class="callout-label">Exercise</div>
+    In cell 4.3, change <code>midiNotes</code> to <code>[64, 68, 71]</code> — that's E4, G#4, B4, which is an E augmented chord. What does it look like on the staff?
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — The Full Quiz
+  ═══════════════════════════════════════════════ -->
+  <hr class="divider">
+  <div class="section-header" id="s5">
+    <span class="section-num">05 —</span>
+    <h2 class="section-title">Putting it all together<br>The ear-training quiz</h2>
+  </div>
+
+  <p class="prose">Now we combine everything: chord math, audio playback, and notation rendering into a complete ear-training quiz. The quiz picks a random chord, plays it, shows four answer options, and reveals the notation after you answer.</p>
+
+  <p class="prose">Study the code below — it's the complete app. After reading it, the final cell lets you play the actual quiz.</p>
+
+  <div data-cell
+       data-label="5.1 — The quiz logic (study this)"
+       data-code="// ── Core quiz logic (no audio/notation, just the data flow) ──
+
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+const CHORD_TYPES = [
+  { name: 'Major',       intervals: [0,4,7]    },
+  { name: 'Minor',       intervals: [0,3,7]    },
+  { name: 'Diminished',  intervals: [0,3,6]    },
+  { name: 'Augmented',   intervals: [0,4,8]    },
+  { name: 'Major 7th',   intervals: [0,4,7,11] },
+  { name: 'Dominant 7th',intervals: [0,4,7,10] },
+];
+
+function generateQuestion() {
+  // 1. Pick a random chord type
+  const type = CHORD_TYPES[Math.floor(Math.random() * CHORD_TYPES.length)];
+
+  // 2. Pick a random root note (C through B, in octave 4)
+  const root = Math.floor(Math.random() * 12);
+  const rootMidi = 12 + root + 4 * 12;   // octave 4
+
+  // 3. Build the MIDI notes
+  const midiNotes = type.intervals.map(i => rootMidi + i);
+
+  // 4. Pick 3 wrong answers from the remaining chord types
+  const distractors = CHORD_TYPES
+    .filter(c => c.name !== type.name)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+
+  // 5. Shuffle correct + wrong answers together
+  const options = [type, ...distractors].sort(() => Math.random() - 0.5);
+
+  return {
+    rootName: NOTE_NAMES[root],
+    correctType: type,
+    midiNotes,
+    options
+  };
+}
+
+// Run a few simulated questions
+for (let i = 0; i < 4; i++) {
+  const q = generateQuestion();
+  const noteNames = q.midiNotes.map(m =>
+    NOTE_NAMES[m % 12] + (Math.floor(m/12)-1)
+  );
+  console.log('─'.repeat(40));
+  console.log('Chord:', q.rootName + ' ' + q.correctType.name);
+  console.log('Notes:', noteNames.join(' - '));
+  console.log('Options:', q.options.map(o => o.name).join(' / '));
+}"></div>
+
+  <p class="prose">And here is the complete running quiz — the same app you started with, but now you know exactly how every part of it works.</p>
+
+  <div class="cell">
+    <div class="cell-header">
+      <span class="cell-label">5.2 — The full chord trainer</span>
+      <div class="cell-actions">
+        <span class="status-dot ok"></span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">live</span>
+      </div>
+    </div>
+    <iframe class="final-app-frame" id="finalAppFrame" srcdoc="loading…"></iframe>
+  </div>
+
+</div><!-- /notebook -->
+
+<!-- ══ Libraries (loaded once for the whole page) ══ -->
+<script src="https://unpkg.com/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
+<script src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  SANDBOX CELL ENGINE
+// ══════════════════════════════════════════════════════════════
+
+const LIBS_HEAD = `
+  <script src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"><\/script>
+  <style>
+    body { margin: 0; padding: 0.75rem 1rem; font-family: 'DM Mono', monospace; font-size: 13px; background: #f7f6f2; }
+    .out-line { margin: 1px 0; }
+    .err { color: #c0392b; }
+    .timeout { color: #7a5c00; font-style: italic; }
+  </style>
+`;
+
+const SANDBOX_TIMEOUT_MS = 5000;
+
+// Build a sandboxed iframe document that:
+// 1. Intercepts console.log → renders in output div
+// 2. Runs user code in a try/catch
+// 3. Exposes `outputEl` for VexFlow cells
+function makeSandboxDoc(code, isVexflow) {
+  const outputDiv = isVexflow
+    ? `<div id="output" style="padding:0.5rem 1rem;"></div>`
+    : `<div id="output" style="padding:0.75rem 1rem;"></div>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">${LIBS_HEAD}</head><body>
+${outputDiv}
+<script>
+  const outputEl = document.getElementById('output');
+
+  // Override console.log
+  const _log = console.log.bind(console);
+  console.log = function(...args) {
+    _log(...args);
+    const line = document.createElement('div');
+    line.className = 'out-line';
+    line.textContent = args.map(a => typeof a === 'object' ? JSON.stringify(a,null,2) : String(a)).join(' ');
+    outputEl.appendChild(line);
+  };
+
+  // Run user code with timeout guard via Worker trick
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    const msg = document.createElement('div');
+    msg.className = 'out-line timeout';
+    msg.textContent = '⚠ Execution timed out (${SANDBOX_TIMEOUT_MS/1000}s). Check for infinite loops.';
+    outputEl.appendChild(msg);
+  }, ${SANDBOX_TIMEOUT_MS});
+
+  try {
+    ${code}
+    clearTimeout(timer);
+  } catch(e) {
+    clearTimeout(timer);
+    if (!timedOut) {
+      const err = document.createElement('div');
+      err.className = 'out-line err';
+      err.textContent = '✗ ' + e.name + ': ' + e.message;
+      outputEl.appendChild(err);
+    }
+  }
+<\/script>
+</body></html>`;
+}
+
+// Render all [data-cell] elements into actual cell UI
+function initCells() {
+  document.querySelectorAll('[data-cell]').forEach(el => {
+    const label    = el.dataset.label || 'Code cell';
+    const code     = (el.dataset.code || '').trim();
+    const vexflow  = el.dataset.vexflow === 'true';
+    const id       = 'cell-' + Math.random().toString(36).slice(2,8);
+
+    el.innerHTML = `
+      <div class="cell-header">
+        <span class="cell-label">${label}</span>
+        <div class="cell-actions">
+          <span class="status-dot" id="dot-${id}"></span>
+          <button class="btn reset" onclick="resetCell('${id}')">↺ Reset</button>
+          <button class="btn run" onclick="runCell('${id}')">▶ Run</button>
+        </div>
+      </div>
+      <textarea class="cell-editor" id="editor-${id}" spellcheck="false">${escHtml(code)}</textarea>
+      <div class="cell-output empty" id="output-${id}"></div>
+    `;
+    el.className = 'cell';
+    el.dataset.vexflowFlag = vexflow;
+    el.dataset.originalCode = code;
+    el.dataset.cellId = id;
+
+    // Auto-size textarea
+    const ta = el.querySelector('textarea');
+    ta.style.height = 'auto';
+    ta.style.height = (ta.scrollHeight + 4) + 'px';
+    ta.addEventListener('input', () => {
+      ta.style.height = 'auto';
+      ta.style.height = (ta.scrollHeight + 4) + 'px';
+    });
+
+    // Shift+Enter to run
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); runCell(id); }
+    });
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function runCell(id) {
+  const editor  = document.getElementById('editor-' + id);
+  const outputEl= document.getElementById('output-' + id);
+  const dot     = document.getElementById('dot-' + id);
+  const cell    = document.querySelector(`[data-cell-id="${id}"]`);
+  const vexflow = cell && cell.dataset.vexflowFlag === 'true';
+
+  const code = editor.value;
+
+  dot.className = 'status-dot running';
+  outputEl.className = 'cell-output';
+  outputEl.innerHTML = '';
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'width:100%;border:none;display:block;';
+  iframe.scrolling = 'no';
+  outputEl.appendChild(iframe);
+
+  iframe.srcdoc = makeSandboxDoc(code, vexflow);
+
+  // Auto-resize iframe to content height
+  iframe.addEventListener('load', () => {
+    try {
+      const body = iframe.contentDocument.body;
+      const resize = () => {
+        const h = Math.max(body.scrollHeight + 8, 36);
+        iframe.style.height = h + 'px';
+      };
+      resize();
+      // Re-check after a tick (VexFlow renders async)
+      setTimeout(resize, 300);
+      setTimeout(resize, 800);
+
+      // Check for errors
+      const hasError = body.querySelector('.err');
+      dot.className = 'status-dot ' + (hasError ? 'error' : 'ok');
+    } catch(e) {
+      dot.className = 'status-dot ok';
+    }
+  });
+}
+
+function resetCell(id) {
+  const cell   = document.querySelector(`[data-cell-id="${id}"]`);
+  const editor = document.getElementById('editor-' + id);
+  const output = document.getElementById('output-' + id);
+  const dot    = document.getElementById('dot-' + id);
+
+  if (cell) editor.value = cell.dataset.originalCode;
+  output.innerHTML = '';
+  output.className = 'cell-output empty';
+  dot.className = 'status-dot';
+  editor.style.height = 'auto';
+  editor.style.height = (editor.scrollHeight + 4) + 'px';
+}
+
+// ══ Audio cells (run in main page) ══
+const audioOriginals = {};
+
+function runAudioCell(n) {
+  const editor = document.getElementById('audio-editor-' + n);
+  const output = document.getElementById('audio-output-' + n);
+  const outText= document.getElementById('audio-out-' + n);
+  const dot    = document.getElementById('audio-dot-' + n);
+
+  dot.className = 'status-dot running';
+  output.className = 'cell-output';
+  outText.className = 'out-text';
+  outText.textContent = 'Running…';
+
+  try {
+    // eslint-disable-next-line no-new-func
+    const fn = new Function(editor.value);
+    fn();
+    dot.className = 'status-dot ok';
+  } catch(e) {
+    outText.className = 'out-text';
+    outText.style.color = '#c0392b';
+    outText.textContent = '✗ ' + e.name + ': ' + e.message;
+    dot.className = 'status-dot error';
+  }
+}
+
+function resetAudioCell(n) {
+  const editor  = document.getElementById('audio-editor-' + n);
+  const output  = document.getElementById('audio-output-' + n);
+  const outText = document.getElementById('audio-out-' + n);
+  const dot     = document.getElementById('audio-dot-' + n);
+
+  if (audioOriginals[n]) editor.value = audioOriginals[n];
+  outText.textContent = '';
+  outText.style.color = '';
+  output.className = 'cell-output';
+  dot.className = 'status-dot';
+}
+
+// Save originals for audio cells
+window.addEventListener('DOMContentLoaded', () => {
+  [1,2].forEach(n => {
+    const el = document.getElementById('audio-editor-' + n);
+    if (el) audioOriginals[n] = el.value;
+  });
+});
+
+// ══ Final app iframe ══
+function loadFinalApp() {
+  const appSrc = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#f9f6f0;color:#2c2414;padding:1.5rem 1rem 2rem;}
+#app{max-width:500px;margin:0 auto;}
+
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;}
+.app-title{font-family:'Lora',Georgia,serif;font-size:18px;font-weight:400;color:#2c2414;letter-spacing:-0.01em;}
+.scores{display:flex;gap:1.75rem;}
+.score-item{text-align:right;}
+.score-num{font-family:'Lora',serif;font-size:22px;font-weight:500;color:#2c2414;line-height:1;}
+.score-label{font-size:10px;color:#9c8a6e;letter-spacing:0.07em;text-transform:uppercase;margin-top:2px;}
+
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem;}
+.filter-chip{font-size:11px;padding:5px 14px;border-radius:20px;border:1px solid #d4c4a8;background:#efe8d8;color:#7a6040;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.02em;transition:all 0.15s;}
+.filter-chip.active{background:#2c2414;color:#f0e8d8;border-color:#2c2414;}
+
+.play-card{background:#ede4d3;border:1px solid #d4c4a8;border-radius:14px;padding:1.6rem 1.5rem;text-align:center;margin-bottom:1rem;}
+.play-eyebrow{font-size:10px;color:#8a7455;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1rem;}
+.play-btn{width:72px;height:72px;border-radius:50%;border:1.5px solid #b8a482;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;background:#fff8ee;transition:background 0.15s,transform 0.1s;font-size:26px;color:#5a3e1e;}
+.play-btn:hover:not(:disabled){background:#fff2dc;}
+.play-btn:active:not(:disabled){transform:scale(0.94);}
+.play-btn.playing{background:#f0e8d8;border-color:#9c8462;}
+.play-btn:disabled{opacity:0.45;cursor:default;}
+.chord-hint{margin-top:0.9rem;font-size:12px;color:#8a7455;min-height:18px;}
+
+.notation-area{background:#fff8ee;border:1px solid #d4c4a8;border-radius:12px;padding:1rem 1.25rem 0.6rem;margin-bottom:0.9rem;text-align:center;display:none;overflow:hidden;}
+.notation-label{font-size:10px;color:#9c8a6e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;}
+.notation-chord-name{font-family:'Lora',serif;font-size:16px;font-weight:500;color:#2c2414;margin-bottom:2px;}
+
+.status-msg{font-size:13px;color:#9c8a6e;text-align:center;min-height:22px;margin-bottom:0.6rem;font-style:italic;}
+.status-msg.good{color:#3b7a4e;font-style:normal;font-weight:500;}
+.status-msg.bad{color:#a03030;font-style:normal;font-weight:500;}
+
+.section-label{font-size:10px;color:#9c8a6e;letter-spacing:0.09em;text-transform:uppercase;margin-bottom:0.6rem;}
+
+.answer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;}
+.ans-btn{padding:13px 11px;background:#fff;border:1px solid #ddd5c4;border-radius:12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:border-color 0.12s,background 0.12s;}
+.ans-btn:hover:not(:disabled){border-color:#b8a888;background:#faf7f2;}
+.ans-btn:active:not(:disabled){transform:scale(0.98);}
+.ans-bullet{width:28px;height:28px;border-radius:50%;background:#f5efe4;border:1px solid #e0d4bc;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#9c8a6e;flex-shrink:0;transition:background 0.12s,color 0.12s,border-color 0.12s;}
+.ans-name{font-size:13.5px;color:#2c2414;line-height:1.2;font-weight:500;}
+.ans-sub{font-size:10.5px;color:#9c8a6e;margin-top:2px;letter-spacing:0.01em;}
+.ans-btn:disabled{cursor:default;}
+.ans-btn.correct{border-color:#3b7a4e;background:#f0faf3;}
+.ans-btn.correct .ans-bullet{background:#3b7a4e;color:#fff;border-color:#3b7a4e;}
+.ans-btn.correct .ans-name{color:#2a5c38;}
+.ans-btn.wrong{border-color:#b84040;background:#fdf3f3;}
+.ans-btn.wrong .ans-bullet{background:#b84040;color:#fff;border-color:#b84040;}
+.ans-btn.wrong .ans-name{color:#8a2a2a;}
+.ans-btn.reveal{border-color:#3b7a4e;background:#f0faf3;}
+.ans-btn.reveal .ans-bullet{background:#3b7a4e;color:#fff;border-color:#3b7a4e;}
+
+.controls{display:flex;gap:8px;justify-content:center;}
+.ctrl-btn{padding:11px 26px;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;cursor:pointer;transition:background 0.12s,transform 0.1s;letter-spacing:0.01em;}
+.ctrl-btn:active{transform:scale(0.97);}
+.ctrl-btn.primary{background:#2c2414;color:#f0e8d8;border:none;}
+.ctrl-btn.primary:hover{background:#3d3019;}
+.ctrl-btn.secondary{background:#fff;border:1px solid #ddd5c4;color:#7a6040;}
+.ctrl-btn.secondary:hover{background:#faf7f2;}
+</style>
+</head><body><div id="app">
+
+<div class="header">
+  <div class="app-title">Chord trainer</div>
+  <div class="scores">
+    <div class="score-item">
+      <div class="score-num" id="correct">0</div>
+      <div class="score-label">correct</div>
+    </div>
+    <div class="score-item">
+      <div class="score-num" id="streak">0</div>
+      <div class="score-label">streak</div>
+    </div>
+  </div>
+</div>
+
+<div class="filter-row" id="filterRow"></div>
+
+<div class="play-card">
+  <div class="play-eyebrow">Listen carefully</div>
+  <button class="play-btn" id="playBtn" disabled aria-label="Play chord">♩</button>
+  <div class="chord-hint" id="chordHint">Loading piano samples…</div>
+</div>
+
+<div class="notation-area" id="notationArea">
+  <div class="notation-label">Chord notation</div>
+  <div class="notation-chord-name" id="notationChordName"></div>
+  <svg id="notation-svg"></svg>
+</div>
+
+<div class="status-msg" id="statusMsg"></div>
+<div class="section-label" id="questionLabel"></div>
+<div class="answer-grid" id="answerGrid"></div>
+<div class="controls" id="controls"></div>
+
+</div>
+<script src="https://unpkg.com/soundfont-player@0.12.0/dist/soundfont-player.js"><\/script>
+<script src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"><\/script>
+<script>
+const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const INTERVAL_LABELS={
+  maj:'1 — 3 — 5',
+  min:'1 — \u266d3 — 5',
+  dim:'1 — \u266d3 — \u266d5',
+  aug:'1 — 3 — \u266f5',
+  maj7:'1 — 3 — 5 — 7',
+  min7:'1 — \u266d3 — 5 — \u266d7',
+  dom7:'1 — 3 — 5 — \u266d7',
+  hdim7:'1 — \u266d3 — \u266d5 — \u266d7',
+  dim7:'1 — \u266d3 — \u266d5 — \u266d\u266d7',
+  inv1:'1st inversion',inv2:'2nd inversion',
+  minv1:'1st inversion',minv2:'2nd inversion',
+  maj9:'1—3—5—7—9',min9:'1—\u266d3—5—\u266d7—9',dom9:'1—3—5—\u266d7—9',
+  maj11:'1—3—5—7—9—11',min11:'1—\u266d3—5—\u266d7—9—11',
+};
+const CHORD_TYPES={
+triads:[
+{name:'Major',symbol:'maj',intervals:[0,4,7]},
+{name:'Minor',symbol:'min',intervals:[0,3,7]},
+{name:'Diminished',symbol:'dim',intervals:[0,3,6]},
+{name:'Augmented',symbol:'aug',intervals:[0,4,8]},
+],
+sevenths:[
+{name:'Major 7th',symbol:'maj7',intervals:[0,4,7,11]},
+{name:'Minor 7th',symbol:'min7',intervals:[0,3,7,10]},
+{name:'Dominant 7th',symbol:'dom7',intervals:[0,4,7,10]},
+{name:'Half-dim 7th',symbol:'hdim7',intervals:[0,3,6,10]},
+{name:'Diminished 7th',symbol:'dim7',intervals:[0,3,6,9]},
+],
+inversions:[
+{name:'Major 1st inv',symbol:'inv1',intervals:[4,7,12]},
+{name:'Major 2nd inv',symbol:'inv2',intervals:[7,12,16]},
+{name:'Minor 1st inv',symbol:'minv1',intervals:[3,7,12]},
+{name:'Minor 2nd inv',symbol:'minv2',intervals:[7,12,15]},
+],
+extended:[
+{name:'Major 9th',symbol:'maj9',intervals:[0,4,7,11,14]},
+{name:'Minor 9th',symbol:'min9',intervals:[0,3,7,10,14]},
+{name:'Dominant 9th',symbol:'dom9',intervals:[0,4,7,10,14]},
+],
+};
+const LETTERS=['A','B','C','D'];
+let piano=null,audioCtx=null,currentChord=null,currentMidiNotes=[],answered=false,correct=0,streak=0;
+let activeFilters={triads:true,sevenths:false,inversions:false,extended:false};
+function pickRandom(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function midiToSFName(midi){return NOTE_NAMES[midi%12]+(Math.floor(midi/12)-1);}
+function midiToVexKey(midi){const V=['c','c#','d','d#','e','f','f#','g','g#','a','a#','b'];return V[midi%12]+'/'+(Math.floor(midi/12)-1);}
+function getPool(){let p=[];for(const k of Object.keys(activeFilters))if(activeFilters[k])p=p.concat(CHORD_TYPES[k]);return p.length?p:CHORD_TYPES.triads;}
+function initAudio(){
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  Soundfont.instrument(audioCtx,'acoustic_grand_piano',{soundfont:'MusyngKite'})
+  .then(inst=>{piano=inst;document.getElementById('chordHint').textContent='Press to hear the chord';const b=document.getElementById('playBtn');b.disabled=false;b.textContent='\u25b6';generateQuestion();})
+  .catch(()=>{document.getElementById('chordHint').textContent='Could not load samples.';});
+}
+function playChord(){
+  if(!piano)return;
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  const b=document.getElementById('playBtn');b.classList.add('playing');b.textContent='\u266a';
+  const now=audioCtx.currentTime;
+  currentMidiNotes.forEach((m,i)=>{piano.play(midiToSFName(m),now+i*0.03,{duration:2,gain:1.4});});
+  setTimeout(()=>{b.classList.remove('playing');b.textContent='\u25b6';},2200);
+}
+function renderNotation(midiNotes){
+  const VF=Vex.Flow;
+  const{Renderer,Stave,StaveNote,Voice,Formatter,Accidental}=VF;
+  try{
+    const svg=document.getElementById('notation-svg');svg.innerHTML='';
+    const W=260,H=130;svg.setAttribute('width',W);svg.setAttribute('height',H);
+    const renderer=new Renderer(svg,Renderer.Backends.SVG);renderer.resize(W,H);
+    const ctx=renderer.getContext();
+    const stave=new Stave(10,22,W-20);stave.addClef('treble');stave.setContext(ctx).draw();
+    const norm=midiNotes.map(m=>{while(m<48)m+=12;while(m>84)m-=12;return m;});
+    const seen=new Set();
+    const unique=norm.filter(m=>{const pc=m%12;if(seen.has(pc))return false;seen.add(pc);return true;}).sort((a,b)=>a-b);
+    const keys=unique.map(midiToVexKey);
+    const sn=new StaveNote({keys,duration:'w',clef:'treble'});
+    keys.forEach((k,i)=>{const n=k.split('/')[0];if(n.includes('#'))sn.addModifier(new Accidental('#'),i);else if(n.includes('b'))sn.addModifier(new Accidental('b'),i);});
+    const voice=new Voice({num_beats:4,beat_value:4}).setMode(Voice.Mode.SOFT);
+    voice.addTickables([sn]);
+    new Formatter().joinVoices([voice]).format([voice],W-80);
+    voice.draw(ctx,stave);
+  }catch(e){console.error('VexFlow:',e);}
+}
+function showNotation(){
+  const root=NOTE_NAMES[currentMidiNotes[0]%12];
+  document.getElementById('notationChordName').textContent=root+' '+currentChord.name;
+  renderNotation(currentMidiNotes);
+  document.getElementById('notationArea').style.display='block';
+}
+function generateQuestion(){
+  const pool=getPool();
+  currentChord=pickRandom(pool);
+  const root=Math.floor(Math.random()*12);
+  const oct=pickRandom([3,4]);
+  const rootMidi=12+root+oct*12;
+  currentMidiNotes=currentChord.intervals.map(i=>rootMidi+i);
+  let wrong=pool.filter(c=>c.symbol!==currentChord.symbol);
+  if(wrong.length<3)wrong=Object.values(CHORD_TYPES).flat().filter(c=>c.symbol!==currentChord.symbol);
+  const dist=wrong.sort(()=>Math.random()-.5).slice(0,3);
+  answered=false;
+  document.getElementById('notationArea').style.display='none';
+  document.getElementById('statusMsg').textContent='';
+  document.getElementById('statusMsg').className='status-msg';
+  document.getElementById('questionLabel').textContent='What chord is this?';
+  renderAnswers([currentChord,...dist]);
+  renderControls();
+}
+function submitAnswer(chosen,btn){
+  if(answered)return;answered=true;
+  document.querySelectorAll('.ans-btn').forEach(b=>b.disabled=true);
+  if(chosen.symbol===currentChord.symbol){
+    btn.classList.add('correct');correct++;streak++;
+    document.getElementById('statusMsg').textContent=streak>=3?streak+' in a row!':'Correct!';
+    document.getElementById('statusMsg').className='status-msg good';
+  }else{
+    btn.classList.add('wrong');streak=0;
+    document.querySelectorAll('.ans-btn').forEach(b=>{if(b.dataset.symbol===currentChord.symbol)b.classList.add('reveal');});
+    document.getElementById('statusMsg').textContent='It was '+NOTE_NAMES[currentMidiNotes[0]%12]+' '+currentChord.name;
+    document.getElementById('statusMsg').className='status-msg bad';
+  }
+  document.getElementById('correct').textContent=correct;
+  document.getElementById('streak').textContent=streak;
+  showNotation();renderControls();
+}
+function renderAnswers(opts){
+  const g=document.getElementById('answerGrid');g.innerHTML='';
+  const shuffled=opts.sort(()=>Math.random()-.5);
+  shuffled.forEach((ch,i)=>{
+    const b=document.createElement('button');
+    b.className='ans-btn';b.dataset.symbol=ch.symbol;
+    const sub=INTERVAL_LABELS[ch.symbol]||'';
+    b.innerHTML='<div class="ans-bullet">'+LETTERS[i]+'<\/div><div><div class="ans-name">'+ch.name+'<\/div><div class="ans-sub">'+sub+'<\/div><\/div>';
+    b.addEventListener('click',()=>submitAnswer(ch,b));
+    g.appendChild(b);
+  });
+}
+function renderControls(){
+  const c=document.getElementById('controls');c.innerHTML='';
+  if(answered){
+    const nb=document.createElement('button');nb.className='ctrl-btn primary';nb.textContent='Next chord';
+    nb.addEventListener('click',()=>{generateQuestion();});c.appendChild(nb);
+  }
+  const rb=document.createElement('button');rb.className='ctrl-btn secondary';rb.textContent='\u21ba Play again';
+  rb.addEventListener('click',playChord);c.appendChild(rb);
+}
+function renderFilters(){
+  const row=document.getElementById('filterRow');
+  const labels={triads:'Triads',sevenths:'7th chords',inversions:'Inversions',extended:'Extended'};
+  for(const k of Object.keys(labels)){
+    const chip=document.createElement('button');chip.className='filter-chip'+(activeFilters[k]?' active':'');
+    chip.textContent=labels[k];
+    chip.addEventListener('click',()=>{activeFilters[k]=!activeFilters[k];chip.classList.toggle('active',activeFilters[k]);generateQuestion();});
+    row.appendChild(chip);
+  }
+}
+document.getElementById('playBtn').addEventListener('click',playChord);
+renderFilters();initAudio();
+<\/script></body></html>`;
+
+  document.getElementById('finalAppFrame').srcdoc = appSrc;
+}
+
+// ══ Boot ══
+document.addEventListener('DOMContentLoaded', () => {
+  initCells();
+  loadFinalApp();
+
+  // Auto-size audio textareas
+  document.querySelectorAll('.cell-editor').forEach(ta => {
+    ta.style.height = 'auto';
+    ta.style.height = (ta.scrollHeight + 4) + 'px';
+  });
+});
+</script>
+
+</body>
+</html>
