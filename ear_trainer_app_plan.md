@@ -52,7 +52,10 @@
 - **35** More UST types — Minor shell [♭3 + ♭7]: IIm, IV, ♭VII, ♭VI upper triads → m7 contexts. Maj7 shell [3 + 7]: II, IIm, V, VIm upper triads → Maj7 contexts. Pool panel split into three UST sections (Dom7 / m7 / Maj7 shell). Breakdown, labels, notation and root badge all adapt per shell quality
 - **36** Chord scales breakdown row (all chord families): algorithmic set-intersection against all 25 scales in SCALE_REF. Scale root = chord root (upper root for slash, lower root for poly, implied root for UST); all sounding pitch classes must be contained in the scale. Collapsible "N scales fit ▸" sub-section within breakdown; each row shows scale name + teal tag (neutral/bright/tense/dark/etc.) + faint descriptive note. Applies in quiz (post-answer) and dictionary mode across normal chords, inversions, slash, polychords, and UST
 - **37** Voice leading panel — *partially implemented, being redesigned* (see TODO below)
-- **38** Chord progression mode — *partially implemented* (see TODO below)
+- **38** Chord progression mode — *substantially complete* (see TODO below for remaining items)
+  - Fixed: root chip now retransposes and re-renders notation/breakdown/badge in progressions mode (`recomputeCurrentNotes` progressions branch added)
+  - Fixed: `selectedProgressions` default seed no longer references non-existent `I-V-I`
+  - Fixed: `playSlowly()` now has a progressions branch delegating to `playProgressionSlowly()`
 - **39** Extended / compound intervals: 7 new entries: m9, M9, A9/♯9, P11, A11/♯11, m13, M13. Pool panel split into "Simple intervals" and "Extended / Compound" sections (compound collapsed and unselected by default). Breakdown: "Simple equivalent" row replaces inversion row for compound intervals. INTERVAL_CONSONANCE and INTERVAL_CONTEXT extended to cover all new semitone values
 - **Tab order** Tabs reordered to Intervals | Chords | Scales (was Chords | Intervals | Scales); Intervals is now the default landing mode
 - **Mobile** Full mobile responsive pass: fixed bottom play bar removed; dark mode toggle moved to score bar on mobile (duplicate button, CSS show/hide per breakpoint, JS syncs both); root panel open on desktop / collapsed on mobile via JS boot; all root chips visible via flex-wrap grid (was hidden horizontal scroll); dynamic body padding-top driven by actual sticky header height; default root set to C
@@ -323,13 +326,18 @@ The following is already working:
 #### Still to do:
 - **BUG-7 notation redesign**: rewrite `showProgressionNotation()` as a single continuous
   score (see BUG-7 above for full spec)
-- **`recomputeCurrentNotes()` progressions branch**: changing the root chip in
-  progressions mode does not retranspose and re-render. Add a progressions case
-  that mirrors the other modes.
 - **Root badge spelling**: `dictShowProgression` uses raw `NOTE_NAMES[pc]` (always
   sharps). Should use `spelledRoot(pc)`.
+- **Scrollable slot UI**: quiz slot row needs horizontal scroll on mobile before 8-chord
+  progressions are added — current layout breaks at 5+ chords on small screens
+- **Enhanced `progFunctionNote()`**: current implementation covers basic diatonic functions
+  only. Needs secondary dominant awareness, blues function labels, tritone sub context.
+  Decision: quiz tests sound recognition only (degree + quality); function enrichment
+  is breakdown-only, does not affect quiz mechanics.
 - **Expanded progression collection**: add all progressions from the genre reference
-  (see full list below)
+  (see full list below). Order of work: (1) scrollable UI, (2) enhanced function labels,
+  (3) data additions. 8-chord progressions (12-bar blues, rhythm changes, Romanesca,
+  descending fifths) to be added alongside the rest — not deferred.
 
 #### Completed (Aug 2026):
 - ✓ `showProgressionNotation()` display bug fixed (was `display: ''` instead of `'block'`)
@@ -337,7 +345,9 @@ The following is already working:
 - ✓ Dictionary mode wired (`dictShowProgression`, `renderDictProgressionPoolPanel`)
 - ✓ Pool panel: collapsible sections, two-line chips, unified quiz + dict appearance
 - ✓ **BUG-6 fixed**: breakdown panel now appears in both quiz and dictionary mode
-  (see BUG-6 above for full details)
+- ✓ **Root chip bug fixed**: changing root chip now correctly retransposes and re-renders notation, breakdown, playback and badge in progressions mode (`recomputeCurrentNotes` progressions branch in `progressions-mode.js`)
+- ✓ **`selectedProgressions` seed fixed**: removed non-existent `I-V-I` symbol from default set
+- ✓ **`playSlowly()` progressions branch added**: keyboard slow-play path now delegates to `playProgressionSlowly()` instead of falling through to chord logic
 
 #### Overview
 New **Progressions** tab added to the mode tab bar: Intervals | Chords | Scales | **Progressions**.
@@ -671,7 +681,3 @@ expose gaps (e.g. very dense extended voicings needing 11ths on non-dominant cho
 - Timed mode — answer before the clock runs out
 - MIDI input — play answer on a connected keyboard instead of the dropdown
 - Export session stats as CSV
-- 8-chord progressions: 12-bar blues (I–I–I–I / IV–IV–I–I / V–IV–I–I), quick-change
-  12-bar, jazz blues 12-bar, 16-bar blues, full rhythm changes (A+bridge)
-- Romanesca / Pachelbel (8 chords: I–V–vi–iii–IV–I–IV–V)
-- Descending fifths sequence (8 chords: I–IV–viio–iii–vi–ii–V–I)
