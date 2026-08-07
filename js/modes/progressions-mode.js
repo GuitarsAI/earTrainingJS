@@ -252,13 +252,15 @@ function submitProgressionAnswer() {
     statusEl.textContent = '✗ Not quite';
     statusEl.className   = 'status-msg wrong';
   }
-  updateStatsTable();
+  updateScore();
+  answered = true;
 
   // Hide submit, show Next
   const submitBtnEl = document.getElementById('progSubmitBtn');
   if (submitBtnEl) submitBtnEl.style.display = 'none';
 
   showProgressionNotation();
+  showBreakdown();
 
   // Add Next progression button
   const submitRowEl = document.querySelector('.prog-submit-row');
@@ -593,6 +595,7 @@ function dictShowProgression(prog) {
 
   // Show notation immediately
   showProgressionNotation();
+  showBreakdown();
 
   // Hear slowly + play buttons
   const sb = document.createElement('button');

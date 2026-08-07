@@ -71,9 +71,7 @@ notation rendered as garbage or was completely blank.
 - injected `.prog-notation-row` into `#notationArea` (never removed)
 - hid `#keysigChipRow` (never re-shown)
 - left progression buttons in `#controls` (Submit / Next / Hear Slowly persisted)
-**Fix:** Added `teardownProgressionUI()` — a single idempotent cleanup function that restores
-all five elements to their baseline state. Called at the top of `switchMode()`, `setAppMode()`,
-and `resetQuizUI()`. (Session: Aug 2026)
+**Fix:** Added `teardownProgressionUI()` in `js/modes/progressions-mode.js` — a single idempotent cleanup function that restores all five elements to their baseline state. Called (with `typeof` guard) at the top of `switchMode()` and `setAppMode()` in `js/app.js`. (Session: Aug 2026)
 
 #### BUG-2 — Progression mini-stave notation: wrong spelling, always sharps, flat detection broken
 **Symptom:** Progression notation showed notes spelled as sharps even in flat keys (Bb → A#,
@@ -84,7 +82,7 @@ Accidental detection used a broken `k.includes('b') && !k.startsWith('b')` guard
 misfired on the note B natural. No key signature support at all.
 **Fix:** Replaced the raw array with `midiToVexKeySpelled()` + `respellForKeySig()` +
 `isCoveredByKeySig()` — identical pipeline to all other modes. Added `progKeySigMode`
-state variable, wired Key/C chips for progressions, added `stave.addKeySignature()`.
+state variable in `js/engine/state.js`, wired Key/C chips for progressions, added `stave.addKeySignature()`.
 Changed `catch(e) {}` to `console.warn(...)` to surface errors during testing. (Session: Aug 2026)
 
 #### BUG-3 — Interval notation: two notes render on same staff position in Key mode
@@ -117,7 +115,7 @@ of key sig mode.
 **Root cause:** `renderResolutionNotation()` called `midiToVexKeySpelled()` directly but
 never called `respellForKeySig()`. `stave.addKeySignature()` was never called. The
 `chordKeySigMode` state was completely ignored in this code path.
-**Fix (Aug 2026):** `renderResolutionNotation()` now fully wires `chordKeySigMode`:
+**Fix (Aug 2026):** `renderResolutionNotation()` in `js/modes/progressions-mode.js` now fully wires `chordKeySigMode`:
 computes `keySigStr` and `coveredLetters` from it, calls `respellForKeySig()` on every
 note, calls `stave.addKeySignature()` on both treble and bass staves when Key mode is
 active. Verified by `// BUG-4 fix` comment in code.
@@ -151,7 +149,7 @@ regardless of the register of the notes.
 fixed at 100px which is too small for low-register notes or grand staff. No logic to
 detect whether bass or grand staff is needed based on MIDI range.
 **Also:** `notationPanel` and `notationArea` were being set to `display: ''` (empty string)
-instead of `'block'`, causing the notation to stay hidden entirely. Fixed in v5.
+instead of `'block'`, causing the notation to stay hidden entirely. Fixed in the split codebase (Aug 2026).
 **Fix approach:** Rewrite `showProgressionNotation()` as a single continuous score:
 - One clef decision for the whole progression based on the union of all MIDI notes
   across all chords (treble / bass / grand staff — same threshold logic as `showNotation()`)
@@ -163,7 +161,35 @@ instead of `'block'`, causing the notation to stay hidden entirely. Fixed in v5.
 - Width scales with number of chords; existing horizontal scroll handles overflow
 - Height: single staff for treble/bass only; grand staff height when needed
 - No more separate per-chord cell divs
-**Status:** Partially fixed (display bug fixed in v5). Notation redesign not yet done.
+**Status:** Partially fixed (display bug fixed Aug 2026). Notation redesign not yet done.
+
+---
+
+## Where to make changes
+
+The codebase is now split into multiple files. When implementing any TODO item below,
+use this table to find the right file.
+
+| Area | File |
+|---|---|
+| All state variables | `js/engine/state.js` |
+| Selected pool defaults | `js/engine/defaults.js` |
+| Shared helpers (`pickRandom`, `chooseRootMidi`, etc.) | `js/engine/helpers.js` |
+| Audio playback | `js/engine/audio.js` |
+| Notation rendering (VexFlow, `showNotation`) | `js/engine/notation.js` |
+| Breakdown panel (`showBreakdown`) | `js/breakdown/breakdown.js` |
+| Chord data (`CHORD_TYPES`, `INTERVALS`, `SCALES`) | `js/data/chords.js` |
+| Enharmonic spelling engine | `js/data/spelling.js` |
+| Key signature helpers | `js/data/keysig.js` |
+| Progression data (`PROGRESSIONS`) | `js/data/progressions.js` |
+| Chord quiz + answer logic | `js/modes/chords-mode.js` |
+| Interval quiz + answer logic | `js/modes/intervals-mode.js` |
+| Scale quiz + answer logic | `js/modes/scales-mode.js` |
+| Progression playback, notation, quiz, dict, `recomputeCurrentNotes`, `teardownProgressionUI` | `js/modes/progressions-mode.js` |
+| Answer dropdown, controls rendering | `js/ui/controls.js` |
+| Pool panel rendering | `js/ui/pool.js` |
+| Score, stats | `js/ui/stats.js` |
+| Mode switching, dictionary functions, boot, theme, register panel | `js/app.js` |
 
 ---
 
@@ -272,10 +298,10 @@ The following is already working:
 - `generateProgressionQuestion()` — random progression, random root, slot state
 - `renderProgressionAnswerUI()` — per-slot degree + quality chip grid, Submit, Hear Slowly
 - `submitProgressionAnswer()` — grading, green/red per slot, revealed correct answer, scoring, Next
-- `showProgressionNotation()` — notation display (display bug fixed in v5; redesign pending per BUG-7)
+- `showProgressionNotation()` — notation display (display bug fixed Aug 2026; redesign pending per BUG-7)
 - Key/C chip support for progression notation
 - Dictionary mode (`dictShowProgression`, `renderDictProgressionPoolPanel`) — wired
-- Pool panel: collapsible sections, two-line chips (symbol + name) unified across quiz and dict modes (fixed v5)
+- Pool panel: collapsible sections, two-line chips (symbol + name) unified across quiz and dict modes (fixed Aug 2026)
 
 #### Still to do:
 - **BUG-7 notation redesign**: rewrite `showProgressionNotation()` as a single continuous

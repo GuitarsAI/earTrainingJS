@@ -59,3 +59,10 @@ let pinnedRoot         = 0;      // 0 = C by default; null = random
 let pinnedRootSpelling = null;   // null = auto, 'sharp' | 'flat' = user chose an enharmonic spelling
 let pinnedOctave       = null;   // null = random, 'low'|'mid'|'high' = band
 
+
+// POINT 38: Progression mode state
+let currentProgression  = null;
+let currentProgRootPc   = 0;
+let currentProgRootMidi = null;
+let progSlotAnswers     = [];
+let progAnswered        = false;

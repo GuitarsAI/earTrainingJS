@@ -1,5 +1,186 @@
 # Sound Travels Ear Trainer — File Split Plan v2
 
+---
+
+## ✅ Progress tracker
+
+### Layer 1 — CSS ✅ COMPLETE
+- [x] `css/base.css` — CSS variables (light + dark), reset, body, #app
+- [x] `css/components.css` — all component styles; `@media (max-width: 479px)` tooltip fix kept here (component edge case, not a layout override)
+- [x] `css/mobile.css` — `@media (max-width: 600px)` block verbatim
+- [x] `index.html` — `<style>` block removed, three `<link>` tags inserted, logo `src` updated to `assets/logo.png`
+- [ ] **Verify** (requires local server — `python3 -m http.server 8000`):
+  - [ ] All four modes render correctly
+  - [ ] Dark mode toggle works
+  - [ ] Mobile layout intact at 375px viewport
+  - [ ] Notation card is white in dark mode
+  - [ ] Logo renders
+
+> **Note:** CSS cannot be tested via `file://` — a local server is required.
+> `layout.css` renamed to `components.css` (more accurate — covers all component styles, not just layout).
+> `assets/logo.svg` renamed to `assets/logo.png` (asset is a PNG, no SVG source available).
+
+---
+
+### Layer 2 — Data layer ✅ COMPLETE
+Actual cut boundaries from monolith (verified):
+- `spelling.js`: lines 724–954
+- `keysig.js`: lines 955–1174 (not 1179 — line 1175 is the chords.js comment)
+- `chords.js`: lines 1175–1450 (CHORD_TYPES + INTERVALS + INTERVAL_STYLES + CHORD_PLAYBACK_STYLES + SCALES + SCALE_DIRECTIONS)
+- `progressions.js`: lines 2829–2972
+
+> **Note:** `intervals.js` and `scales.js` were not cut as separate files —
+> INTERVALS, INTERVAL_STYLES, CHORD_PLAYBACK_STYLES, SCALES, and SCALE_DIRECTIONS
+> all live in `chords.js` (lines 1365–1450) as one contiguous block. No split needed.
+
+- [x] `js/data/spelling.js` — lines 724–954, verbatim. References `pinnedRootSpelling` (global from `state.js`) — fine at runtime.
+- [x] `js/data/keysig.js` — lines 955–1174, verbatim. `setKeySig` touches DOM + calls UI functions — stays here until Layer 7.
+- [x] `js/data/chords.js` — lines 1175–1450, verbatim. Contains all data constants. `selectedIntervals` init references `INTERVALS` — `chords.js` must load before `state.js`.
+- [x] `js/data/progressions.js` — lines 2829–2972, verbatim. `PROGRESSIONS`, `PROG_DEGREES`, `PROG_QUALITIES`, `PROG_GROUPS`, `PROG_GROUP_COLLAPSED`. No deps, no side effects.
+- [x] `index.html` — `<script src="...">` tags added for all data files
+- [x] **Verify:** app boots ✅ — full regression testing in progress
+
+### Layer 3 — State ✅ COMPLETE
+Actual cut boundaries from monolith (verified):
+- `state.js`: lines 1451–1513
+- `defaults.js`: extracted from state.js (not a monolith cut — the 3 `selected*` Sets that reference data constants)
+
+- [x] `js/engine/state.js` — lines 1451–1513, verbatim. `selectedIntervals` init references `INTERVALS` — load after `chords.js`.
+- [x] `js/engine/defaults.js` — 8 lines, extracted from state.js. `selectedChords`, `selectedIntervals`, `selectedScales`. Depends on `chords.js`. ✅ No cleanup needed — `state.js` already had the 3 `selected*` lines removed with a comment pointing to `defaults.js`.
+
+### Layer 3.5 — Helpers ✅ COMPLETE
+Actual cut boundaries from monolith (verified):
+- `helpers.js`: lines 1514–1792
+
+- [x] `js/engine/helpers.js` — lines 1514–1792, verbatim. Contains `resetSession`, `pickRandom`, `midiToSoundFontName`, `INV_LABELS`, `applyInversion`, `buildInversionPool`, `getAllChords`, `getActivePool`, `getActiveIntervalPool`, `getActiveScalePool`, `resolveOctaveBand`, `chooseRootMidi`, `chooseSimpleRootMidi`, `recordAnswer`, `renderStats`, `updateRootBadge`, `VOICING_MODES`, `applyVoicingMode`, `currentVoicingMode`, `currentChordPlayStyle`, `resolveVoicingMode`, `renderVoicingChips`.
+  - `NOTE_NAMES` (used by `midiToSoundFontName`) is defined in `spelling.js` — loads first, no issue.
+  - `currentVoicingMode` and `currentChordPlayStyle` are declared here, not in `state.js` — no duplicate risk.
+  - Load order: after `defaults.js`, before `audio.js` ✅ confirmed in `index.html`.
+
+### Layer 4 — Audio ✅ COMPLETE
+Actual cut boundaries from monolith (verified):
+- `audio.js`: lines 1793–1990
+
+- [x] `js/engine/audio.js` — lines 1793–1990, 198 lines, verbatim. Contains `initAudio`, `setPlayingState`, `playMidiNotes`, `resolveChordStyle`, `playChord`, `resolveIntervalStyle`, `resolveScaleDir`, `playInterval`, `playScale`, `playSlowly`.
+  - ⚠️ `playScale` calls `showNotation()` directly — cross-layer call, resolved at runtime (both in scope).
+  - ⚠️ `playSlowly` calls `getResolutionInfo()` and `getSourceMidi()` — resolved at runtime (progressions-mode loads before audio is called).
+  - 🐛 **FIXED:** `initAudio` previously gated all UI on soundfont load via `setAppMode('dict')` inside `.then()`. Fixed: `setAppMode` moved to boot in `app.js`; `Promise.race` with 12s timeout added so `.catch()` fires promptly on network failure.
+
+### Layer 5 — Notation ✅ COMPLETE
+Actual cut boundaries from monolith (verified):
+- `notation.js` part 1: lines 1991–2265 (render engine + label helpers)
+- `notation.js` part 2: lines 4183–4370 (renderPolyNotation + showNotation router) — appended, not contiguous in monolith
+
+- [x] `js/engine/notation.js` — 463 lines total (two non-contiguous monolith ranges stitched).
+  - Part 1: `midiToVexKeyExact`, `addAccidentals`, `renderNotation` (VexFlow engine), `getSlashChordRootLabel`, `getSlashResolvedName`, `polyQualitySuffix`, `polyQualityFull`, `getPolyChordLabel`, `getUSTLabel`, `getChordRootName`
+  - Part 2: `renderPolyNotation`, `showNotation` (full mode/family router — calls `showBreakdown` at end)
+  - ⚠️ `showNotation` calls `renderInversionChips()` — lives in dictionary/app range, must be in scope.
+
+### Layer 6 — Breakdown ✅ COMPLETE
+Actual cut boundaries from monolith (verified):
+- `breakdown.js`: lines 2267–4178
+
+> **Note:** The plan's split into 5 breakdown files doesn't match the monolith structure.
+> All mode branches live inside a single `showBreakdown` function with shared locals (`panel`,
+> `addDivider`). Splitting into `breakdown-chords.js` etc. is a proper refactor, not a verbatim
+> cut — deferred to Layer 7. One file for now.
+
+- [x] `js/breakdown/breakdown.js` — lines 2267–4178, 1,912 lines, verbatim.
+  - Shared data constants: `SEMITONE_TO_NUMERAL`, `INTERVAL_CONSONANCE`, `INTERVAL_CONTEXT`, `INTERVAL_INVERSION_*`, `SCALE_CHARACTER`, `SCALE_MODAL_PARENT`, `SEMITONE_TO_ROMAN`, `INTERVAL_ABBR`, `SCALE_REF`
+  - Shared helpers: `ordinal`, `semitonesToNumeral`, `semitoneToDegree`, `computeDegreeNumerals`, `computeTriadMap`, `computeRiemannRelations`, `computeTritoneSubInfo`, `computeDimEnharmonics`, `computeDimDomSubs`, `computeAugEnharmonics`, `computeHalfDimContext`, `computeSusResolution`, `makePill`, `makeRiemannRow`, `makeBDRow`, `joinSep`, `intervalAbbr`, `tritoneLabel`, `figuredBass`, `makeChordScalesRow`, `makeVoiceLeadingRow`
+  - Router + branches: `showBreakdown` (inline intervals/scales/poly/UST/slash/chords branches), `hideBreakdown`
+- [ ] `js/breakdown/breakdown-chords.js` — deferred to Layer 7 refactor
+- [ ] `js/breakdown/breakdown-intervals.js` — deferred to Layer 7 refactor
+- [ ] `js/breakdown/breakdown-scales.js` — deferred to Layer 7 refactor
+- [ ] `js/breakdown/breakdown-progressions.js` — deferred to Layer 7 refactor
+
+### Layer 7 — UI + Modes + Dictionary + App ✅ COMPLETE — regression testing in progress
+Actual cut boundaries from monolith (verified — full map):
+
+| File | Monolith lines | Key contents |
+|---|---|---|
+| `chords-mode.js` | 4371–4517 | `generateChordQuestion`, `submitChordAnswer` |
+| `intervals-mode.js` | 4519–4556 | `generateIntervalQuestion`, `submitIntervalAnswer` |
+| `scales-mode.js` | 4558–4596 | `generateScaleQuestion`, `submitScaleAnswer` |
+| `progressions-mode.js` | 4598–5388 | `progChordMidi`, `playProgression`, `playProgressionSlowly`, `generateProgressionQuestion`, `renderProgressionAnswerUI`, `updateSubmitBtn`, `submitProgressionAnswer`, `showProgressionNotation`, pool panels, `dictShowProgression`, `generateQuestion`, `recomputeCurrentNotes`, `teardownProgressionUI` — 🐛 original cut at 5369 was missing this function; corrected to 5388 |
+| `stats.js` | 5388–5409 | `resetQuizUI`, `updateScore` |
+| `controls.js` | 5411–5516 | `renderAnswers`, `revealDropdownAnswer`, `renderControls` |
+| `pool.js` | 5518–5903 | `renderPoolPanel`, `makePoolPanelShell`, `makeSection`, `renderChordPoolPanel`, `renderIntervalPoolPanel`, `renderScalePoolPanel`, `makeSectionWithDisplayName`, `renderChordStyleChips`, `renderIntervalStyleChips`, `renderScaleDirChips` |
+| `app.js` | 5905–6521 | `switchMode`, `renderRegisterPanel`, settings toggle, all dictionary functions, `makeCollapsible`, boot, theme toggle |
+
+> **Notes:**
+> - `recomputeCurrentNotes` (5227, ~140 lines) handles all four modes — grouped with progressions-mode for now, may move to app.js at refactor time.
+> - `getAllChords` appeared at both 1577 (helpers range) and 6021 (dict duplicate) — ✅ duplicate already removed from `app.js`; canonical copy is in `helpers.js`.
+> - `chips.js` from the original plan does not map to a clean monolith section — inversion chips (`renderInversionChips`, 6249) and style chips (`renderChordStyleChips` etc., 5819) are split between pool.js and app.js ranges. Deferred to Layer 7 refactor.
+
+- [x] `js/modes/chords-mode.js` — lines 4371–4517, 147 lines. `generateChordQuestion` (slash/poly/UST/normal branching) + `submitChordAnswer`.
+- [x] `js/modes/intervals-mode.js` — lines 4519–4556, 38 lines. `generateIntervalQuestion` + `submitIntervalAnswer`.
+- [x] `js/modes/scales-mode.js` — lines 4558–4596, 39 lines. `generateScaleQuestion` + `submitScaleAnswer`.
+- [x] `js/modes/progressions-mode.js` — lines 4598–5388, 773 lines. `progChordMidi`, `playProgression`, `playProgressionSlowly`, `generateProgressionQuestion`, `renderProgressionAnswerUI`, `updateSubmitBtn`, `submitProgressionAnswer`, `showProgressionNotation`, pool panels, `dictShowProgression`, `generateQuestion`, `recomputeCurrentNotes`, `teardownProgressionUI`, `RESOLUTION_TARGETS`, `getResolutionInfo`, `computeVoiceLeading`, `makeVoiceLeadingRow`, `playResolution`, `getSourceMidi`, `showCurrentView`, `renderResolutionNotation`, `nameChordFromIntervals`.
+  - 🐛 **FIXED:** original cut ended at monolith line 5369, stopping mid-comment just before `teardownProgressionUI`. Function body (lines 5371–5388) was missing. Appended verbatim from monolith.
+- [x] `js/ui/stats.js` — lines 5388–5409, 22 lines. `resetQuizUI` + `updateScore`.
+- [x] `js/ui/controls.js` — lines 5411–5516, 106 lines. `renderAnswers`, `revealDropdownAnswer`, `renderControls`.
+- [x] `js/ui/pool.js` — lines 5518–5903, 386 lines. `renderPoolPanel`, `makePoolPanelShell`, `makeSection`, `renderChordPoolPanel`, `renderIntervalPoolPanel`, `renderScalePoolPanel`, `makeSectionWithDisplayName`, `renderChordStyleChips`, `renderIntervalStyleChips`, `renderScaleDirChips`.
+- [x] `js/dict/dictionary.js` — folded into `app.js`; no separate file.
+- [x] `js/app.js` — lines 5905–6517, 613 lines. `switchMode`, `renderRegisterPanel`, settings toggle, all dictionary functions (`dictLoadSymbol`, `renderDictPoolPanel`, `makeDictSection`, `dictApplyInversion`, `renderInversionChips`, `dictShow`, `setAppMode`), `makeCollapsible`, boot, keyboard shortcuts, theme toggle.
+  - ✅ Duplicate `getAllChords` removed — canonical copy in `helpers.js`.
+  - ✅ Closing tags excluded correctly.
+  - 🐛 **FIXED:** `setAppMode('dict')` moved from `initAudio().then()` to boot sequence — UI now loads immediately, independent of audio.
+  - 🐛 **FIXED:** `teardownProgressionUI()` calls in `switchMode` and `setAppMode` guarded with `typeof` check to prevent `ReferenceError` if `progressions-mode.js` fails to load.
+
+### index.html wiring ✅ COMPLETE
+
+- [x] `index.html` — 205 lines (down from 6,521). Full HTML structure verbatim. `<style>` block replaced with three `<link>` tags. Base64 logo replaced with `src="assets/logo.png"`. Monolithic `<script>` block replaced with 19 ordered `<script src="...">` tags (18 original + `helpers.js`).
+
+Load order in `index.html`:
+```html
+<!-- Third-party libraries -->
+<script src="https://unpkg.com/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
+<script src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+
+<!-- Data layer -->
+<script src="js/data/spelling.js"></script>
+<script src="js/data/keysig.js"></script>
+<script src="js/data/chords.js"></script>
+<script src="js/data/progressions.js"></script>
+
+<!-- State — defaults must follow chords.js (selectedIntervals refs INTERVALS) -->
+<script src="js/engine/state.js"></script>
+<script src="js/engine/defaults.js"></script>
+
+<!-- Engine -->
+<script src="js/engine/helpers.js"></script>
+<script src="js/engine/audio.js"></script>
+<script src="js/engine/notation.js"></script>
+
+<!-- Breakdown -->
+<script src="js/breakdown/breakdown.js"></script>
+
+<!-- UI -->
+<script src="js/ui/stats.js"></script>
+<script src="js/ui/controls.js"></script>
+<script src="js/ui/pool.js"></script>
+
+<!-- Modes -->
+<script src="js/modes/chords-mode.js"></script>
+<script src="js/modes/intervals-mode.js"></script>
+<script src="js/modes/scales-mode.js"></script>
+<script src="js/modes/progressions-mode.js"></script>
+
+<!-- App boot — last, depends on everything above -->
+<script src="js/app.js"></script>
+```
+
+### Integration cleanup ✅ COMPLETE
+
+- [x] **`state.js`** — no action needed. The 3 `const selected*` lines were already absent from the split file; `state.js` had a comment pointing to `defaults.js` from the start.
+- [x] **`app.js`** — duplicate `getAllChords` (ex-line 6021) already removed. Canonical copy in `helpers.js`.
+- [x] **Orphaned helpers** — cut as `js/engine/helpers.js` (lines 1514–1792). Wired into `index.html` after `defaults.js`, before `audio.js`.
+- [x] **`index.html`** — `helpers.js` added to load order at correct position.
+- [x] **Verify:** app boots ✅ — full regression testing in progress (see Layer 7 verify checklist)
+
+---
+
 ## Goal
 
 Move from a single monolithic HTML file (~6,500 lines) to a professional,
