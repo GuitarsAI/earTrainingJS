@@ -1,0 +1,409 @@
+/* ── POINT 19: Sticky header shell ── */
+#stickyShell {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+#stickyInner { max-width: 580px; margin: 0 auto; padding: 0 1rem; }
+
+/* ── Header ── */
+.header { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0; gap: 0.5rem; }
+.header-left { display: flex; align-items: center; gap: 0.625rem; min-width: 0; }
+.site-logo { height: 2.25rem; width: 2.25rem; object-fit: contain; display: block; flex-shrink: 0; }
+[data-theme="dark"] .site-logo { filter: invert(1) brightness(1.8); }
+.title { font-family: 'Playfair Display', Georgia, serif; font-size: 1.125rem; font-weight: 700; color: var(--text); letter-spacing: 0.01em; white-space: nowrap; flex: 1; min-width: 0; }
+.score-bar { display: flex; gap: 0.5rem; align-items: center; padding: 0.25rem 0 0.4rem; }
+/* score-pill: min 44px tall for touch target */
+.score-pill { font-size: 0.8125rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 0.25rem 0.625rem; min-height: 2.75rem; display: flex; align-items: center; }
+.score-pill span { font-weight: 600; color: var(--text); }
+
+/* ── Quiz / Dictionary toggle ── */
+.qd-toggle { display: flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-left: auto; flex-shrink: 0; }
+.qd-btn { padding: 0.25rem 0.75rem; font-size: 0.8125rem; font-weight: 500; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background 0.15s, color 0.15s; min-height: 2.75rem; white-space: nowrap; }
+.qd-btn.active { background: var(--bg-chip-active); color: var(--accent-text); }
+.qd-btn:hover:not(.active) { background: var(--bg-hover); color: var(--text); }
+
+/* ── POINT 16: Theme toggle button — 44px touch target ── */
+.theme-toggle {
+  width: 2.75rem; height: 2.75rem; border-radius: 50%;
+  background: var(--bg-chip); border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer; font-size: 1rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { background: var(--bg-hover); border-color: var(--border-active); }
+#themeToggleMobile { display: none; } /* hidden on desktop; shown in mobile block below */
+
+/* ── POINT 19: Mode tabs — live in sticky header ── */
+.mode-tabs { display: flex; border-top: 1px solid var(--border); }
+.mode-tab { flex: 1; padding: 0.625rem 0.25rem; font-size: 0.9375rem; font-weight: 500; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background 0.15s, color 0.15s, border-bottom 0.15s; border-bottom: 2px solid transparent; min-height: 2.75rem; }
+.mode-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: transparent; }
+.mode-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text); }
+
+/* ── POINT 10: Training pool panel ── */
+.pool-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 1rem; overflow: hidden; }
+.pool-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; cursor: pointer; user-select: none; min-height: 2.75rem; }
+.pool-panel-header:hover { background: var(--bg-hover); }
+.pool-panel-title { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.pool-panel-meta { font-size: 0.75rem; color: var(--text-faint); }
+.pool-panel-arrow { font-size: 0.75rem; color: var(--text-faint); margin-left: 6px; }
+.pool-panel-body { border-top: 1px solid var(--border); padding: 0.75rem 1rem; display: none; }
+.pool-panel-body.open { display: block; }
+.pool-section { margin-bottom: 0.9rem; }
+.pool-section:last-child { margin-bottom: 0; }
+.pool-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; cursor: pointer; user-select: none; }
+.pool-section-header:hover .pool-section-title { color: var(--text); }
+.pool-section-title { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 5px; transition: color 0.15s; }
+.pool-section-chevron { font-size: 0.65rem; color: var(--text-faint); transition: transform 0.2s; display: inline-block; }
+.pool-section-count { font-size: 0.75rem; color: var(--text-faint); }
+.pool-section-actions { display: flex; gap: 6px; }
+.pool-all-btn { font-size: 0.75rem; color: var(--accent-dark); background: none; border: none; cursor: pointer; padding: 0; min-height: 2.75rem; }
+.pool-all-btn:hover { text-decoration: underline; }
+.pool-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.pool-section-body { overflow: hidden; }
+.pool-section-body.collapsed { display: none; }
+/* pool-chip: min 44px tall */
+.pool-chip { font-size: 0.875rem; padding: 0.5rem 0.75rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
+.pool-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
+.pool-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+.pool-inv-row { display: flex; align-items: center; gap: 8px; margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid var(--border); font-size: 0.875rem; color: var(--text-muted); }
+.pool-inv-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; min-height: 2.75rem; }
+
+/* ── Chord playback style selector (POINT 6) ── */
+.chord-style-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.chord-style-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
+.chord-style-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
+.chord-style-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+
+/* ── POINT 23: Voicing mode chips (chord mode only) ── */
+.voicing-mode-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.voicing-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
+.voicing-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
+.voicing-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+
+/* ── Interval playback style selector (POINT 5) ── */
+.interval-style-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.style-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
+.style-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
+.style-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+
+/* ── Scale direction chips (POINT 7) ── */
+.scale-dir-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.scale-dir-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
+.scale-dir-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
+.scale-dir-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+
+/* ── Play area ── */
+.play-area { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; text-align: center; margin-bottom: 1rem; }
+.play-label { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 1rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+/* ── POINT 19: Enlarged play button with teal glow ── */
+.play-btn {
+  width: 5rem; height: 5rem; border-radius: 50%;
+  background: var(--accent); border: none;
+  cursor: pointer; display: inline-flex; align-items: center;
+  justify-content: center; font-size: 2rem;
+  transition: transform 0.1s, background 0.15s, box-shadow 0.2s;
+  color: #fff;
+  box-shadow: 0 0 0 0 rgba(74,158,142,0);
+}
+.play-btn:hover:not(:disabled) { background: var(--accent-dark); box-shadow: 0 0 0 8px rgba(74,158,142,0.18), 0 4px 16px rgba(74,158,142,0.3); }
+.play-btn:active:not(:disabled) { transform: scale(0.93); }
+.play-btn.playing { background: var(--accent-dark); box-shadow: 0 0 0 10px rgba(74,158,142,0.22), 0 4px 20px rgba(74,158,142,0.35); }
+.play-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
+.chord-hint { margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-faint); min-height: 1.25rem; }
+
+/* ── Notation — always paper-white so VexFlow black ink is readable ── */
+/* POINT 20c: notation card fixed to #fff in both themes; VexFlow renders black ink */
+.notation-area {
+  background: #ffffff; border: 1px solid var(--border); border-radius: 14px;
+  padding: 1rem 1.5rem 0.5rem; margin-bottom: 1rem;
+  text-align: center; display: none;
+}
+.notation-scroll {
+  overflow-x: auto; overflow-y: visible;
+  width: 100%; -webkit-overflow-scrolling: touch;
+}
+#notation-svg        { display: block; margin: 0 auto; max-width: none; }
+/* Labels inside notation card are always dark (card is always white) */
+.notation-label      { font-size: 0.75rem; color: #777; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; margin-bottom: 4px; }
+.notation-chord-name { font-size: 1.125rem; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
+
+/* ── Key sig chip — always light since notation card is always #fff ── */
+.keysig-chip-row { display: flex; justify-content: center; gap: 0.375rem; margin: 0.25rem 0 0.5rem; }
+.keysig-chip {
+  font-size: 0.75rem; font-weight: 500; padding: 0.2rem 0.65rem;
+  border-radius: 20px; border: 1px solid #d0d0cc;
+  background: #f2f2f0; color: #666660;
+  cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+  min-height: 1.75rem; display: inline-flex; align-items: center;
+}
+.keysig-chip:hover:not(.active) { background: #e6e6e2; color: #1a1a18; }
+.keysig-chip.active {
+  background: #e6f4f1; color: #1d5248;
+  border-color: #4a9e8e; font-weight: 600;
+}
+
+/* ── Quiz status ── */
+.status-msg { font-size: 0.875rem; color: var(--text-muted); text-align: center; min-height: 1.375rem; margin-bottom: 0.75rem; }
+.status-msg.good { color: var(--correct); font-weight: 500; }
+.status-msg.bad  { color: var(--wrong);   font-weight: 500; }
+
+/* ── POINT 11: Custom answer dropdown ── */
+.answer-dropdown-wrap { position: relative; margin-bottom: 1rem; }
+.ans-dropdown-trigger {
+  width: 100%; padding: 0.75rem 2.25rem 0.75rem 0.875rem; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 10px; font-size: 1rem;
+  color: var(--text-muted); cursor: pointer; text-align: left; position: relative;
+  transition: border-color 0.15s; user-select: none; min-height: 2.75rem;
+}
+.ans-dropdown-trigger::after {
+  content: '▾'; position: absolute; right: 0.8125rem; top: 50%;
+  transform: translateY(-50%); font-size: 0.75rem; color: var(--text-faint);
+}
+.ans-dropdown-trigger:hover:not(.disabled) { border-color: var(--text-faint); }
+.ans-dropdown-trigger.open { border-color: var(--accent); border-radius: 10px 10px 0 0; }
+.ans-dropdown-trigger.disabled { cursor: default; }
+.ans-dropdown-trigger.correct { background: var(--correct-bg); border-color: var(--correct-border); color: var(--correct); font-weight: 500; }
+.ans-dropdown-trigger.wrong   { background: var(--wrong-bg);   border-color: var(--wrong-border);   color: var(--wrong);   font-weight: 500; }
+
+.ans-dropdown-list {
+  display: none; position: absolute; left: 0; right: 0; top: 100%;
+  background: var(--bg-card); border: 1px solid var(--accent); border-top: none;
+  border-radius: 0 0 10px 10px; max-height: 17.5rem; overflow-y: auto;
+  z-index: 100; box-shadow: 0 6px 18px var(--shadow-md);
+}
+.ans-dropdown-list.open { display: block; }
+/* dropdown items: 44px min touch target */
+.ans-dropdown-item {
+  padding: 0.75rem 0.875rem; font-size: 1rem; color: var(--text); cursor: pointer;
+  border-bottom: 1px solid var(--border); transition: background 0.1s;
+  min-height: 2.75rem; display: flex; align-items: center;
+}
+.ans-dropdown-item:last-child { border-bottom: none; }
+.ans-dropdown-item:hover { background: var(--bg-hover); }
+.ans-dropdown-item.correct { background: var(--correct-bg); color: var(--correct); font-weight: 500; }
+.ans-dropdown-item.wrong   { background: var(--wrong-bg);   color: var(--wrong); }
+
+/* ── Controls ── */
+.controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.ctrl-btn { padding: 0.625rem 1.375rem; background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; color: var(--text); cursor: pointer; transition: background 0.1s, border-color 0.15s; min-height: 2.75rem; }
+.ctrl-btn:hover { background: var(--bg-hover); border-color: var(--text-faint); }
+.ctrl-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ctrl-btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.ctrl-btn.slow { background: var(--bg-chip); border-color: var(--border); color: var(--text-muted); }
+.ctrl-btn.slow:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--text); }
+.ctrl-btn.resolve {
+  background: var(--bg-chip); border: 1px solid var(--border-active);
+  color: var(--accent-text); font-weight: 600;
+}
+.ctrl-btn.resolve:hover { background: var(--bg-chip-active); }
+
+/* ── POINT 19: Collapsible Settings panel ── */
+.settings-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 1rem; overflow: hidden; }
+.settings-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1rem; cursor: pointer; user-select: none; min-height: 2.75rem; }
+.settings-panel-header:hover { background: var(--bg-hover); }
+.settings-panel-title { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.settings-panel-arrow { font-size: 0.6875rem; color: var(--text-faint); }
+.settings-panel-body { border-top: 1px solid var(--border); padding: 0.75rem 1rem; display: none; }
+.settings-panel-body.open { display: block; }
+.settings-section { margin-bottom: 0.75rem; }
+.settings-section:last-child { margin-bottom: 0; }
+.settings-section-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+.settings-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+
+/* ── POINT 12: Root note & octave register chips ── */
+.register-row { display: flex; align-items: center; gap: 8px; margin-bottom: 0.4rem; }
+.register-row:last-child { margin-bottom: 0; }
+.register-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; min-width: 52px; }
+.register-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+/* reg-chip: min 44px tall */
+.reg-chip { font-size: 0.75rem; padding: 0.375rem 0.5625rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
+.reg-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
+.reg-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+
+/* ── POINT 14: Post-answer breakdown panel ── */
+.breakdown-panel {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 1rem 1.25rem; margin-bottom: 1rem; font-size: 1rem;
+}
+.breakdown-header {
+  font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+}
+.breakdown-figured { font-size: 0.6875rem; vertical-align: super; font-weight: 400; color: var(--text-faint); margin-left: 1px; }
+.breakdown-row { display: flex; gap: 0.5rem; margin-bottom: 0.35rem; align-items: baseline; }
+.breakdown-row:last-child { margin-bottom: 0; }
+.breakdown-key { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; min-width: 90px; flex-shrink: 0; }
+.breakdown-val { color: var(--text); line-height: 1.4; }
+.breakdown-sep { color: var(--text-faint); margin: 0 3px; }
+
+/* ── POINT 22: Breakdown enrichment styles ── */
+/* Sub-section divider inside breakdown panel */
+.breakdown-divider {
+  border: none; border-top: 1px solid var(--border);
+  margin: 0.6rem 0 0.5rem;
+}
+/* Relation pills row (Riemannian, tritone sub, etc.) */
+.breakdown-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.breakdown-pill {
+  display: inline-flex; flex-direction: column; align-items: flex-start;
+  background: var(--bg-chip); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem; line-height: 1.3;
+  cursor: default;
+  position: relative;
+}
+.breakdown-pill-label {
+  font-size: 0.625rem; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.breakdown-pill-value { font-weight: 600; color: var(--text); }
+/* Riemannian tooltip — shown on hover/focus */
+.bd-riemann-wrap { position: relative; display: inline-block; }
+.bd-riemann-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.125rem; height: 1.125rem; border-radius: 50%;
+  background: var(--bg-chip); border: 1px solid var(--border);
+  color: var(--text-faint); font-size: 0.625rem; font-weight: 700;
+  cursor: help; margin-left: 5px; vertical-align: middle;
+  flex-shrink: 0;
+}
+.bd-riemann-tooltip {
+  display: none; position: absolute; bottom: calc(100% + 6px); left: 0;
+  width: 260px; background: var(--bg-card);
+  border: 1px solid var(--border-active); border-radius: 10px;
+  padding: 0.6rem 0.75rem; box-shadow: 0 4px 16px var(--shadow-md);
+  z-index: 300; font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;
+}
+.bd-riemann-tooltip strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.bd-riemann-tooltip p { margin: 0 0 0.35rem; }
+.bd-riemann-tooltip p:last-child { margin: 0; }
+.bd-riemann-wrap:hover .bd-riemann-tooltip,
+.bd-riemann-wrap:focus-within .bd-riemann-tooltip { display: block; }
+/* On very narrow screens push tooltip right so it doesn't clip */
+@media (max-width: 479px) {
+  .bd-riemann-tooltip { left: auto; right: 0; width: 220px; }
+}
+
+/* ── POINT 36: Chord scales collapsible sub-section ── */
+.cs-section { margin-top: 0.5rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.cs-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.35rem 0.625rem; cursor: pointer; user-select: none;
+  background: var(--bg-chip); font-size: 0.75rem; font-weight: 600;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+  min-height: 2.25rem;
+}
+.cs-header:hover { background: var(--bg-hover); }
+.cs-arrow { font-size: 0.625rem; color: var(--text-faint); margin-left: 4px; }
+.cs-body { display: none; padding: 0.5rem 0.625rem 0.4rem; border-top: 1px solid var(--border); }
+.cs-body.open { display: block; }
+.cs-row { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.2rem 0; }
+.cs-name { font-size: 0.875rem; color: var(--text); flex: 1; }
+.cs-tag {
+  font-size: 0.6875rem; font-weight: 600; padding: 0.1rem 0.4rem;
+  border-radius: 20px; background: var(--bg-chip-active);
+  color: var(--accent-text); border: 1px solid var(--border-active);
+  white-space: nowrap; flex-shrink: 0;
+}
+.cs-note { font-size: 0.75rem; color: var(--text-faint); flex-shrink: 0; }
+
+/* ── POINT 8: Root toggle ── */
+.root-toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-muted); }
+.root-toggle-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; min-height: 2.75rem; }
+.root-badge { display: inline-block; background: var(--bg-chip-active); border: 1px solid var(--border-active); color: var(--accent-text); border-radius: 6px; padding: 2px 10px; font-size: 0.875rem; font-weight: 600; margin-left: 4px; }
+
+/* ── POINT 8: Stats panel ── */
+.stats-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: none; }
+.stats-title { font-size: 0.75rem; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; }
+.stats-title button { font-size: 0.75rem; color: var(--text-faint); background: none; border: none; cursor: pointer; padding: 0; min-height: 2.75rem; }
+.stats-title button:hover { color: var(--text-muted); }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+.stats-table th { text-align: left; color: var(--text-faint); font-weight: 500; padding: 2px 4px 4px; border-bottom: 1px solid var(--border); }
+.stats-table th:not(:first-child) { text-align: right; }
+.stats-table td { padding: 4px 4px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
+.stats-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.stats-table tr:last-child td { border-bottom: none; }
+.stat-bar-wrap { display: inline-block; width: 60px; height: 6px; background: var(--border); border-radius: 3px; vertical-align: middle; margin-left: 4px; }
+.stat-bar { height: 6px; border-radius: 3px; background: var(--accent); }
+.stats-toggle { font-size: 0.75rem; color: var(--text-faint); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 0.75rem; display: block; min-height: 2.75rem; }
+.stats-toggle:hover { color: var(--text-muted); }
+
+/* ── POINT 8: Keyboard hint ── */
+.kbd-hint { font-size: 0.75rem; color: var(--text-faint); text-align: center; margin-top: 0.5rem; letter-spacing: 0.02em; }
+
+/* ── POINT 37: Voice leading ── */
+.vl-table { width: 100%; border-collapse: collapse; margin-top: 0.25rem; font-size: 0.8125rem; }
+.vl-table td { padding: 0.18rem 0.35rem; color: var(--text); }
+.vl-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.vl-table td:nth-child(2) { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.vl-table td:nth-child(3) { color: var(--text-faint); font-size: 0.75rem; white-space: nowrap; }
+.vl-table td:nth-child(4) { color: var(--text-faint); font-size: 0.75rem; font-style: italic; }
+.vl-table tr:hover td { background: var(--bg-hover); }
+
+/* ── POINT 38: Progression mode ── */
+.prog-slots-wrap { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.5rem 0 0.75rem; }
+.prog-slot {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem 0.6rem;
+  background: var(--bg-card);
+  transition: border-color 0.2s;
+}
+.prog-slot.correct  { border-color: var(--correct-border); background: var(--correct-bg); }
+.prog-slot.wrong    { border-color: var(--wrong-border);   background: var(--wrong-bg);   }
+.prog-slot-label {
+  font-size: 0.7rem; font-weight: 600; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+.prog-slot-label .prog-slot-revealed {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--wrong); margin-left: 0.5rem; text-transform: none; letter-spacing: 0;
+}
+.prog-slot-row { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.3rem; }
+.prog-slot-row:last-child { margin-bottom: 0; }
+.prog-chip {
+  padding: 0.25rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border);
+  background: var(--bg-chip); color: var(--text-muted); font-size: 0.78rem; font-weight: 500;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.prog-chip:hover { background: var(--bg-hover); color: var(--text); }
+.prog-chip.active {
+  background: var(--bg-chip-active); border-color: var(--border-active);
+  color: var(--accent-text); font-weight: 600;
+}
+.prog-chip.disabled { opacity: 0.45; pointer-events: none; }
+.prog-submit-row { display: flex; justify-content: center; margin-top: 0.5rem; }
+.prog-submit-btn {
+  padding: 0.5rem 2rem; border-radius: 8px; border: none;
+  background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: background 0.15s; min-height: 2.75rem;
+}
+.prog-submit-btn:hover { background: var(--accent-dark); }
+.prog-submit-btn:disabled { opacity: 0.4; pointer-events: none; }
+/* Notation row for progressions — horizontal scroll of mini staves */
+.prog-notation-row {
+  display: flex; gap: 0.5rem; overflow-x: auto;
+  padding: 0.25rem 0 0.5rem; align-items: flex-start;
+}
+.prog-notation-cell { flex: 0 0 auto; text-align: center; }
+.prog-notation-cell-label {
+  font-size: 0.7rem; color: var(--text-faint); margin-bottom: 0.15rem;
+}
+/* Pool chip two-line variant for progressions */
+.pool-chip.prog-pool-chip { line-height: 1.25; padding: 0.35rem 0.65rem; }
+.pool-chip.prog-pool-chip .prog-chip-sym  { display: block; font-weight: 600; font-size: 0.82rem; color: var(--text); }
+.pool-chip.prog-pool-chip .prog-chip-name { display: block; font-size: 0.68rem; color: var(--text-faint); }
+
+/* ── POINT 20.5: New Session button — 44px touch target ── */
+.new-session-btn {
+  font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+  background: var(--bg-chip); border: 1px solid var(--border);
+  border-radius: 20px; padding: 0.25rem 0.625rem; cursor: pointer;
+  letter-spacing: 0.03em; transition: all 0.15s; white-space: nowrap;
+  min-height: 2.75rem; display: inline-flex; align-items: center;
+}
+.new-session-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-chip-active); }

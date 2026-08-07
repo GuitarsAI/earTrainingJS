@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Sound Travels Ear Training</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+<div id="stickyShell">
+  <div id="stickyInner">
+  <!-- 21b: Line 1 — branding row -->
+  <div class="header">
+    <div class="header-left">
+      <img class="site-logo" src="assets/logo.png" alt="The Sound Travels logo">
+      <div class="title">The Sound Travels Ear Training</div>
+    </div>
+    <!-- 21b: theme toggle stays on branding row -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">☀️</button>
+  </div>
+  <!-- 21b: Line 2 — session controls -->
+  <div class="score-bar">
+    <div class="score-pill" id="streakPill">Streak <span id="streak">0</span></div>
+    <div class="score-pill" id="scorePill"><span id="correct">0</span> / <span id="total">0</span></div>
+    <button class="new-session-btn" id="newSessionBtn" aria-label="Start a new session">New Session</button>
+    <button class="theme-toggle" id="themeToggleMobile" aria-label="Toggle dark/light mode">🌙</button>
+    <div class="qd-toggle" id="qdToggle">
+      <button class="qd-btn" id="qdQuiz">Quiz</button>
+      <button class="qd-btn active" id="qdDict">Dictionary</button>
+    </div>
+  </div>
+
+  <!-- POINT 5 / POINT 7: top-level mode tabs -->
+  <div class="mode-tabs" id="modeTabs">
+    <button class="mode-tab active" data-mode="intervals">Intervals</button>
+    <button class="mode-tab" data-mode="chords">Chords</button>
+    <button class="mode-tab" data-mode="scales">Scales</button>
+    <button class="mode-tab" data-mode="progressions">Progressions</button>
+  </div><!-- /.mode-tabs -->
+  </div><!-- /#stickyInner -->
+</div><!-- /#stickyShell -->
+
+<div id="app">
+
+  <!-- Root selection — collapsible panel -->
+  <div class="pool-panel" id="rootPanel" style="margin-top:0.75rem">
+    <div class="pool-panel-header" id="rootPanelHeader">
+      <span class="pool-panel-title">Root note</span>
+      <span class="pool-panel-arrow" id="rootPanelArrow">▸</span>
+    </div>
+    <div class="pool-panel-body open" id="rootPanelBody">
+      <div class="register-chips" id="rootChips" style="margin-bottom:0.5rem"></div>
+      <!-- POINT 8: Root note toggle (easy/hard) -->
+      <div class="root-toggle-row" id="rootToggleRow">
+        <label>
+          <input type="checkbox" id="showRootChk" checked>
+          Show root note
+        </label>
+        <span id="rootBadge" class="root-badge"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- POINT 10: Training pool panel (shown per mode) -->
+  <div class="pool-panel" id="poolPanel"></div>
+
+  <!-- POINT 19: Collapsible Settings panel — houses all chip controls -->
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-panel-header" id="settingsPanelHeader">
+      <span class="settings-panel-title">Settings</span>
+      <span class="settings-panel-arrow" id="settingsPanelArrow">▸</span>
+    </div>
+    <div class="settings-panel-body" id="settingsPanelBody">
+      <!-- POINT 23: Voicing mode chips (shown in chord mode only) -->
+      <div class="settings-section" id="voicingModeSection" style="display:none">
+        <div class="settings-section-label">Voicing</div>
+        <div class="voicing-mode-row" id="voicingModeRow"></div>
+      </div>
+      <!-- Chord playback style chips (shown in chord mode, POINT 6) -->
+      <div class="settings-section" id="chordStyleSection" style="display:none">
+        <div class="settings-section-label">Playback style</div>
+        <div class="settings-chips chord-style-row" id="chordStyleRow"></div>
+      </div>
+      <!-- Interval style chips (shown in interval mode, POINT 5) -->
+      <div class="settings-section" id="intervalStyleSection">
+        <div class="settings-section-label">Interval style</div>
+        <div class="settings-chips interval-style-row" id="intervalStyleRow"></div>
+      </div>
+      <!-- Scale direction chips (shown in scale mode, POINT 7) -->
+      <div class="settings-section" id="scaleDirSection" style="display:none">
+        <div class="settings-section-label">Scale direction</div>
+        <div class="settings-chips scale-dir-row" id="scaleDirRow"></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-label">Octave register</div>
+        <div class="register-chips" id="octaveChips"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="play-area" id="playArea">
+    <div class="play-label" id="playLabel">Play interval (together)</div>
+    <button class="play-btn" id="playBtn" disabled aria-label="Play">&#9833;</button>
+    <div class="chord-hint" id="chordHint">Loading piano samples&#8230;</div>
+  </div>
+
+  <!-- Notation — collapsible wrapper -->
+  <div class="pool-panel" id="notationPanel" style="display:none; background:#fff;">
+    <div class="pool-panel-header" id="notationPanelHeader" style="background:#fff; border-radius:14px 14px 0 0;">
+      <span class="pool-panel-title" style="color:#1a1a18;">Notation</span>
+      <span class="pool-panel-arrow" id="notationPanelArrow">▾</span>
+    </div>
+    <div class="pool-panel-body open" id="notationPanelBody">
+      <div class="notation-area" id="notationArea" style="margin-bottom:0; border:none; border-radius:0; padding-top:0.25rem;">
+        <div class="notation-chord-name" id="notationChordName"></div>
+        <div class="keysig-chip-row" id="keysigChipRow" style="display:none">
+          <button class="keysig-chip"        id="keysigChipC"   onclick="setKeySig('C')">C</button>
+          <button class="keysig-chip active" id="keysigChipKey" onclick="setKeySig('key')">Key</button>
+        </div>
+        <div class="keysig-chip-row" id="inversionChipRow" style="display:none"></div>
+        <div class="notation-scroll">
+          <svg id="notation-svg"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POINT 14: Post-answer breakdown — collapsible wrapper -->
+  <div class="pool-panel" id="breakdownWrapper" style="display:none;">
+    <div class="pool-panel-header" id="breakdownPanelHeader">
+      <span class="pool-panel-title">Breakdown</span>
+      <span class="pool-panel-arrow" id="breakdownPanelArrow">▾</span>
+    </div>
+    <div class="pool-panel-body open" id="breakdownPanelBody">
+      <div class="breakdown-panel" id="breakdownPanel"></div>
+    </div>
+  </div>
+
+  <div class="status-msg" id="statusMsg"></div>
+  <!-- POINT 11: Custom dropdown answer -->
+  <div class="answer-dropdown-wrap" id="answerDropdownWrap" style="display:none">
+    <div class="ans-dropdown-trigger" id="ansDropdownTrigger" role="button" tabindex="0">Select your answer…</div>
+    <div class="ans-dropdown-list" id="ansDropdownList"></div>
+  </div>
+  <div class="controls" id="controls"></div>
+
+  <!-- POINT 8: Session stats panel -->
+  <button class="stats-toggle" id="statsToggle" style="margin-top:0.75rem">▸ Session stats</button>
+  <div class="stats-panel" id="statsPanel">
+    <div class="stats-title">
+      Accuracy by type
+      <button id="resetStatsBtn">Reset</button>
+    </div>
+    <table class="stats-table" id="statsTable">
+      <thead><tr><th>Type</th><th>Correct</th><th>Total</th><th>%</th></tr></thead>
+      <tbody id="statsBody"></tbody>
+    </table>
+  </div>
+
+  <!-- POINT 11: Keyboard shortcut hint (1-4 removed; dropdown replaces buttons) -->
+  <div class="kbd-hint">Space = play &nbsp;·&nbsp; Enter = next</div>
+</div>
+
+<!-- Third-party libraries -->
+<script src="https://unpkg.com/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
+<script src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+
+<!-- Data layer -->
+<script src="js/data/spelling.js"></script>
+<script src="js/data/keysig.js"></script>
+<script src="js/data/chords.js"></script>
+<script src="js/data/progressions.js"></script>
+
+<!-- State — defaults must follow chords.js (selectedIntervals refs INTERVALS) -->
+<script src="js/engine/state.js"></script>
+<script src="js/engine/defaults.js"></script>
+
+<!-- Engine -->
+<script src="js/engine/helpers.js"></script>
+<script src="js/engine/audio.js"></script>
+<script src="js/engine/notation.js"></script>
+
+<!-- Breakdown -->
+<script src="js/breakdown/breakdown.js"></script>
+
+<!-- UI -->
+<script src="js/ui/stats.js"></script>
+<script src="js/ui/controls.js"></script>
+<script src="js/ui/pool.js"></script>
+
+<!-- Modes -->
+<script src="js/modes/chords-mode.js"></script>
+<script src="js/modes/intervals-mode.js"></script>
+<script src="js/modes/scales-mode.js"></script>
+<script src="js/modes/progressions-mode.js"></script>
+
+<!-- App boot — last, depends on everything above -->
+<script src="js/app.js"></script>
+
+</body>
+</html>
