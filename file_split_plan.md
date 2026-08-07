@@ -1,4 +1,4 @@
-# Sound Travels Ear Trainer — File Split Plan
+# Sound Travels Ear Trainer — File Split Plan v2
 
 ## Goal
 
@@ -7,6 +7,10 @@ maintainable multi-file structure. The app stays **serverless and static** —
 no build step, no bundler, no Node.js required. Everything is plain HTML, CSS,
 and vanilla JS loaded via `<script>` and `<link>` tags. GitHub Pages hosts it
 as-is.
+
+The split is also a **refactor**: duplication between quiz and dictionary mode
+is eliminated during the migration, not after. The monolith is not patched
+first — each file is written clean.
 
 ---
 
@@ -18,10 +22,291 @@ as-is.
    separated. A bug in progression playback lives in one place.
 3. **Dependency order is explicit** — the load order in `index.html` is the
    dependency graph. Nothing is implicit.
-4. **Patch files become obsolete** — each module is small enough to edit
-   directly. No more surgical patches on a 6,500-line file.
+4. **No duplication between quiz and dictionary** — quiz and dict are two
+   interaction modes over the same data and render functions. State setup,
+   pool rendering, notation, breakdown, and controls are written once.
 5. **GitHub Pages compatible** — flat directory or simple folder structure,
    no server-side routing needed.
+
+---
+
+## Quiz vs Dictionary — the core model
+
+This distinction governs every architectural decision in the split.
+
+**Quiz mode**: play → user answers → reveal  
+**Dictionary mode**: user selects → reveal immediately
+
+The *reveal* (notation, breakdown, controls) is **identical** in both modes.
+The only difference is what triggers it and whether an answer UI is shown.
+
+This means:
+- `showCurrentView()` is the single render entry point for both modes
+- `renderControls()` renders the same buttons in both modes (slow, resolve),
+  adding Next only in quiz after answering
+- `playSlowly()` is available in both modes
+- Pool panels use the same structure and components in both modes
+- State setup logic is written once and called from both paths
+
+---
+
+## Quiz vs Dictionary — pool panels
+
+The pool panel shows the same data in both modes. The interaction differs:
+
+| | Quiz | Dictionary |
+|---|---|---|
+| Selection | Multi-select (Set) | Single-select (one symbol) |
+| On click | Toggle in/out of training pool | Load item immediately |
+| All / None buttons | Yes | No |
+| Panel title | "Training pool — Chords" | "Dictionary — Chords" |
+
+A single `makeSection(body, title, items, options)` function handles both.
+The `options.mode` parameter (`'multi'` or `'single'`) controls chip behavior.
+Everything else — chevron collapse, chip layout, count label — is shared code.
+
+---
+
+## Quiz vs Dictionary — MODE_HANDLERS interface
+
+Each mode file exposes exactly this interface. `app.js` routes all calls
+through it. No direct cross-mode function calls anywhere.
+
+```js
+const MODE_HANDLERS = {
+  chords: {
+    generateQuestion,  // pick random item, setupState, play, render answer UI
+    loadItem(symbol),  // find item, setupState only — no play, no answer UI
+    submitAnswer,      // score, update streak, call showCurrentView()
+    showCurrentView,   // render notation + breakdown + controls
+    recomputeNotes,    // called when register/voicing chip changes
+    playChord,         // main play button
+    playSlowly,        // 🐢 button — post-answer in quiz, always in dict
+    teardown,          // clean up mode-specific DOM before mode switch
+  },
+  intervals:    { generateQuestion, loadItem, submitAnswer, showCurrentView,
+                  recomputeNotes, playChord, playSlowly, teardown },
+  scales:       { generateQuestion, loadItem, submitAnswer, showCurrentView,
+                  recomputeNotes, playChord, playSlowly, teardown },
+  progressions: { generateQuestion, loadItem, submitAnswer, showCurrentView,
+                  recomputeNotes, playChord, playSlowly, teardown },
+};
+```
+
+`switchMode(mode)` calls `MODE_HANDLERS[mode].generateQuestion()` or
+`MODE_HANDLERS[mode].loadItem(dictSymbol)` depending on `appMode`.
+
+`setAppMode(mode)` calls `renderPoolPanel()` (which reads `appMode` and passes
+the correct options to `makeSection`) then calls the appropriate entry point.
+
+---
+
+## State setup — eliminating generateQuestion / loadItem duplication
+
+`generateChordQuestion` and `dictLoadSymbol` currently duplicate the full
+slash / poly / UST / normal chord branching logic. The fix is internal
+`_setup` helpers in each mode file, shared between both paths.
+
+### chords-mode.js internal helpers
+
+```js
+// Internal — called by both generateQuestion and loadItem
+function _resetChordState() {
+  currentSlashBassMidi = null; currentUpperRootMidi = null;
+  currentPolyUpperMidi = []; currentPolyLowerMidi = [];
+  currentPolyUpperRootMidi = null; currentPolyLowerRootMidi = null;
+  currentUSTShellMidi = []; currentUSTUpperMidi = []; currentUSTRootMidi = null;
+}
+function _setupSlashChord(item)  { ... } // sets currentSlashBassMidi, etc.
+function _setupPolyChord(item)   { ... } // sets currentPolyUpperMidi, etc.
+function _setupUSTChord(item)    { ... } // sets currentUSTShellMidi, etc.
+function _setupNormalChord(item) { ... } // sets currentMidiNotes, currentChordRootMidi
+
+function setupChordState(item) {
+  _resetChordState();
+  currentChord = item;
+  chordKeySigMode = 'C';
+  if (item.family === 'slash')     _setupSlashChord(item);
+  else if (item.family === 'poly') _setupPolyChord(item);
+  else if (item.family === 'ust')  _setupUSTChord(item);
+  else                             _setupNormalChord(item);
+}
+
+// Public interface
+function generateQuestion() {
+  const item = pickRandom(getActivePool());
+  setupChordState(item);
+  playChord();
+  renderAnswers(getActivePool(), submitAnswer);
+  renderControls();
+  updateRootBadge(...);
+}
+
+function loadItem(symbol) {
+  const item = symbol === '_random'
+    ? pickRandom(getAllChords())
+    : getAllChords().find(c => c.symbol === symbol);
+  if (!item) return;
+  dictInversionIndex = 0;
+  setupChordState(item);
+  // no play, no answer UI — caller handles showCurrentView
+}
+```
+
+### intervals-mode.js and scales-mode.js
+
+Same pattern — `setupIntervalState(item)` and `setupScaleState(item)` are
+internal helpers called by both `generateQuestion` and `loadItem`.
+
+### progressions-mode.js
+
+Progressions don't have a dict equivalent of `loadItem` for state setup —
+`dictShowProgression(prog)` sets state directly and is simple enough that
+no deduplication is needed. It stays as-is but is renamed `loadItem(symbol)`.
+
+---
+
+## showCurrentView — single render entry point
+
+Currently post-reveal rendering is scattered: `submitAnswer` calls
+`showNotation()`, `dictShow()` calls it directly, chip changes call it
+conditionally. The fix is one function per mode that is the only external
+render call.
+
+```js
+// In each mode file — example for chords
+function showCurrentView() {
+  showNotation();          // notation.js — renders SVG, calls showBreakdown()
+  renderInversionChips();  // ui/controls.js
+  renderControls();        // ui/controls.js — slow + resolve + next(quiz only)
+}
+```
+
+Every call site in `app.js`, `dictionary.js`, and chip handlers calls
+`MODE_HANDLERS[currentMode].showCurrentView()`. Nothing calls `showNotation()`
+or `showBreakdown()` directly from outside the mode file.
+
+---
+
+## renderControls — unified, no quiz/dict branching
+
+```js
+// ui/controls.js
+function renderControls() {
+  const c = document.getElementById('controls');
+  c.innerHTML = '';
+
+  // Slow button — always, both modes
+  const sb = document.createElement('button');
+  sb.className = 'ctrl-btn slow';
+  sb.textContent = '🐢 Hear slowly';
+  sb.addEventListener('click', () => MODE_HANDLERS[currentMode].playSlowly());
+  c.appendChild(sb);
+
+  // Resolve button — chords only, both modes
+  if (currentMode === 'chords') {
+    const rb = document.createElement('button');
+    rb.className = 'ctrl-btn resolve';
+    rb.textContent = resolutionActive ? '← Chord' : 'Resolve →';
+    rb.addEventListener('click', playResolution);
+    c.appendChild(rb);
+  }
+
+  // Next button — quiz only, after answering
+  if (appMode === 'quiz' && answered) {
+    const nb = document.createElement('button');
+    nb.className = 'ctrl-btn primary';
+    nb.textContent = currentMode === 'progressions' ? 'Next progression' : 'Next';
+    nb.addEventListener('click', () => MODE_HANDLERS[currentMode].generateQuestion());
+    c.appendChild(nb);
+  }
+}
+```
+
+---
+
+## renderPoolPanel — unified, no quiz/dict branching
+
+```js
+// ui/pool.js
+function renderPoolPanel() {
+  const panel = document.getElementById('poolPanel');
+  panel.innerHTML = '';
+  const isDict = appMode === 'dict';
+
+  if (currentMode === 'chords')      _renderChordPool(panel, isDict);
+  else if (currentMode === 'intervals') _renderIntervalPool(panel, isDict);
+  else if (currentMode === 'scales') _renderScalePool(panel, isDict);
+  else if (currentMode === 'progressions') _renderProgressionPool(panel, isDict);
+}
+
+// makeSection handles both modes via options.mode
+function makeSection(body, title, items, options) {
+  // options: { mode, selected, onSelect, collapsed, useDisplayName }
+  // mode === 'multi': toggle Set, show All/None
+  // mode === 'single': radio behavior, call onSelect(symbol) immediately
+  // All/None buttons only rendered when mode === 'multi'
+  // Everything else identical
+}
+
+function makeProgSection(body, title, items, options) {
+  // Same pattern — two-line chips, mode parameter controls behavior
+}
+```
+
+`_renderChordPool(panel, isDict)` passes:
+- `mode: isDict ? 'single' : 'multi'`
+- `selected: isDict ? dictSymbol : selectedChords`
+- `onSelect: isDict ? (sym) => { dictLoadAndShow(sym); } : () => {}`
+- title: `isDict ? 'Dictionary — Chords' : 'Training pool — Chords'`
+
+Same groups, same items, same structure. No separate dict render functions.
+
+---
+
+## dictionary.js — thin coordinator only
+
+With the above in place, `dictionary.js` shrinks to ~80 lines:
+
+```js
+// dict-specific state
+let dictSymbol = null;
+let dictInversionIndex = 0;
+let dictProgSymbol = null;
+
+function dictLoadAndShow(symbol) {
+  dictSymbol = symbol;
+  MODE_HANDLERS[currentMode].loadItem(symbol);
+  MODE_HANDLERS[currentMode].showCurrentView();
+}
+
+function setAppMode(mode) {
+  teardownProgressionUI();
+  appMode = mode;
+  // update header UI (quiz/dict toggle, score pills visibility)
+  _syncAppModeUI();
+
+  if (mode === 'dict') {
+    answered = true; // allow notation/breakdown to render
+    if (!dictSymbol) dictSymbol = dictDefaultSymbol();
+    renderPoolPanel(); // unified — reads appMode internally
+    dictLoadAndShow(dictSymbol);
+  } else {
+    answered = false;
+    renderPoolPanel();
+    MODE_HANDLERS[currentMode].generateQuestion();
+  }
+}
+
+function dictDefaultSymbol() {
+  // returns first symbol in current mode's full catalog
+}
+
+function dictApplyInversion(invIdx) { ... } // ~20 lines, unchanged logic
+```
+
+No pool panel rendering. No state setup. No notation calls. All of that
+goes through MODE_HANDLERS.
 
 ---
 
@@ -32,165 +317,247 @@ as-is.
 ├── index.html                  ← shell only: loads all CSS + JS in order
 │
 ├── css/
-│   ├── base.css                ← CSS variables, reset, typography
-│   ├── layout.css              ← sticky header, mode tabs, panels, grid
-│   ├── components.css          ← chips, buttons, score bar, breakdown rows
-│   ├── notation.css            ← notation card, stave wrapper, VexFlow overrides
-│   └── theme.css               ← dark/light mode vars, toggle button
+│   ├── base.css                ← CSS variables (both themes), reset, typography
+│   ├── layout.css              ← sticky header, tabs, panels, play area,
+│   │                             notation card, breakdown, answer UI, controls
+│   └── mobile.css              ← all @media (max-width: 600px) overrides
 │
 ├── js/
 │   ├── data/
-│   │   ├── spelling.js         ← enharmonic engine: spelledNote, spelledRoot,
-│   │   │                         midiToVexKeySpelled, vexAccidental, pcInterval,
-│   │   │                         LETTER_PCS, LETTER_NAMES, SEMITONES_TO_LETTER_STEPS,
+│   │   ├── spelling.js         ← spelledNote, spelledRoot, midiToVexKeySpelled,
+│   │   │                         vexAccidental, pcInterval,
+│   │   │                         LETTER_PCS, LETTER_NAMES,
 │   │   │                         TRITONE_AS_D5, EIGHT_AS_A5, NINE_AS_D7
+│   │   │                         Depends on: nothing
 │   │   │
-│   │   ├── keysig.js           ← key signature helpers: vexKeyMajor, vexKeyMinor,
+│   │   ├── keysig.js           ← vexKeyMajor, vexKeyMinor,
 │   │   │                         keySigCoveredLetters, isCoveredByKeySig,
 │   │   │                         respellForKeySig, keySigCoveredPcs,
-│   │   │                         keySigAccidentalCount, VEX_KEY_MAJOR_*, etc.
-│   │   │                         Depends on: spelling.js
-│   │   │
-│   │   ├── chords.js           ← CHORD_TYPES, CHORD_PLAYBACK_STYLES,
-│   │   │                         VOICING_MODES, applyVoicingMode,
-│   │   │                         resolveVoicingMode, INV_LABELS,
-│   │   │                         applyInversion, buildInversionPool, getAllChords
+│   │   │                         keySigAccidentalCount,
+│   │   │                         MAJOR_SHARPS_COUNT, MAJOR_FLATS_COUNT,
+│   │   │                         MINOR_TO_REL_MAJOR
 │   │   │                         Depends on: spelling.js
 │   │   │
 │   │   ├── intervals.js        ← INTERVALS, INTERVAL_STYLES,
 │   │   │                         INTERVAL_CONSONANCE, INTERVAL_CONTEXT,
 │   │   │                         INTERVAL_INVERSION_NAME, INTERVAL_INVERSION_SEMITONES,
+│   │   │                         INTERVAL_ABBR, intervalAbbr,
 │   │   │                         SEMITONE_TO_NUMERAL, SEMITONE_TO_ROMAN,
-│   │   │                         intervalAbbr, semitoneToDegree, tritoneLabel
+│   │   │                         semitonesToNumeral, semitoneToDegree,
+│   │   │                         tritoneLabel
+│   │   │                         Depends on: spelling.js
+│   │   │
+│   │   ├── chords.js           ← CHORD_TYPES, CHORD_PLAYBACK_STYLES,
+│   │   │                         VOICING_MODES, applyVoicingMode,
+│   │   │                         resolveVoicingMode, INV_LABELS,
+│   │   │                         applyInversion, buildInversionPool,
+│   │   │                         getAllChords
 │   │   │                         Depends on: spelling.js
 │   │   │
 │   │   ├── scales.js           ← SCALES, SCALE_DIRECTIONS, SCALE_REF,
+│   │   │                         SCALE_CHARACTER, SCALE_MODAL_PARENT,
 │   │   │                         getChordScales, getScaleParentKeyStr,
-│   │   │                         computeDegreeNumerals, buildTriadMap,
+│   │   │                         computeDegreeNumerals, computeTriadMap,
 │   │   │                         getModalCharacter
 │   │   │                         Depends on: spelling.js, intervals.js
 │   │   │
 │   │   └── progressions.js     ← PROGRESSIONS, PROG_DEGREES, PROG_QUALITIES,
 │   │                             PROG_GROUPS, PROG_GROUP_COLLAPSED,
 │   │                             selectedProgressions, progChordMidi,
-│   │                             HARMONIC_FUNCTION, progFunctionNote,
-│   │                             qualityFullName
+│   │                             HARMONIC_FUNCTION, qualityFullName
 │   │                             Depends on: chords.js
 │   │
 │   ├── engine/
-│   │   ├── state.js            ← all global let/const state variables:
+│   │   ├── state.js            ← all state with zero data-layer dependencies:
 │   │   │                         piano, audioCtx, answered, appMode,
-│   │   │                         correct/total/streak, currentChord,
-│   │   │                         currentMidiNotes, currentMode,
-│   │   │                         currentInterval, currentScale,
-│   │   │                         currentProgression, all keySigMode vars,
-│   │   │                         selectedChords, selectedIntervals,
-│   │   │                         selectedScales, sessionStats,
-│   │   │                         pinnedRoot, pinnedOctave, etc.
-│   │   │                         Depends on: chords.js, intervals.js, scales.js
+│   │   │                         correct, total, streak,
+│   │   │                         currentChord, currentMidiNotes,
+│   │   │                         currentChordRootMidi,
+│   │   │                         currentSlashBassMidi, currentUpperRootMidi,
+│   │   │                         currentPolyUpperMidi, currentPolyLowerMidi,
+│   │   │                         currentPolyUpperRootMidi, currentPolyLowerRootMidi,
+│   │   │                         currentUSTShellMidi, currentUSTUpperMidi,
+│   │   │                         currentUSTRootMidi,
+│   │   │                         currentMode, currentInterval, currentIntervalMidi,
+│   │   │                         intervalStyle, currentIntervalStyle,
+│   │   │                         chordPlayStyle, currentChordPlayStyle,
+│   │   │                         activeVoicingMode, currentVoicingMode,
+│   │   │                         currentScale, currentScaleRootMidi,
+│   │   │                         scaleDirection, currentScaleDir,
+│   │   │                         currentProgression, currentProgRootPc,
+│   │   │                         currentProgRootMidi, progAnswered, progSlotAnswers,
+│   │   │                         chordKeySigMode, intervalKeySigMode,
+│   │   │                         scaleKeySigMode, progKeySigMode,
+│   │   │                         resolutionActive, resolutionRootMidi,
+│   │   │                         showRoot, sessionStats,
+│   │   │                         pinnedRoot, pinnedRootSpelling, pinnedOctave
+│   │   │                         Depends on: nothing
 │   │   │
-│   │   ├── audio.js            ← piano init, playChord, playInterval,
+│   │   ├── defaults.js         ← state that references data constants at init:
+│   │   │                         selectedChords = new Set(['maj','m','dim','aug'])
+│   │   │                         selectedIntervals = new Set(INTERVALS.filter(...))
+│   │   │                         selectedScales = new Set(['major','nat_minor'])
+│   │   │                         Depends on: intervals.js, chords.js, scales.js
+│   │   │
+│   │   ├── audio.js            ← initAudio, playChord, playInterval,
 │   │   │                         playScale, playProgression,
-│   │   │                         playProgressionSlowly, midiToSoundFontName,
-│   │   │                         resolveVoicingMode (audio side)
+│   │   │                         playProgressionSlowly, playSlowly,
+│   │   │                         midiToSoundFontName, setPlayingState
 │   │   │                         Depends on: state.js, chords.js, progressions.js
 │   │   │
-│   │   └── notation.js         ← all VexFlow rendering:
-│   │                             showNotation, hideNotation,
-│   │                             renderPolyNotation, showProgressionNotation,
-│   │                             nameChordFromIntervals,
-│   │                             all respell/keySig wiring per mode
+│   │   └── notation.js         ← renderNotation, renderPolyNotation,
+│   │                             showNotation (router: intervals/scales/poly/
+│   │                               UST/slash/normal — calls showBreakdown at end),
+│   │                             hideNotation,
+│   │                             getChordKeyStr, getIntervalKeyStr,
+│   │                             getScaleParentKeyStr (notation side),
+│   │                             getBestFitKeyStr, setKeySig
+│   │                             NOTE: showProgressionNotation lives in
+│   │                             progressions-mode.js, not here
 │   │                             Depends on: state.js, spelling.js, keysig.js,
-│   │                                         chords.js, scales.js
+│   │                                         chords.js, scales.js, intervals.js
 │   │
 │   ├── breakdown/
-│   │   ├── breakdown.js        ← showBreakdown, hideBreakdown, makeBDRow,
-│   │   │                         joinSep, addDivider, makeChordScalesRow,
-│   │   │                         makeVoiceLeadingRow
+│   │   ├── breakdown.js        ← showBreakdown (router — calls per-mode branch),
+│   │   │                         hideBreakdown, makeBDRow, joinSep,
+│   │   │                         addDivider, makePill, makeRiemannRow,
+│   │   │                         makeChordScalesRow, makeVoiceLeadingRow,
+│   │   │                         figuredBass, ordinal
 │   │   │                         Depends on: state.js, spelling.js, intervals.js,
 │   │   │                                     scales.js, chords.js
 │   │   │
-│   │   ├── breakdown-chords.js ← chord breakdown branch (slash, poly, UST,
-│   │   │                         normal chords, inversions, theory rows)
+│   │   ├── breakdown-chords.js ← chord breakdown branch:
+│   │   │                         slash, poly, UST, inversions,
+│   │   │                         normal chord theory rows,
+│   │   │                         computeRiemannRelations,
+│   │   │                         computeTritoneSubInfo,
+│   │   │                         computeDimEnharmonics, computeDimDomSubs,
+│   │   │                         computeAugEnharmonics,
+│   │   │                         computeHalfDimContext, computeSusResolution
 │   │   │                         Depends on: breakdown.js, chords.js, state.js
 │   │   │
 │   │   ├── breakdown-intervals.js ← interval breakdown branch
 │   │   │                         Depends on: breakdown.js, intervals.js, state.js
 │   │   │
-│   │   ├── breakdown-scales.js ← scale breakdown branch
+│   │   ├── breakdown-scales.js ← scale breakdown branch,
+│   │   │                         computeTriadMap (breakdown side)
 │   │   │                         Depends on: breakdown.js, scales.js, state.js
 │   │   │
-│   │   └── breakdown-progressions.js ← progressions breakdown branch (BUG-6 fix)
+│   │   └── breakdown-progressions.js ← progressions breakdown branch
 │   │                         Depends on: breakdown.js, progressions.js, state.js
 │   │
 │   ├── ui/
-│   │   ├── pool.js             ← renderPoolPanel, makePoolPanelShell,
-│   │   │                         makeSection, makeSectionWithDisplayName,
-│   │   │                         renderChordPoolPanel, renderIntervalPoolPanel,
-│   │   │                         renderScalePoolPanel, renderProgressionPoolPanel,
-│   │   │                         renderDictProgressionPoolPanel, makeProgSection,
-│   │   │                         makeDictProgSection, makeCollapsible
+│   │   ├── pool.js             ← renderPoolPanel (reads appMode, routes to
+│   │   │                           _renderChordPool, _renderIntervalPool, etc.)
+│   │   │                         makeSection(body, title, items, options)
+│   │   │                           options.mode 'multi'|'single' controls behavior
+│   │   │                           All/None only rendered in multi mode
+│   │   │                         makeProgSection(body, title, items, options)
+│   │   │                         makePoolPanelShell
+│   │   │                         makeCollapsible
+│   │   │                         NOTE: no separate dict render functions —
+│   │   │                         all rendering goes through makeSection with
+│   │   │                         the appropriate mode option
 │   │   │                         Depends on: state.js, chords.js, intervals.js,
 │   │   │                                     scales.js, progressions.js
 │   │   │
 │   │   ├── chips.js            ← renderVoicingChips, renderChordStyleChips,
 │   │   │                         renderIntervalStyleChips, renderScaleDirChips,
-│   │   │                         renderRegisterPanel, renderInversionChips
+│   │   │                         renderRegisterPanel, renderInversionChips,
+│   │   │                         dictApplyInversion
 │   │   │                         Depends on: state.js, pool.js
 │   │   │
-│   │   ├── stats.js            ← renderStats, updateRootBadge, updateScore,
-│   │   │                         recordAnswer, updateStatsTable, resetSession
+│   │   ├── stats.js            ← renderStats, updateRootBadge, recordAnswer,
+│   │   │                         updateStatsTable, resetSession
 │   │   │                         Depends on: state.js
 │   │   │
-│   │   └── controls.js         ← renderAnswers, renderControls,
-│   │                             revealDropdownAnswer, renderProgressionAnswerUI,
-│   │                             updateSubmitBtn, setKeySig
-│   │                             Depends on: state.js, chords.js
-│   │
+│   │   └── controls.js         ← renderControls (unified — slow + resolve always,
+│   │   │                           Next only in quiz after answering),
+│   │   │                         renderAnswers (quiz answer dropdown),
+│   │   │                         updateSubmitBtn, revealDropdownAnswer
+│   │   │                         NOTE: renderControls calls
+│   │   │                         MODE_HANDLERS[currentMode].playSlowly()
+│   │   │                         and MODE_HANDLERS[currentMode].generateQuestion()
+│   │   │                         so it depends on app.js for MODE_HANDLERS —
+│   │   │                         MODE_HANDLERS must be declared in state.js
+│   │   │                         or as a global in app.js before controls runs
+│   │   │                         Depends on: state.js, chords.js
+│   │   │
 │   ├── modes/
-│   │   ├── chords-mode.js      ← generateChordQuestion, submitChordAnswer,
-│   │   │                         recomputeCurrentNotes (chords branch),
-│   │   │                         chooseRootMidi, chooseSimpleRootMidi,
-│   │   │                         pickRandom, resolveOctaveBand
-│   │   │                         Depends on: state.js, audio.js, notation.js,
-│   │   │                                     breakdown.js, chords.js
+│   │   ├── chords-mode.js      ← generateQuestion, loadItem(symbol),
+│   │   │                         submitAnswer, showCurrentView,
+│   │   │                         recomputeNotes, playChord, playSlowly, teardown,
+│   │   │                         setupChordState (internal shared helper),
+│   │   │                         _resetChordState, _setupSlashChord,
+│   │   │                         _setupPolyChord, _setupUSTChord,
+│   │   │                         _setupNormalChord,
+│   │   │                         getActivePool, chooseRootMidi,
+│   │   │                         chooseSimpleRootMidi, pickRandom,
+│   │   │                         resolveOctaveBand, resolveVoicingMode,
+│   │   │                         getChordRootName, getSlashResolvedName,
+│   │   │                         getPolyChordLabel, getUSTLabel,
+│   │   │                         playResolution, getResolutionInfo
+│   │   │                         Depends on: state.js, defaults.js, audio.js,
+│   │   │                                     notation.js, breakdown.js,
+│   │   │                                     chords.js, controls.js, chips.js
 │   │   │
-│   │   ├── intervals-mode.js   ← generateIntervalQuestion, submitIntervalAnswer,
-│   │   │                         recomputeCurrentNotes (intervals branch)
-│   │   │                         Depends on: state.js, audio.js, notation.js,
-│   │   │                                     breakdown.js, intervals.js
+│   │   ├── intervals-mode.js   ← generateQuestion, loadItem(symbol),
+│   │   │                         submitAnswer, showCurrentView,
+│   │   │                         recomputeNotes, playChord, playSlowly, teardown,
+│   │   │                         setupIntervalState (internal shared helper),
+│   │   │                         getActiveIntervalPool, resolveIntervalStyle
+│   │   │                         Depends on: state.js, defaults.js, audio.js,
+│   │   │                                     notation.js, breakdown.js,
+│   │   │                                     intervals.js, controls.js
 │   │   │
-│   │   ├── scales-mode.js      ← generateScaleQuestion, submitScaleAnswer,
-│   │   │                         recomputeCurrentNotes (scales branch)
-│   │   │                         Depends on: state.js, audio.js, notation.js,
-│   │   │                                     breakdown.js, scales.js
+│   │   ├── scales-mode.js      ← generateQuestion, loadItem(symbol),
+│   │   │                         submitAnswer, showCurrentView,
+│   │   │                         recomputeNotes, playChord, playSlowly, teardown,
+│   │   │                         setupScaleState (internal shared helper),
+│   │   │                         getActiveScalePool, resolveScaleDir
+│   │   │                         Depends on: state.js, defaults.js, audio.js,
+│   │   │                                     notation.js, breakdown.js,
+│   │   │                                     scales.js, controls.js
 │   │   │
-│   │   └── progressions-mode.js ← generateProgressionQuestion,
-│   │                              generateProgressionQuestion_entry,
-│   │                              submitProgressionAnswer,
+│   │   └── progressions-mode.js ← generateQuestion, loadItem(symbol),
+│   │                              submitAnswer, showCurrentView,
+│   │                              recomputeNotes, playChord, playSlowly, teardown,
+│   │                              showProgressionNotation (lives here, not notation.js),
 │   │                              renderProgressionAnswerUI,
-│   │                              showProgressionNotation,
 │   │                              teardownProgressionUI,
-│   │                              dictShowProgression
-│   │                              Depends on: state.js, audio.js, notation.js,
+│   │                              getActiveProgressionPool
+│   │                              Depends on: state.js, defaults.js, audio.js,
+│   │                                          notation.js, breakdown.js,
 │   │                                          breakdown-progressions.js,
-│   │                                          progressions.js
+│   │                                          progressions.js, controls.js
 │   │
 │   ├── dict/
-│   │   └── dictionary.js       ← dictFullCatalog, dictDefaultSymbol,
-│   │                             dictLoadSymbol, dictShow,
-│   │                             getAllChords, getAllIntervals, getAllScales,
-│   │                             renderDictPoolPanel, makeDictSection,
-│   │                             panel_deactivateAllDictChips,
-│   │                             dictApplyInversion
-│   │                             Depends on: state.js, all mode files,
-│   │                                         pool.js, breakdown.js
+│   │   └── dictionary.js       ← thin coordinator only (~80 lines):
+│   │                             dictSymbol, dictInversionIndex, dictProgSymbol
+│   │                               (dict-specific state only),
+│   │                             setAppMode(mode),
+│   │                             dictLoadAndShow(symbol),
+│   │                             dictDefaultSymbol(),
+│   │                             dictApplyInversion (if not moved to chips.js),
+│   │                             _syncAppModeUI()
+│   │                             NOTE: no pool rendering, no state setup,
+│   │                             no notation calls — all through MODE_HANDLERS
+│   │                             Depends on: state.js, all mode files
 │   │
-│   └── app.js                  ← boot, switchMode, setAppMode,
-│                                 generateQuestion, recomputeCurrentNotes (router),
-│                                 resetQuizUI, theme toggle,
-│                                 makeCollapsible, event listeners,
-│                                 DOMContentLoaded init
+│   └── app.js                  ← MODE_HANDLERS map (declared here so all files
+│                                   can reference it),
+│                                 switchMode(mode),
+│                                 generateQuestion() router,
+│                                 recomputeCurrentNotes() router,
+│                                 resetSession,
+│                                 theme toggle,
+│                                 boot: initAudio, renderPoolPanel,
+│                                       renderChordStyleChips, renderVoicingChips,
+│                                       renderIntervalStyleChips, renderScaleDirChips,
+│                                       renderRegisterPanel,
+│                                       makeCollapsible wiring,
+│                                       event listeners (play btn, tabs, keyboard,
+│                                       showRoot, stats toggle, new session)
 │                                 Depends on: everything
 │
 └── assets/
@@ -200,9 +567,6 @@ as-is.
 ---
 
 ## Script load order in index.html
-
-The order below is the dependency graph made explicit.
-Each file may only reference names defined in files above it.
 
 ```html
 <!-- Data layer — no DOM, no state dependencies -->
@@ -215,6 +579,7 @@ Each file may only reference names defined in files above it.
 
 <!-- Engine — depends on data -->
 <script src="js/engine/state.js"></script>
+<script src="js/engine/defaults.js"></script>
 <script src="js/engine/audio.js"></script>
 <script src="js/engine/notation.js"></script>
 
@@ -251,119 +616,193 @@ Each file may only reference names defined in files above it.
 ```html
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
-<link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/notation.css">
-<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/mobile.css">
 ```
 
----
-
-## File size estimates (approximate)
-
-| File | Est. lines | Notes |
-|---|---|---|
-| spelling.js | ~180 | Largest pure-data engine file |
-| keysig.js | ~130 | |
-| chords.js | ~220 | CHORD_TYPES alone is ~180 lines |
-| intervals.js | ~120 | |
-| scales.js | ~160 | SCALES + SCALE_REF + helpers |
-| progressions.js | ~260 | PROGRESSIONS data is large |
-| state.js | ~70 | All let/const state vars |
-| audio.js | ~120 | |
-| notation.js | ~320 | Largest engine file — VexFlow is verbose |
-| breakdown.js | ~80 | Shared helpers only |
-| breakdown-chords.js | ~200 | Slash + poly + UST + normal + theory rows |
-| breakdown-intervals.js | ~80 | |
-| breakdown-scales.js | ~130 | |
-| breakdown-progressions.js | ~120 | BUG-6 fix lives here permanently |
-| pool.js | ~250 | |
-| chips.js | ~150 | |
-| stats.js | ~80 | |
-| controls.js | ~120 | |
-| chords-mode.js | ~130 | |
-| intervals-mode.js | ~60 | |
-| scales-mode.js | ~60 | |
-| progressions-mode.js | ~200 | |
-| dictionary.js | ~200 | |
-| app.js | ~180 | Boot + routing + event listeners |
-| **Total JS** | **~3,570** | vs ~5,800 JS lines in current file |
-| CSS (all files) | ~700 | vs ~720 CSS lines in current file |
-| index.html (shell) | ~60 | Just HTML structure + script/link tags |
-| **Grand total** | **~4,330** | vs 6,520 currently |
-
-The reduction (~2,200 lines) comes from removing blank lines and comment
-duplication that accumulates in a monolithic file, and from the structural
-clarity making dead code easier to spot.
+Three files instead of five. The current monolith already has all mobile
+overrides grouped at the bottom in one `@media` block — `mobile.css` is a
+direct cut-and-paste of that block. `base.css` takes CSS variables and reset.
+`layout.css` takes everything else.
 
 ---
 
-## Migration strategy
+## Migration strategy — Option B (outside-in, recommended)
 
-### Option A — Big bang (rewrite all at once)
-Extract everything in one session. Takes longer up front but leaves no
-intermediate broken state.
+Split in layers, testing after each layer.
 
-**Risk:** high. One missed dependency breaks the whole app.
+### Layer 1 — CSS
+Extract `<style>` into three files. Extract base64 logo to `assets/logo.svg`.
+No logic changes.
 
-### Option B — Outside-in (recommended)
-Split in layers, testing after each layer:
+**Verify:**
+- All four modes render correctly
+- Dark mode toggle works
+- Mobile layout intact at 375px viewport
+- Notation card is white in dark mode
+- Logo renders
 
-1. **CSS first** — lowest risk; no logic changes.
-   Extract all `<style>` into the five CSS files. Verify visually.
+### Layer 2 — Data layer
+Extract in order: `spelling.js` → `keysig.js` → `intervals.js` → `chords.js`
+→ `scales.js` → `progressions.js`. Pure data and pure functions, no DOM, no
+state. Each file can be verified by checking the browser console for undefined
+reference errors after load.
 
-2. **Data layer** — `spelling.js` → `keysig.js` → `intervals.js` →
-   `chords.js` → `scales.js` → `progressions.js`.
-   Each file is pure data + pure functions; no DOM, no state.
-   Easy to verify: if the app loads and plays, data is wired correctly.
+**Verify:**
+- App boots without console errors
+- Each mode generates a question and plays audio
+- No undefined errors on any mode switch
 
-3. **State** — move all `let`/`const` state to `state.js`.
-   No logic changes; just relocation.
+### Layer 3 — State
+Extract `state.js` (zero deps), then `defaults.js` (depends on data layer).
+No logic changes — pure relocation.
 
-4. **Engine** — `audio.js`, then `notation.js`.
-   Notation is the riskiest engine file — VexFlow has many call sites.
+**Verify:**
+- Scores reset correctly on New Session
+- Selected pool persists through mode switch
+- pinnedRoot / pinnedOctave affect playback register
 
-5. **Breakdown** — one branch per file. Each branch has a clear `return`
-   so they are fully independent once `showBreakdown()` is the router.
+### Layer 4 — Audio
+Extract `audio.js`. Wire `initAudio` call in `app.js`.
 
-6. **UI + modes + dictionary + app** — finish the split.
+**Verify:**
+- All four play buttons work
+- Block / ascending / descending / broken chord styles all work
+- Replay button works post-answer
+- Progression plays in sequence
+
+### Layer 5 — Notation
+Extract `notation.js` (renderNotation, renderPolyNotation, showNotation router,
+hideNotation, setKeySig, key string helpers).
+`showProgressionNotation` stays in the monolith for now — it moves in Layer 7.
+
+**Verify:**
+- Chord notation renders after answering (all families: normal, slash, poly, UST)
+- Key sig chip changes notation correctly
+- Interval notation shows correct direction
+- Scale notation shows ascending / descending / both
+- VexFlow accidentals correct in all key sigs
+
+### Layer 6 — Breakdown
+Extract one file at a time. `breakdown.js` first (shared helpers + router),
+then each branch. After each file, test that mode's breakdown panel.
+
+**Verify after each file:**
+- Breakdown panel expands after answering
+- All rows render with correct content
+- Progression breakdown shows all chords (BUG-6 regression check)
+- Chord scales section works
+- Voice leading row works
+
+### Layer 7 — UI components + Mode files + Dictionary + App
+This is the largest layer. Extract in order:
+`stats.js` → `controls.js` → `chips.js` → `pool.js` →
+`chords-mode.js` → `intervals-mode.js` → `scales-mode.js` →
+`progressions-mode.js` → `dictionary.js` → `app.js`
+
+**This layer is where the refactoring happens:**
+- Write `makeSection` with `mode` option (replaces makeSection + makeDictSection)
+- Write `setupChordState` / `setupIntervalState` / `setupScaleState`
+- Write unified `renderControls`
+- Write `showCurrentView` on each mode handler
+- Wire `MODE_HANDLERS` map in `app.js`
+
+**Verify after each mode file:**
+- Quiz: question generates, plays, answer scores correctly
+- Dict: item loads immediately, notation and breakdown show without answering
+- Pool panel shows same groups in both modes
+- Slow button works in both modes
+- Resolve button works in both modes (chords)
+- Next button only appears in quiz after answering
+- Inversion chips work in both modes (chords)
+- Key sig chips update notation in both modes
+- Register panel affects both quiz and dict playback
+
+**Full regression after app.js:**
+- All four modes × quiz + dict = 8 combinations work end to end
+- Keyboard shortcuts work (Space, Enter)
+- Theme toggle works
+- Stats panel works
+- New Session resets correctly
+- Mode switch cleans up previous mode DOM
 
 ---
 
-## Things to watch out for
+## Known couplings to watch
 
-**Circular references**
-`state.js` declares variables but imports nothing. Every other file reads
-from state but doesn't re-declare it. Keep this strict — no file in `data/`
-should reference `state.js`.
+**`dictLoadAndShow` mirrors `generateQuestion` state setup**
+Even after extracting `setupChordState`, both paths call the same helper.
+Any new chord family (e.g. Point 42) must add a branch to `setupChordState`
+once — both quiz and dict get it automatically. Do not add family-specific
+logic anywhere else.
 
-**`showBreakdown()` becomes a router**
-In the split, `showBreakdown()` (in `breakdown.js`) calls the per-mode
-functions from the breakdown sub-files. The mode-specific branches move
-out; the router stays.
+**`renderControls` depends on `MODE_HANDLERS`**
+`MODE_HANDLERS` is declared in `app.js` but `controls.js` loads before `app.js`.
+Resolve by declaring `let MODE_HANDLERS = {}` in `state.js` and populating it
+in `app.js` at boot. Then `controls.js` can reference it safely.
+
+**`showNotation` calls `showBreakdown` at its end**
+This is intentional coupling — notation and breakdown always appear together
+post-reveal. If you ever need notation without breakdown (unlikely), extract
+the `showBreakdown()` call to `showCurrentView()` instead.
 
 **VexFlow global**
 VexFlow is loaded via CDN and attaches to `window.Vex`. All notation files
-can reference `Vex` directly — no import needed.
+reference `Vex` directly — no import needed.
 
 **SoundFont / piano global**
-`piano` is declared in `state.js` and assigned in `audio.js` on boot.
-All other files reference the `piano` variable directly.
+`piano` is declared in `state.js`, assigned in `audio.js` on boot.
+All files reference `piano` directly.
 
 **No ES modules**
-We deliberately avoid `import`/`export` (ES modules require a server for
-`file://` local testing and add CORS complexity for GitHub Pages with
-certain CDN setups). Plain `<script>` tags in load order is simpler,
-universally compatible, and sufficient for this codebase size.
+We deliberately avoid `import`/`export`. Plain `<script>` tags in load order
+is simpler, universally compatible, and sufficient for this codebase size.
+`file://` local testing works without a server.
+
+---
+
+## File size estimates
+
+| File | Est. lines | Notes |
+|---|---|---|
+| spelling.js | ~180 | |
+| keysig.js | ~130 | |
+| intervals.js | ~130 | |
+| chords.js | ~220 | CHORD_TYPES alone is ~180 lines |
+| scales.js | ~160 | |
+| progressions.js | ~260 | |
+| state.js | ~60 | Zero deps — primitives only |
+| defaults.js | ~20 | Group 3 state only |
+| audio.js | ~120 | |
+| notation.js | ~200 | showProgressionNotation moved out |
+| breakdown.js | ~100 | Shared helpers + router |
+| breakdown-chords.js | ~200 | |
+| breakdown-intervals.js | ~80 | |
+| breakdown-scales.js | ~130 | |
+| breakdown-progressions.js | ~120 | |
+| pool.js | ~180 | Unified makeSection replaces 6 functions |
+| chips.js | ~150 | |
+| stats.js | ~80 | |
+| controls.js | ~100 | Unified renderControls |
+| chords-mode.js | ~200 | Includes setupChordState + _setup helpers |
+| intervals-mode.js | ~80 | |
+| scales-mode.js | ~80 | |
+| progressions-mode.js | ~220 | Includes showProgressionNotation |
+| dictionary.js | ~80 | Thin coordinator only |
+| app.js | ~150 | MODE_HANDLERS + boot + event listeners |
+| **Total JS** | **~3,430** | vs ~5,800 JS lines in monolith |
+| CSS (3 files) | ~720 | Same total, better organised |
+| index.html (shell) | ~60 | |
+| **Grand total** | **~4,210** | vs 6,520 currently |
 
 ---
 
 ## What this unlocks
 
 - **Bug fixes are local** — `breakdown-progressions.js` is the only file
-  that touches progression breakdown logic. No hunting through 6,500 lines.
-- **Point 42 (chord library)** — add new entries to `chords.js` only.
-- **Point 41 (voicing system)** — add to `audio.js` + `chips.js` only.
-- **Point 37 (voice leading)** — `breakdown-chords.js` + `audio.js` only.
-- **New modes** — add `js/modes/newmode-mode.js` and wire it in `app.js`.
-- **Patch files** — every future fix is a direct edit to the right file,
-  not a patch against a moving monolith.
+  that touches progression breakdown. No hunting through 6,500 lines.
+- **New chord families** — add to `chords.js` + one branch in `setupChordState`.
+  Quiz and dict get it automatically.
+- **New modes** — add `js/modes/newmode-mode.js`, add to `MODE_HANDLERS`,
+  add a pool render branch in `pool.js`.
+- **Pool panel changes** — edit `makeSection` once, affects both quiz and dict.
+- **Controls changes** — edit `renderControls` once, affects both modes.
