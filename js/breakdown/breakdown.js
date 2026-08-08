@@ -396,15 +396,13 @@ function makeBDRow(panel, label, content) {
   panel.appendChild(row);
 }
 
-// Reuses the existing cs-section/cs-header/cs-body/cs-arrow CSS.
-// label: text shown on the toggle header row.
-// open: start expanded (default false).
-// Returns { section, body } — append section to panel, append rows to body.
+// Reuses existing cs-section/cs-header/cs-body/cs-arrow CSS — no new styles needed.
+// label: text on the toggle header. open: start expanded.
+// Returns { section, body } — append section to panel, rows go into body.
 function makeCSGroup(label, open = false) {
   const section = document.createElement('div');
   section.className = 'cs-section';
-  section.style.marginTop = '0.35rem';
-  section.style.marginBottom = '0.35rem';
+  section.style.margin = '0.35rem 0';
 
   const hdr = document.createElement('div');
   hdr.className = 'cs-header';
@@ -421,6 +419,7 @@ function makeCSGroup(label, open = false) {
 
   const body = document.createElement('div');
   body.className = open ? 'cs-body open' : 'cs-body';
+  body.style.padding = '0.4rem 0.625rem';
 
   hdr.addEventListener('click', () => {
     const isOpen = body.classList.toggle('open');
@@ -429,7 +428,6 @@ function makeCSGroup(label, open = false) {
 
   section.appendChild(hdr);
   section.appendChild(body);
-
   return { section, body };
 }
 
@@ -774,8 +772,8 @@ function computeVoiceLeading(sourceMidi, targetMidi) {
   });
 }
 
-// Add "Resolves to" row to breakdown panel (always shown for chords)
-function makeVoiceLeadingRow(panel) {
+// Render voice leading content into a container (body of the Voice leading collapsible)
+function makeVoiceLeadingRow(container) {
   const info = getResolutionInfo();
   if (!info) return;
 
@@ -788,24 +786,13 @@ function makeVoiceLeadingRow(panel) {
 
   const vl = computeVoiceLeading(sourceMidi, info.targetMidi);
 
-  const rowWrap = document.createElement('div');
-  rowWrap.className = 'breakdown-row';
-
-  const keyEl = document.createElement('span');
-  keyEl.className = 'breakdown-key';
-  keyEl.textContent = 'Resolves to';
-  rowWrap.appendChild(keyEl);
-
-  const valEl = document.createElement('span');
-  valEl.className = 'breakdown-val';
-  valEl.style.flex = '1';
-
   // Target chord name + direction label
   const nameEl = document.createElement('div');
   nameEl.style.fontWeight = '600';
   nameEl.style.marginBottom = '0.3rem';
+  nameEl.style.fontSize = '0.875rem';
   nameEl.textContent = info.targetName + '  ' + info.label;
-  valEl.appendChild(nameEl);
+  container.appendChild(nameEl);
 
   // Voice leading table
   const tbl = document.createElement('table');
@@ -826,10 +813,7 @@ function makeVoiceLeadingRow(panel) {
     tr.appendChild(tdRole);
     tbl.appendChild(tr);
   });
-  valEl.appendChild(tbl);
-
-  rowWrap.appendChild(valEl);
-  panel.appendChild(rowWrap);
+  container.appendChild(tbl);
 }
 
 // ─── POINT 37: Resolve → button logic ────────────────────────────────────────
@@ -1570,16 +1554,19 @@ function showBreakdown() {
     hdr.textContent = iName + ': ' + n0 + ' \u2192 ' + n1;
     panel.appendChild(hdr);
 
+    // Detail rows — collapsible, closed by default
+    const { section: intSec, body: intBody } = makeCSGroup('Detail', false);
+    panel.appendChild(intSec);
+
     // Semitones
-    makeBDRow(panel, 'Semitones', semi + ' semitone' + (semi === 1 ? '' : 's'));
+    makeBDRow(intBody, 'Semitones', semi + ' semitone' + (semi === 1 ? '' : 's'));
 
     // Degree numeral
     const numeral = SEMITONE_TO_NUMERAL[semi] || '—';
-    makeBDRow(panel, 'Degree', numeral);
+    makeBDRow(intBody, 'Degree', numeral);
 
     // Inversion (complement to P8) — only meaningful for simple intervals
     if (currentInterval.compound) {
-      // POINT 39: compound intervals — show simple equivalent instead
       const simpleSemi = semi - 12;
       const simpleName = INTERVAL_INVERSION_NAME[12 - simpleSemi] !== undefined
         ? ({ 1:'Minor 2nd', 2:'Major 2nd', 3:'Minor 3rd', 4:'Major 3rd', 5:'Perfect 4th',
@@ -1587,26 +1574,26 @@ function showBreakdown() {
              9:'Major 6th', 10:'Minor 7th', 11:'Major 7th', 12:'Octave' })[simpleSemi] || '—'
         : '—';
       const simpleNumeral = SEMITONE_TO_NUMERAL[simpleSemi] || '—';
-      makeBDRow(panel, 'Simple equivalent', simpleName + ' (' + simpleNumeral + ', ' + simpleSemi + ' semitones)');
+      makeBDRow(intBody, 'Simple equivalent', simpleName + ' (' + simpleNumeral + ', ' + simpleSemi + ' semitones)');
     } else {
       const invSemi = INTERVAL_INVERSION_SEMITONES[semi];
       if (invSemi !== undefined) {
         const invName    = INTERVAL_INVERSION_NAME[semi] || '—';
         const invNumeral = SEMITONE_TO_NUMERAL[invSemi] || '—';
-        makeBDRow(panel, 'Inverts to', invName + ' (' + invNumeral + ') — ' + invSemi + ' semitone' + (invSemi === 1 ? '' : 's'));
+        makeBDRow(intBody, 'Inverts to', invName + ' (' + invNumeral + ') — ' + invSemi + ' semitone' + (invSemi === 1 ? '' : 's'));
       }
     }
 
     // Consonance
     const cons = INTERVAL_CONSONANCE[semi];
-    if (cons) makeBDRow(panel, 'Consonance', cons);
+    if (cons) makeBDRow(intBody, 'Consonance', cons);
 
-    // Common context — context-aware for ambiguous semitone counts
+    // Common context
     let ctx = INTERVAL_CONTEXT[semi];
     if (semi === 8 && EIGHT_AS_A5.has(sym)) ctx = 'root→A5 (augmented 5th); enharmonic ♭6th';
     if (semi === 9 && NINE_AS_D7.has(sym))  ctx = 'root→°7 (diminished 7th); enharmonic M6';
     if (semi === 6 && TRITONE_AS_D5.has(sym)) ctx = 'root→d5 (diminished 5th); the "devil\'s interval"';
-    if (ctx) makeBDRow(panel, 'Context', ctx);
+    if (ctx) makeBDRow(intBody, 'Context', ctx);
 
     panel.style.display = 'block';
     document.getElementById('breakdownWrapper').style.display = 'block';
@@ -1632,7 +1619,7 @@ function showBreakdown() {
     hdr.textContent = rootName + ' ' + (currentScale.displayName || currentScale.name); // POINT 27
     panel.appendChild(hdr);
 
-    // ── Main row group (open by default) ───────────────────────────────────
+    // ── Main group (open) ────────────────────────────────────────────────────
     const { section: scaleSec, body: scaleBody } = makeCSGroup('Notes', true);
     panel.appendChild(scaleSec);
 
@@ -1691,16 +1678,20 @@ function showBreakdown() {
     }
     if (allWH) makeBDRow(scaleBody, 'Steps', joinSep(wh));
 
-    // ── POINT 22 enrichment ──────────────────────────────────────────────────
+    // ── POINT 22 enrichment — all closed ─────────────────────────────────────
     addDivider();
 
-    // Triad map (7-note scales only)
+    // Triad map (closed)
     if (is7Note) {
       const triadMap = computeTriadMap(currentScale.intervals, sym, rootPc);
-      if (triadMap) makeBDRow(panel, 'Triad map', joinSep(triadMap));
+      if (triadMap) {
+        const { section: tmSec, body: tmBody } = makeCSGroup('Triad map', false);
+        panel.appendChild(tmSec);
+        makeBDRow(tmBody, 'Triad map', joinSep(triadMap));
+      }
     }
 
-    // Modal character (closed by default)
+    // Character (closed)
     const char = SCALE_CHARACTER[sym];
     if (char) {
       const { section: charSec, body: charBody } = makeCSGroup('Character', false);
@@ -1708,13 +1699,15 @@ function showBreakdown() {
       makeBDRow(charBody, 'Character', char);
     }
 
-    // Parent scale (always visible)
+    // Parent (closed)
     const modalInfo = SCALE_MODAL_PARENT[sym];
     if (modalInfo) {
-      makeBDRow(panel, 'Parent', ordinal(modalInfo.degree) + ' mode of ' + modalInfo.parent);
+      const { section: parSec, body: parBody } = makeCSGroup('Parent', false);
+      panel.appendChild(parSec);
+      makeBDRow(parBody, 'Parent', ordinal(modalInfo.degree) + ' mode of ' + modalInfo.parent);
     }
 
-    // POINT 47: Harmonic field
+    // POINT 47: Harmonic field (already has its own cs-section internally, closed)
     addDivider();
     makeHarmonicFieldRow(panel, currentScale.intervals, currentScaleRootMidi, sym);
 
@@ -1755,32 +1748,43 @@ function showBreakdown() {
         return spelledNote(semi, chordRootPc, qualSym);
       });
 
-      // Chord header acts as the cs-section toggle trigger
-      const { section: chordSec, body: chordBody } = makeCSGroup('', false);
+      // Build cs-section with custom header showing degree + chord name
+      const section = document.createElement('div');
+      section.className = 'cs-section';
+      section.style.margin = '0.35rem 0';
 
-      // Replace the cs-header content with degree label + chord name
-      const chordHdr = chordSec.querySelector('.cs-header');
-      const arrow = chordHdr.querySelector('.cs-arrow');
-      chordHdr.innerHTML = ''; // clear default text node
+      const chordHdr = document.createElement('div');
+      chordHdr.className = 'cs-header';
+      chordHdr.style.cursor = 'pointer';
+
       const degLabel = document.createElement('span');
-      degLabel.style.cssText = 'color:var(--accent); margin-right:0.5rem;';
+      degLabel.style.cssText = 'color:var(--accent); margin-right:0.5rem; font-weight:700;';
       degLabel.textContent = degObj.label;
+
       const nameLabel = document.createElement('span');
       nameLabel.style.flex = '1';
       nameLabel.textContent = chordRootName + ' ' + qualityFullName(qualSym);
-      const newArrow = document.createElement('span');
-      newArrow.className = 'cs-arrow';
-      newArrow.textContent = '▸';
+
+      const arrow = document.createElement('span');
+      arrow.className = 'cs-arrow';
+      arrow.textContent = '▸';
+
       chordHdr.appendChild(degLabel);
       chordHdr.appendChild(nameLabel);
-      chordHdr.appendChild(newArrow);
-      // Re-bind click with new arrow ref
+      chordHdr.appendChild(arrow);
+
+      const chordBody = document.createElement('div');
+      chordBody.className = 'cs-body';
+      chordBody.style.padding = '0.4rem 0.625rem';
+
       chordHdr.addEventListener('click', () => {
         const isOpen = chordBody.classList.toggle('open');
-        newArrow.textContent = isOpen ? '▾' : '▸';
+        arrow.textContent = isOpen ? '▾' : '▸';
       });
 
-      panel.appendChild(chordSec);
+      section.appendChild(chordHdr);
+      section.appendChild(chordBody);
+      panel.appendChild(section);
 
       makeBDRow(chordBody, 'Notes', joinSep(noteNames));
 
@@ -2022,27 +2026,51 @@ function showBreakdown() {
     ? ' \u2014 ' + ['','1st inv','2nd inv','3rd inv','4th inv'][invIndex]
     : '';
 
+  // ── Collapsible header: chord name acts as the main group toggle ─────────
   const hdr = document.createElement('div');
   hdr.className = 'breakdown-header';
-  hdr.textContent = rootName + '\u00a0' + baseChord.name + invLabel;
+  hdr.style.cursor = 'pointer';
+  hdr.style.userSelect = 'none';
+  hdr.style.display = 'flex';
+  hdr.style.justifyContent = 'space-between';
+  hdr.style.alignItems = 'center';
+
+  const hdrLeft = document.createElement('span');
+  hdrLeft.textContent = rootName + '\u00a0' + baseChord.name + invLabel;
   if (fb) {
     const sup = document.createElement('span');
     sup.className = 'breakdown-figured';
     sup.textContent = fb;
-    hdr.appendChild(sup);
+    hdrLeft.appendChild(sup);
   }
+  const hdrArrow = document.createElement('span');
+  hdrArrow.className = 'cs-arrow';
+  hdrArrow.textContent = '▾';
+  hdrArrow.style.fontSize = '0.75rem';
+
+  hdr.appendChild(hdrLeft);
+  hdr.appendChild(hdrArrow);
   panel.appendChild(hdr);
+
+  // ── Main group body (open by default) ────────────────────────────────────
+  const mainBody = document.createElement('div');
+  mainBody.className = 'cs-body open';
+  mainBody.style.padding = '0.4rem 0 0';
+  mainBody.style.borderTop = 'none';
+
+  hdr.addEventListener('click', () => {
+    const isOpen = mainBody.classList.toggle('open');
+    hdrArrow.textContent = isOpen ? '▾' : '▸';
+  });
+
+  panel.appendChild(mainBody);
 
   // POINT 23: Voicing mode label (only shown when not Full)
   if (currentVoicingMode && currentVoicingMode !== 'full') {
     const voicingLabels = { real:'Real (no P5)', shell:'Shell (R+3+7)', guide:'Guide tones (3+7)' };
     const vLabel = voicingLabels[currentVoicingMode] || currentVoicingMode;
-    makeBDRow(panel, 'Voicing', vLabel);
+    makeBDRow(mainBody, 'Voicing', vLabel);
   }
-
-  // ── Main row group (open by default) ─────────────────────────────────────
-  const { section: mainSec, body: mainBody } = makeCSGroup('Notes', true);
-  panel.appendChild(mainSec);
 
   // Notes as voiced, bass first
   const voicedMidi = [...currentMidiNotes].sort((a, b) => a - b);
@@ -2083,72 +2111,83 @@ function showBreakdown() {
     makeBDRow(mainBody, 'From ' + bassName, reName);
   }
 
-  // ── POINT 22: Family-dispatched theory rows (into main group) ────────────
-  // ── DOMINANT 7TH FAMILY ──────────────────────────────────────────────────
-  if (family === 'dominant' && (sym === '7' || sym === '7_9' || sym === '7_b9' || sym === '7_s9' || sym === '7_13' || sym === '7_9_13')) {
-    const { subName, iiName, resMaj, resMin } = computeTritoneSubInfo(rootPc, sym);
-    makeBDRow(mainBody, 'Tritone sub', subName);
-    makeBDRow(mainBody, 'Related ii', iiName);
-    makeBDRow(mainBody, 'Resolves to', resMaj + ' or ' + resMin);
-  }
+  // ── POINT 22: Family-dispatched theory rows — each in its own collapsible ─
 
-  // ── DIMINISHED FAMILY ────────────────────────────────────────────────────
-  if (sym === 'o7') {
-    const enharmonics = computeDimEnharmonics(rootPc, sym);
-    makeBDRow(mainBody, 'Enharmonic', joinSep(enharmonics));
-    const domSubs = computeDimDomSubs(rootPc, sym);
-    makeBDRow(mainBody, 'Dom7♭9 subs', joinSep(domSubs));
-  }
-  if (sym === 'm7b5') {
-    const { minKeyName, v7Name } = computeHalfDimContext(rootPc, sym);
-    makeBDRow(mainBody, 'Function', 'ii\u00f8 in ' + minKeyName + ' minor');
-    makeBDRow(mainBody, 'Related V7', v7Name);
-  }
-  if (sym === 'dim') {
-    makeBDRow(mainBody, 'Note', 'Diminished triad — often functions as rootless dom7♭9');
-  }
-
-  // ── AUGMENTED FAMILY ─────────────────────────────────────────────────────
-  if (sym === 'aug') {
-    const enharmonics = computeAugEnharmonics(rootPc, sym);
-    makeBDRow(mainBody, 'Enharmonic', joinSep(enharmonics));
-    makeBDRow(mainBody, 'Note', 'Symmetrical — divides the octave into three equal M3rds');
-  }
-
-  // ── SUSPENDED / POWER ────────────────────────────────────────────────────
-  if (sym === 'sus2' || sym === 'sus4') {
-    const res = computeSusResolution(rootPc, sym, sym);
-    if (res) makeBDRow(mainBody, 'Resolution', res);
-    makeBDRow(mainBody, 'Note', 'No 3rd — quality (major/minor) is ambiguous until resolved');
-  }
-  if (sym === 'power') {
-    makeBDRow(mainBody, 'Note', 'No 3rd or 7th — harmonically open; major or minor context depends on melody');
-  }
-
-  // ── POINT 22: Divider then Neo-tonal + chord scales + voice leading ───────
-  addDivider();
-
-  // ── TRIADS → Neo-tonal (closed by default) ───────────────────────────────
+  // ── TRIADS (major / minor) → Neo-tonal (closed) ──────────────────────────
   const isMajorTriad = sym === 'maj';
   const isMinorTriad = sym === 'm';
   if (isMajorTriad || isMinorTriad) {
     const quality   = isMajorTriad ? 'major' : 'minor';
     const relations = computeRiemannRelations(rootPc, quality, sym);
-    const { section: neoSec, body: neoBody } = makeCSGroup('Neo-tonal', false);
-    panel.appendChild(neoSec);
-    makeRiemannRow(neoBody, relations);
+    const { section: ntSec, body: ntBody } = makeCSGroup('Neo-tonal', false);
+    panel.appendChild(ntSec);
+    makeRiemannRow(ntBody, relations);
   }
 
-  // POINT 36: Chord scales
+  // ── DOMINANT 7TH FAMILY → Dominant (closed) ──────────────────────────────
+  if (family === 'dominant' && (sym === '7' || sym === '7_9' || sym === '7_b9' || sym === '7_s9' || sym === '7_13' || sym === '7_9_13')) {
+    const { subName, iiName, resMaj, resMin } = computeTritoneSubInfo(rootPc, sym);
+    const { section: domSec, body: domBody } = makeCSGroup('Dominant', false);
+    panel.appendChild(domSec);
+    makeBDRow(domBody, 'Tritone sub', subName);
+    makeBDRow(domBody, 'Related ii', iiName);
+    makeBDRow(domBody, 'Resolves to', resMaj + ' or ' + resMin);
+  }
+
+  // ── DIMINISHED FAMILY → Diminished (closed) ──────────────────────────────
+  if (sym === 'o7') {
+    const enharmonics = computeDimEnharmonics(rootPc, sym);
+    const domSubs = computeDimDomSubs(rootPc, sym);
+    const { section: dimSec, body: dimBody } = makeCSGroup('Diminished', false);
+    panel.appendChild(dimSec);
+    makeBDRow(dimBody, 'Enharmonic', joinSep(enharmonics));
+    makeBDRow(dimBody, 'Dom7♭9 subs', joinSep(domSubs));
+  }
+  if (sym === 'm7b5') {
+    const { minKeyName, v7Name } = computeHalfDimContext(rootPc, sym);
+    const { section: hdSec, body: hdBody } = makeCSGroup('Half-dim', false);
+    panel.appendChild(hdSec);
+    makeBDRow(hdBody, 'Function', 'ii\u00f8 in ' + minKeyName + ' minor');
+    makeBDRow(hdBody, 'Related V7', v7Name);
+  }
+  if (sym === 'dim') {
+    const { section: dSec, body: dBody } = makeCSGroup('Diminished', false);
+    panel.appendChild(dSec);
+    makeBDRow(dBody, 'Note', 'Diminished triad — often functions as rootless dom7♭9');
+  }
+
+  // ── AUGMENTED FAMILY → Augmented (closed) ────────────────────────────────
+  if (sym === 'aug') {
+    const enharmonics = computeAugEnharmonics(rootPc, sym);
+    const { section: augSec, body: augBody } = makeCSGroup('Augmented', false);
+    panel.appendChild(augSec);
+    makeBDRow(augBody, 'Enharmonic', joinSep(enharmonics));
+    makeBDRow(augBody, 'Note', 'Symmetrical — divides the octave into three equal M3rds');
+  }
+
+  // ── SUSPENDED / POWER → Suspended / Power (closed) ───────────────────────
+  if (sym === 'sus2' || sym === 'sus4') {
+    const res = computeSusResolution(rootPc, sym, sym);
+    const { section: susSec, body: susBody } = makeCSGroup('Suspended', false);
+    panel.appendChild(susSec);
+    if (res) makeBDRow(susBody, 'Resolution', res);
+    makeBDRow(susBody, 'Note', 'No 3rd — quality (major/minor) is ambiguous until resolved');
+  }
+  if (sym === 'power') {
+    const { section: pwrSec, body: pwrBody } = makeCSGroup('Power', false);
+    panel.appendChild(pwrSec);
+    makeBDRow(pwrBody, 'Note', 'No 3rd or 7th — harmonically open; major or minor context depends on melody');
+  }
+
+  // POINT 36: Chord scales — normal chords (already collapsible internally)
   {
     const allPcs = new Set(currentMidiNotes.map(m => ((m % 12) + 12) % 12));
     makeChordScalesRow(panel, rootPc, allPcs);
   }
 
-  // POINT 37: Voice leading (closed by default) ─────────────────────────────
-  addDivider();
+  // POINT 37: Voice leading (closed)
   {
-    const { section: vlSec, body: vlBody } = makeCSGroup('Resolves to', false);
+    const { section: vlSec, body: vlBody } = makeCSGroup('Voice leading', false);
     panel.appendChild(vlSec);
     makeVoiceLeadingRow(vlBody);
   }
