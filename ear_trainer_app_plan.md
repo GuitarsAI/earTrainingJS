@@ -1,5 +1,10 @@
 # The Sound Travels Ear Trainer — App Plan & Status
 
+> **Algorithm plan:** The voice leading & resolution algorithm (Point 37, Option B) is fully
+> specced in a separate document: `voice_leading_algorithm_plan.md`. Read that document before
+> implementing any part of Point 37. This app plan covers the UI spec and integration points;
+> the algorithm document covers the data layer, build order, and all logic decisions.
+
 ---
 
 ## Changelog
@@ -221,7 +226,25 @@ All items confirmed done by reading `js/modes/progressions-mode.js`:
 
 ### Point 37 — Voice leading panel (redesign)
 
-#### Status: Partially implemented — current code works but uses naive nearest-note algorithm
+#### Status: Partially implemented — redesign specced and algorithm planned
+
+> ⚠️ **See `voice_leading_algorithm_plan.md` for the full algorithm spec before implementing.**
+> That document covers: what exists and can be reused, what must be replaced, the 7-step
+> pipeline, the constraint satisfaction voice leading model, the build order, and all
+> data structures. This section covers the UI spec and integration points only.
+
+**Option B chosen** (full algorithmic context discovery) over Option A (targeted fix), because:
+- `SCALES` and `CHORD_TYPES` in `chords.js` are already the exact primitives needed
+- `getChordScales()` already does partial context discovery — Option B extends it
+- Richer output (all contexts, all resolutions, reason codes) fits the educational mission
+
+**What the algorithm replaces:**
+- `RESOLUTION_TARGETS` — hardcoded lookup table → replaced by `deriveResolutionTargets()` in new `js/engine/voiceLeading.js`
+- Proximity loop in `computeVoiceLeading()` → replaced by 7-rule constraint satisfaction engine
+- `getResolutionInfo()` → updated to call new engine instead of lookup table
+
+**What the algorithm extends:**
+- `getChordScales()` → extended into `findDiatonicContexts()` (adds scale degree, Roman numeral, function, tension; iterates all 12 roots × all 25 SCALES, not just chord's own root)
 
 The current implementation has `RESOLUTION_TARGETS` (lookup table), `computeVoiceLeading()`
 (nearest-note algorithm), `makeVoiceLeadingRow()`, and `playResolution()` all working. The
@@ -239,50 +262,28 @@ redesign below replaces the resolution algorithm and adds an interactive multi-r
 Tighten to **1.2s source + 0.3s pause** in `playResolution()`. Simple constant change.
 
 #### Resolution targets — hybrid algorithm
-Replace `RESOLUTION_TARGETS` with an algorithmic approach, keeping the table only for
-exotic/ambiguous cases:
+> **Full spec in `voice_leading_algorithm_plan.md` § Steps 3–5.**
 
-**Algorithm (runs first):**
-1. Detect the **tritone** in the chord — its two notes have unambiguous tendencies
-   (augmented 4th expands outward, diminished 5th contracts inward) and directly imply the
-   resolution root
-2. If no tritone, find the **strongest dissonance** present and resolve accordingly
-3. Fall back to conventional harmonic motion (P4 up for dominant function) if no clear
-   tension is found
+Replace `RESOLUTION_TARGETS` with `findDiatonicContexts()` + `deriveResolutionTargets()`.
+The algorithm finds all contexts (all 12 roots × all 25 SCALES), derives resolution targets
+from functional harmony rules (not a table), and returns multiple ranked resolutions per context.
 
-**Lookup table (exception whitelist only):**
-- Augmented chords (three enharmonically equal resolutions — algorithm can't pick one)
-- Polychords and USTs (no single clear resolution target)
-- Sus chords (tension ambiguous by design)
-- Power chords (no harmonic information)
-- Any case where the algorithm produces a musically wrong result
-
-New chord types get reasonable voice leading automatically without touching the table.
+A small exception whitelist covers genuinely ambiguous cases (augmented chords, sus, power,
+polychords) — see algorithm plan § 6 Edge Cases for the full list and rationale.
 
 #### Voice leading — constraint satisfaction model
-Replace nearest-note-only with a **constraint satisfaction** approach:
+> **Full spec in `voice_leading_algorithm_plan.md` § Step 6.**
 
-**Hard constraints (must satisfy):**
-- Leading tone (e.g. B in G7) **must rise** by m2 to the tonic
-- Chordal 7th (e.g. F in G7) **must fall** by m2
-- No two voices resolve to the same pitch class unless doubling rules permit it
-- Avoid doubling the 3rd of the target chord; prefer doubling the root
+Replace the nearest-note proximity loop with a 7-rule constraint satisfaction engine.
+Hard constraints (leading tone must rise, chordal 7th must fall, no unison collision, avoid
+doubling the 3rd) are satisfied first. Soft constraints (tritone inward, common tones,
+stepwise motion, contrary motion) are scored and the best assignment chosen.
 
-**Soft constraints (scored and minimised):**
-- Total semitone motion across all voices (prefer minimal movement)
-- Parallel 5ths and octaves (penalise)
-- Poor doublings (penalise)
-
-The assignment with the best score after satisfying hard constraints is chosen.
-
-**Example — G7 → C major (correct voice leading):**
+**Correct example — G7 → C major:**
 ```
-B  → C   (m2 ↑  — leading tone, hard constraint)
-F  → E   (m2 ↓  — chordal 7th, hard constraint)
-G  → G   (common tone)
-D  → E or G  (flexible — complete the chord, avoid doubling 3rd)
+B → C  (leading tone, hard)    F → E  (chordal 7th, hard)
+G → G  (common tone, soft)     D → E  (stepwise, soft — NOT D→C which was the old wrong answer)
 ```
-The current code incorrectly moves D → C (nearest note) rather than D → E or G.
 
 #### Multiple resolutions — interactive UI
 Show **all plausible resolution options** ranked by commonality. The most common one plays
@@ -428,7 +429,7 @@ most voicings. Additional chord types may be added incrementally if specific voi
 ## Recommended implementation order
 
 1. **Point 48 — Collapsible breakdown sub-sections** (self-contained, affects chords + scales only)
-   - Do this first as it restructures the breakdown panel that Point 47 will add into
+   - Do this first as it restructures the breakdown panel that Point 47 and 37 will add into
 
 2. **Point 47 — Harmonic field in scale breakdown** (depends on Point 48 structure being in place)
 
@@ -436,10 +437,15 @@ most voicings. Additional chord types may be added incrementally if specific voi
    - Add click handlers to scale name elements in `makeChordScalesRow()` in `breakdown.js`
    - Wire to mode/tab switching in `app.js`
 
-4. **Point 37 — Voice leading redesign** (largest remaining feature, well-specced)
-   - Timing fix (trivial — two constant changes)
-   - Constraint satisfaction voice leading algorithm
-   - Multiple resolution UI with interactive chips
+4. **Point 37 — Voice leading redesign** (Option B — full algorithmic context discovery)
+   > **Read `voice_leading_algorithm_plan.md` before starting any of these steps.**
+   - **Step 1:** Timing fix — trivial, two constant changes in `playResolution()`
+   - **Step 2:** Write `js/engine/voiceLeading.js` — pure logic, no UI
+     - `findDiatonicContexts()` first (extends `getChordScales()`, iterates all 12 roots × SCALES)
+     - `deriveResolutionTargets()` (replaces RESOLUTION_TARGETS)
+     - `computeVoiceLeadingRules()` (replaces proximity loop)
+   - **Step 3:** Wire to UI — `makeVoiceLeadingRow()` consumes new data, renders resolution pills
+   - **Step 4:** BUG-5 fix (fragile two-chord VexFlow layout) — defer unless confirmed broken
 
 5. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first; superseded in scope by Point 46 — implement 41 first as a foundation, then extend with 46)
 
