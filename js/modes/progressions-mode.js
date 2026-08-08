@@ -86,7 +86,7 @@ function generateProgressionQuestion() {
   document.getElementById('playLabel').textContent = 'Play progression';
   document.getElementById('playBtn').disabled = false;
   document.getElementById('chordHint').textContent = '';
-  updateRootBadge(showRoot ? NOTE_NAMES[pc] : null);
+  updateRootBadge(showRoot ? spelledRoot(pc) : null); // FIX-3: use spelledRoot for correct flat/sharp spelling
 
   renderProgressionAnswerUI();
 }
@@ -329,9 +329,12 @@ function showProgressionNotation() {
     const midiNotes     = intervals.map(iv => chordRootMidi + iv);
     const degObj        = PROG_DEGREES.find(d => d.semi === degSemis)  || { label: '?' };
     const qualObj       = PROG_QUALITIES.find(q => q.sym === qualSym)  || { label: qualSym };
-    const rootName      = spelledRoot(chordRootPc);
+    const rootName        = spelledRoot(chordRootPc);
+    // FIX-2: full chord name reuses ct.name (display-ready from CHORD_TYPES).
+    // Major triads conventionally omit the quality suffix (G not Gmaj).
+    const chordDisplayName = rootName + (ct && ct.name !== 'maj' ? ct.name : '');
     return { degSemis, qualSym, chordRootMidi, chordRootPc, midiNotes,
-             degLabel: degObj.label, qualLabel: qualObj.label, rootName };
+             degLabel: degObj.label, qualLabel: qualObj.label, rootName, chordDisplayName };
   });
 
   // ── Clef decision: union of all MIDI notes across whole progression ───────────
@@ -458,18 +461,22 @@ function showProgressionNotation() {
       voice.draw(ctx, bassStave);
     }
 
-    // ── Chord labels above the stave: "V 7" / "G dom" ──────────────────────────
-    // x positions come from the formatted tickables on the treble (or bass) stave.
-    // We compute evenly-spaced positions since VexFlow doesn't expose tickable x
-    // positions easily after formatting with BarNotes mixed in.
-    const labelY   = (needsTreble || grandStaff) ? trebleY - 4 : bassY - 4;
-    const slotW    = formatterBudget / numChords;
+    // ── Chord labels above the stave ─────────────────────────────────────────────
+    // Two lines per chord slot:
+    //   Upper line (prominent): Roman numeral + quality, e.g. "V 7"  — what the mode teaches
+    //   Lower line (teal):      Full chord name, e.g. "G7"           — real-world anchor
+    // FIX-1: label order swapped so Roman numeral is the dominant upper element.
+    // FIX-2: lower line now shows chordDisplayName (e.g. "G7") not bare rootName ("G").
+    // x positions are evenly spaced since VexFlow doesn't expose tickable x positions
+    // easily after formatting with BarNotes mixed in.
+    const labelY = (needsTreble || grandStaff) ? trebleY - 4 : bassY - 4;
+    const slotW  = formatterBudget / numChords;
     chords.forEach((chord, i) => {
       const x = STAVE_X + headerPx + i * slotW + slotW / 2;
-      // Line 1: degree + quality (e.g. "V 7")
+      // Upper line: Roman numeral + quality (e.g. "V 7") — bold, prominent
       const t1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       t1.setAttribute('x', x);
-      t1.setAttribute('y', labelY);
+      t1.setAttribute('y', labelY - 13);
       t1.setAttribute('text-anchor', 'middle');
       t1.setAttribute('font-size', '11');
       t1.setAttribute('font-family', 'Inter, Arial, sans-serif');
@@ -477,15 +484,15 @@ function showProgressionNotation() {
       t1.setAttribute('fill', 'currentColor');
       t1.textContent = chord.degLabel + ' ' + chord.qualLabel;
       svg.appendChild(t1);
-      // Line 2: root name (e.g. "G")
+      // Lower line: full chord name (e.g. "G7") — smaller, teal
       const t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       t2.setAttribute('x', x);
-      t2.setAttribute('y', labelY - 14);
+      t2.setAttribute('y', labelY);
       t2.setAttribute('text-anchor', 'middle');
       t2.setAttribute('font-size', '10');
       t2.setAttribute('font-family', 'Inter, Arial, sans-serif');
-      t2.setAttribute('fill', 'var(--accent, #2a9d8f)');
-      t2.textContent = chord.rootName;
+      t2.setAttribute('fill', 'var(--accent, #4a9e8e)');
+      t2.textContent = chord.chordDisplayName;
       svg.appendChild(t2);
     });
 

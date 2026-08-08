@@ -1,530 +1,437 @@
-# The Sound Travels Ear Trainer — Tutorial Series Plan
-
-A complete, build-from-scratch tutorial series for music technology students.
-Students have basic HTML knowledge. No prior JavaScript or advanced music theory assumed.
-Every part ends with working, listenable, playable code.
+# The Sound Travels Ear Trainer — App Plan & Status
 
 ---
 
-## Overall Philosophy
+## Changelog
 
-Each section follows a consistent four-beat structure:
-
-1. **Music theory** — explain the concept in plain language with real musical examples
-2. **Why in code** — explain what we are about to build and why we structure it this way
-3. **The code** — heavily commented, runnable cells, editable by the student
-4. **Reflection** — what to notice, what to change, what to listen for
-
-Parts may be split into Part A and Part B if the content is too large.
-The split points are marked below where this is likely.
-
----
-
-## Part 1 — The Language of Pitch
-
-**Music theory covered:** The octave, the piano keyboard, white and black keys,
-note names (A–G), sharps and flats, enharmonic equivalents (C# = Db),
-the chromatic scale, what a semitone is.
-
-**Code covered:** What JavaScript is and where it runs, the `<script>` tag,
-`console.log`, variables (`const`, `let`), strings, numbers, arrays,
-array indexing, the modulo operator `%` and why it models the octave perfectly,
-the `NOTE_NAMES` array, writing a first `midiToName()` function.
-
-**HTML/CSS covered:** Refresher on the HTML document structure, `<!DOCTYPE html>`,
-`<head>` and `<body>`, linking Google Fonts, the `<style>` block vs external CSS,
-`box-sizing: border-box`, the CSS reset pattern, `font-family` stack.
-
-**Ends with:** A working cell that prints every note name with its pitch-class number,
-and a function that converts any MIDI number to a human-readable note name like `C4` or `A#3`.
-
----
-
-## Part 2 — Intervals: The Distance Between Notes
-
-**Music theory covered:** What an interval is, why intervals matter more than
-individual notes, all 12 intervals from minor 2nd to octave, consonance vs dissonance,
-the difference between harmonic (simultaneous) and melodic (sequential) intervals,
-how interval names work (quality + number: Major 3rd, Perfect 5th, etc.),
-the tritone and why it is special, common musical contexts for each interval
-(e.g. Perfect 4th in "Here Comes the Bride", Minor 2nd in the Jaws theme).
-
-**Code covered:** Arrays of objects (the `INTERVALS` data structure), object properties
-(`.name`, `.symbol`, `.semitones`), `forEach`, `find`, arrow functions, template literals,
-writing a function that takes two MIDI notes and returns the interval name between them.
-
-**HTML/CSS covered:** CSS custom properties (`--accent`, `--text`, etc.) — what they are,
-why they exist, how `var()` works, scoping to `:root`. Introduction to the app's
-colour palette and design token system.
-
-**Ends with:** A runnable cell that, given any two MIDI numbers, names the interval,
-describes its character, and prints its semitone distance. A styled interval reference
-table rendered in HTML.
-
----
-
-## Part 3 — Triads: The First Chords
-
-**Music theory covered:** What a chord is, how chords are built by stacking intervals,
-the four triad types (major, minor, diminished, augmented), why major sounds bright and
-minor sounds dark (the role of the third), the root–third–fifth structure,
-chord symbols (C, Cm, Cdim, Caug), how to build any triad from any root using semitone intervals.
-
-**Code covered:** Nested data structures (arrays inside objects inside objects),
-the `CHORD_TYPES` object and its `major`, `minor`, `diminished`, `augmented` arrays,
-`map()` to transform interval arrays into MIDI note arrays, writing `buildChord(rootMidi, intervals)`,
-destructuring, default parameters.
-
-**HTML/CSS covered:** Flexbox in depth — `display: flex`, `flex-direction`, `justify-content`,
-`align-items`, `gap`, `flex-wrap`, `flex: 1`. Building the chord chip row UI.
-The `.pool-chip` component and its active/inactive states.
-
-**Ends with:** A cell that builds and prints any triad given a root and chord type.
-A styled chip row where clicking a chord type name prints its notes to the console.
+- **1** Notation: exact octaves, auto bass/grand clef, accidentals
+- **2** Inversion system: procedural, all chord types, labelled correctly
+- **3** Octave range: root oct 2–5, top note < C7, extended chords oct 3+
+- **4** Extended chord set — superseded by 9b
+- **5** Interval training mode: 12 intervals, 3 playback styles + notation
+- **6** Chord playback modes: Block / Ascending / Descending / Broken / Random
+- **7** Scale training mode: 18 scales, asc / desc / both
+- **8** UX: root badge, Hear Slowly, session stats; Space + Enter shortcuts
+- **9** Scale library expansion — reorganised in 28
+- **9b** Full chord library rebuild: six families, Berklee symbols
+- **10** Granular pool panel: collapsible, per-mode chips, All/None, inversions toggle
+- **11** Answer dropdown: auto-submit, green/red feedback, correct answer revealed
+- **12** Root note + octave register chips (Rnd | C–B | Low/Mid/High)
+- **13** Enharmonic spelling engine: spelledNote(), SYMBOL_SPELLING, VexFlow keys
+- **14** Breakdown panel: figured bass header, Notes / From root / Between notes
+- **15** Bug fixes: showNotation wrapper, showBreakdown call, outsideClick dedup
+- **16** Visual redesign: teal accent, CSS vars, dark/light toggle + localStorage
+- **17** Typography: Playfair Display + Inter via Google Fonts
+- **18** Logo: base64 inline, dark-mode invert filter
+- **19** Layout: sticky header + mode tabs, enlarged play button, collapsible Settings
+- **20a** Dark mode contrast lifted for WCAG AA
+- **20b** Random direction chip for intervals and scales
+- **20c** Notation card fixed to #fff in both themes
+- **20.5** New Session button; resetSession() shared with stats Reset
+- **21** Responsive pass: rem units, 44px touch targets, < 480px breakpoint
+- **21b** Header layout: two-line sticky, title always visible
+- **22** Breakdown enrichment (all three modes): intervals, scales, chords
+  - Intervals: semitones, degree numeral, inversion, consonance, common context
+  - Scales: degree numerals, triad map, modal character, parent scale
+  - Chords: interval numerals, Riemannian relations, tritone sub, dim/aug/sus theory
+- **23** Voicing modes: Full / Real / Shell / Guide + Random chip — *to be expanded and reorganised in Point 41*
+- **24** Tritone label: A4/d5 context-aware, replaces "TT" everywhere
+- **25** Slash chords: root-agnostic, 18 types (9 maj + 9 min upper), grand staff
+- **25b** Slash playback fix: bass merged into shared pipeline
+- **26** Polychords: 8 types, two stacked triads, grand staff, full breakdown. UST: 7 types (I–VII), rootless dom7 shell + upper triad, breakdown with tensions
+- **27** Pentatonic section: 7 scales, dual labels for Major/Minor Pentatonic
+- **28** Scale library by note count: Pentatonic / Hexatonic / Diatonic / Octatonic. Added Augmented scale and Prometheus
+- **29** Qualified Roman numerals throughout: ♭III, ♯IV, ♭VI, ♭VII etc. SEMITONE_TO_ROMAN table; semitoneToDegree(); computeDegreeNumerals(). Degrees row now shown for all scale lengths
+- **29b** Context-aware enharmonic labels throughout: intervalAbbr(), semitonesToNumeral(), computeDegreeNumerals() all take symbol param. EIGHT_AS_A5 / NINE_AS_D7 / TRITONE_AS_D5 sets drive context switching. Fixes A5/m6, °VII/M6, d5/A4 across chord From root, Numerals, scale Degrees, UST and polychord breakdowns
+- **29c** Interval pool relabelled for enharmonic clarity: "Tritone" → "Tritone (A4 / ♭5)"; "Minor 6th" → "Aug 5th / Minor 6th". INTERVAL_INVERSION_NAME updated to match
+- **30** Scale direction bug fix: notation now updates in sync with playback when direction chip changes after answer is revealed
+- **31** Dictionary mode: Quiz / Dictionary toggle inline in score bar. Pool panel switches to single-select; selecting a chip immediately shows notation + breakdown. Switching mode tabs resets selection to first item in first group
+- **32** Chord notation mirrors playback style: Block → stacked chord; Ascending/Descending → melodic left-to-right sequence; Broken → exact broken pattern (root–top–mid–top)
+- **33** Dictionary mode settings re-render wiring complete: voicing chips, chord playback style chips, interval style chips, and scale direction chips all trigger immediate notation + breakdown refresh in dictionary mode
+- **34** More polychord types: 16 new entries covering Aug upper/lower and Dom7 upper/lower (both P5 and TT positions). polyQualitySuffix() and polyQualityFull() helpers replace all hardcoded quality checks throughout label generation and breakdown. Contextual notes added: aug symmetry (3 enharmonic roots), dom7 tritone tension
+- **35** More UST types — Minor shell [♭3 + ♭7]: IIm, IV, ♭VII, ♭VI upper triads → m7 contexts. Maj7 shell [3 + 7]: II, IIm, V, VIm upper triads → Maj7 contexts. Pool panel split into three UST sections (Dom7 / m7 / Maj7 shell). Breakdown, labels, notation and root badge all adapt per shell quality
+- **36** Chord scales breakdown row (all chord families): algorithmic set-intersection against all 25 scales in SCALE_REF. Scale root = chord root (upper root for slash, lower root for poly, implied root for UST); all sounding pitch classes must be contained in the scale. Collapsible "N scales fit ▸" sub-section within breakdown; each row shows scale name + teal tag (neutral/bright/tense/dark/etc.) + faint descriptive note. Applies in quiz (post-answer) and dictionary mode across normal chords, inversions, slash, polychords, and UST
+- **37** Voice leading panel — *partially implemented, redesign specced in TODO below*
+- **38** Chord progression mode — **complete**. Full progression collection (all genres including 12-bar blues, Romanesca, descending fifths); quiz + dictionary modes; per-chord breakdown with harmonic function and chord scales; single continuous score notation with grand staff; notation labels show Roman numeral (prominent, upper) + full chord name e.g. "G7" (teal, lower); root badge uses correct flat/sharp spelling in both quiz and dictionary mode
+- **39** Extended / compound intervals: 7 new entries: m9, M9, A9/♯9, P11, A11/♯11, m13, M13. Pool panel split into "Simple intervals" and "Extended / Compound" sections (compound collapsed and unselected by default). Breakdown: "Simple equivalent" row replaces inversion row for compound intervals. INTERVAL_CONSONANCE and INTERVAL_CONTEXT extended to cover all new semitone values
+- **Tab order** Tabs reordered to Intervals | Chords | Scales (was Chords | Intervals | Scales); Intervals is now the default landing mode
+- **Mobile** Full mobile responsive pass: fixed bottom play bar removed; dark mode toggle moved to score bar on mobile (duplicate button, CSS show/hide per breakpoint, JS syncs both); root panel open on desktop / collapsed on mobile via JS boot; all root chips visible via flex-wrap grid (was hidden horizontal scroll); dynamic body padding-top driven by actual sticky header height; default root set to C
 
 ---
 
-## Part 4 — Seventh Chords
+## Bug Tracker
 
-**Music theory covered:** Adding the seventh to a triad, the four seventh chord types
-(major 7, dominant 7, minor 7, half-diminished / minor 7b5, fully diminished 7),
-why the dominant seventh is the most harmonically tense chord,
-Berklee chord symbols (Maj7, 7, m7, m7b5, dim7), the difference between Maj7 and dom7,
-the tritone inside the dominant seventh and how it drives resolution.
+### Fixed ✓
 
-**Code covered:** Extending the `CHORD_TYPES` data structure, the full `dominant` and
-`diminished` family arrays, writing a `getChordBySymbol()` lookup function,
-`Set` — what it is and why we use it for the selected chord pool (`selectedChords`),
-`Set.has()`, `Set.add()`, `Set.delete()`.
+#### BUG-1 — Mode switch after Progressions corrupts notation in all other modes
+**Symptom:** After visiting the Progressions tab and switching back to Chords/Intervals/Scales,
+notation rendered as garbage or was completely blank.
+**Root cause:** `showProgressionNotation()` mutated shared DOM without restoring it on exit:
+- hid `.notation-scroll` (never re-shown)
+- injected `.prog-notation-row` into `#notationArea` (never removed)
+- hid `#keysigChipRow` (never re-shown)
+- left progression buttons in `#controls` (Submit / Next / Hear Slowly persisted)
+**Fix:** Added `teardownProgressionUI()` in `js/modes/progressions-mode.js` — a single idempotent cleanup function that restores all five elements to their baseline state. Called (with `typeof` guard) at the top of `switchMode()` and `setAppMode()` in `js/app.js`. (Session: Aug 2026)
 
-**HTML/CSS covered:** CSS transitions — `transition: background 0.15s, border-color 0.15s`,
-why transitions make UI feel polished, `cursor: pointer`, `:hover` pseudo-class,
-building the full `.pool-panel` collapsible component.
+#### BUG-2 — Progression notation: wrong spelling, always sharps, flat detection broken
+**Symptom:** Progression notation showed notes spelled as sharps even in flat keys (Bb → A#,
+Eb → D#, etc.). VexFlow errors were silently swallowed, leaving blank stave cells.
+**Root cause:** `showProgressionNotation()` used a raw sharp-name array instead of the proper
+`midiToVexKeySpelled()` pipeline. Accidental detection misfired on the note B natural. No key
+signature support at all.
+**Fix:** Replaced the raw array with `midiToVexKeySpelled()` + `respellForKeySig()` +
+`isCoveredByKeySig()` — identical pipeline to all other modes. Added `progKeySigMode` state
+variable, wired Key/C chips for progressions, added `stave.addKeySignature()`. (Session: Aug 2026)
 
-**Ends with:** A cell that builds any seventh chord and prints its notes with interval names.
-The pool panel now shows both triads and seventh chords as selectable chips.
+#### BUG-3 — Interval notation: two notes render on same staff position in Key mode
+**Symptom:** Certain enharmonic spellings (e.g. Db → Ebb for a minor 2nd) caused both notes to
+render on the exact same D line in Key mode.
+**Root cause:** `respellForKeySig()` reordered priorities incorrectly — cross-letter natural
+fallback ran before same-letter strip, so Ebb → D rather than Ebb → Eb. `spellMidi()` also
+wasn't tracking same-letter simplification so `addAccidentalsFiltered()` couldn't force-draw
+the remaining accidental.
+**Fix (Aug 2026):** Reordered respell priorities. `spellMidi()` now returns `{ key, forcedAcc }`.
+`addAccidentalsFiltered()` bypasses key sig coverage when `forcedAcc=true`.
 
----
+#### BUG-4 — Resolution notation: Key/C chip selection has no effect
+**Symptom:** Clicking Key or C while resolution notation is showing doesn't change the notation.
+**Root cause:** `renderResolutionNotation()` ignored `chordKeySigMode` entirely — never called
+`respellForKeySig()` or `stave.addKeySignature()`.
+**Fix (Aug 2026):** `renderResolutionNotation()` now fully wires `chordKeySigMode`: computes
+`keySigStr` and `coveredLetters`, calls `respellForKeySig()` on every note, calls
+`stave.addKeySignature()` on both staves when Key mode is active.
 
-## Part 5 — Extended Chords and the Full Chord Library
+#### BUG-6 — Progression: breakdown panel not shown post-answer
+**Symptom:** After submitting an answer in Progressions quiz mode, the breakdown panel never
+appeared. Dictionary mode also showed no breakdown for progressions.
+**Root cause (multi-part):** `showBreakdown()` had no `progressions` branch; it was inserted
+after chord family branches so it crashed before being reached; `submitProgressionAnswer()`
+never called `showBreakdown()`; `updateStatsTable()` (non-existent) was called instead of
+`updateScore()`, crashing the handler before notation or breakdown were reached; `answered`
+was never set to `true`.
+**Fix (Aug 2026):** Replaced `updateStatsTable()` with `updateScore()`; added `answered = true`;
+added `showBreakdown()` calls in both `submitProgressionAnswer()` and `dictShowProgression()`;
+added `progressions` branch to `showBreakdown()` with per-chord rows (degree label, chord name,
+notes, intervals from root, harmonic function, chord scales); moved progressions branch above
+all chord family branches.
 
-**Music theory covered:** What happens beyond the octave — ninths, elevenths, thirteenths,
-why we number them 9/11/13 instead of 2/4/6, how extensions are added to a seventh chord base,
-Berklee extended chord symbols (9, Maj9, m9, 11, 13, etc.), altered extensions (b9, #9, #11, b13),
-suspended chords (sus2, sus4) and why they have no third, the six chord families
-(major, minor, dominant, diminished, augmented, suspended) and their musical roles.
-
-**Code covered:** Completing the full `CHORD_TYPES` object with all six families,
-the `getAllChords()` function, `filter()`, `spread operator` (`...`) for merging arrays,
-writing `getActivePool()` from the `selectedChords` Set, `Math.floor()`, `Math.random()`,
-`pickRandom()` helper function.
-
-**HTML/CSS covered:** `border-radius`, `box-shadow` with CSS variables (`var(--shadow)`),
-`overflow: hidden` on rounded containers, the `.pool-panel-body` open/closed toggle,
-`display: none` vs `display: block`, using JavaScript to toggle CSS classes.
-
-**Ends with:** The complete chord library is in place. A cell that picks a random chord
-from the active pool and prints its full description. The pool panel shows all six families.
-
----
-
-## Part 6 — Web Audio API: Making Sound
-
-**Music theory covered:** How digital audio works (sampling, sample rate, bit depth),
-what a soundfont is and why we use sampled piano instead of oscillators,
-MIDI velocity and dynamics, what audio latency is and why scheduling matters.
-
-**Code covered:** `async` / `await` — what asynchronous code means and why audio loading
-requires it, `fetch()` to load audio files from a server, `AudioContext`,
-`decodeAudioData()`, storing decoded buffers in an object (`piano = {}`),
-`createBufferSource()`, `connect()` to `destination`, `.start()` and `.stop()`,
-`midiToSoundFontName()` — how MIDI numbers map to soundfont file names.
-The full `initAudio()` function dissected line by line.
-
-**HTML/CSS covered:** The play button — `border-radius: 50%` for circles, `width` + `height`
-for square aspect ratio, `display: inline-flex` + `align-items: center` + `justify-content: center`
-for centred icon, the teal glow `box-shadow` on hover, CSS `transition` for the press animation.
-
-**Ends with:** Clicking the play button plays a single piano note. The student can change
-the MIDI number in the cell and hear a different pitch.
-
----
-
-## Part 7 — Playing Chords: Timing and Playback Styles
-
-**Music theory covered:** Block chords vs arpeggios, ascending vs descending voicing,
-broken chord patterns, why different playback styles reveal different aspects of a chord's sound,
-how jazz pianists voice chords differently from classical pianists.
-
-**Code covered:** `setTimeout` — scheduling events in time, why we can't use a simple loop
-for audio timing, the playback pipeline for block/ascending/descending/broken/random styles,
-the `chordPlayStyle` state variable, the full `playChord()` function, handling the `random`
-style with `pickRandom()`, `currentMidiNotes` state.
-
-**HTML/CSS covered:** The chord style chip row, `flex-wrap: wrap` for responsive chip rows,
-`min-height: 2.75rem` for touch targets and why 44px is the accessibility standard,
-the sticky header shell — `position: fixed`, `top: 0`, `left: 0`, `right: 0`, `z-index`,
-why the `body` needs `padding-top` to compensate.
-
-**Ends with:** Full chord playback with all five styles selectable via chips.
-The sticky header is in place. Clicking any chip and pressing play produces the correct style.
+#### BUG-7 — Progression notation: staves missing clef, misaligned, cut off, treble only
+**Symptom:** Mini staves in progression notation rendered without a clef. Cells were
+inconsistently sized and notes were clipped. Only treble clef was used regardless of register.
+`notationPanel` and `notationArea` were set to `display: ''` instead of `'block'`, keeping
+notation hidden.
+**Fix (Aug 2026):** `showProgressionNotation()` fully rewritten as a single continuous score:
+- One clef decision for the whole progression based on the union of all MIDI notes across
+  all chords (treble / bass / grand staff — same threshold logic as `showNotation()`)
+- One wide SVG with a single stave or grand staff pair; clef at left, key sig, then
+  chord 1 — barline — chord 2 — barline — etc.
+- Width scales with number of chords; horizontal scroll handles overflow
+- Chord labels rendered as SVG text above each chord slot: Roman numeral + quality (bold,
+  larger) on the upper line; absolute root name in teal on the lower line
+- `display: ''` bugs corrected to `display: 'block'`
+**Status:** Fixed. ✓
 
 ---
 
-## Part 8 — The Quiz Engine: Questions, Answers, Scoring
+### Open Bugs 🔴
 
-**Music theory covered:** What ear training is and why it matters, the difference between
-recognising a chord by name and recognising it by sound, how professional musicians
-use ear training in practice (transcription, session work, improvisation).
-
-**Code covered:** `generateQuestion()` — picking a random chord and root, `chooseRootMidi()`
-and how the octave band system works, `currentChord` and `currentMidiNotes` state variables,
-building the answer dropdown dynamically with `document.createElement`, `appendChild`,
-`addEventListener('change')`, the `answered` flag, `correct` / `total` / `streak` counters,
-`recordAnswer()`, `renderStats()`, the `resetSession()` function.
-
-**HTML/CSS covered:** The answer dropdown — `<select>` and `<option>` styling,
-the feedback colours (`.correct-bg`, `.wrong-bg`) and their CSS variable definitions,
-`border-left` for the callout style feedback panel, the score pill row,
-`font-weight: 600` for numeric emphasis.
-
-**Ends with:** A complete working chord quiz — triads and seventh chords, random roots,
-block playback, dropdown answer, green/red feedback, score tracking, streak counter.
-This is a real, usable ear training tool.
+#### BUG-5 — Resolution notation: VexFlow two-chord layout is fragile
+**Symptom:** Source and resolution chords sometimes render in wrong positions or overlap.
+**Root cause:** Uses a single stave with `[srcNote, BarNote, tgtNote]` as half-notes in one
+voice. `BarNote` inside a single voice is fragile in VexFlow and the Formatter misbehaves.
+**Fix approach:** Use two separate stave segments or two independent voices.
+**Status:** Deferred — needs more testing to confirm whether it causes visible problems in
+practice before prioritising the fix.
 
 ---
 
-## Part 9 — The UI System: CSS Architecture and Dark Mode
+## Where to make changes
 
-**Music theory covered:** (No new music theory — this part is entirely CSS/JS architecture.)
+The codebase is split into multiple files. When implementing any TODO item below, use this
+table to find the right file.
 
-**Code covered:** `localStorage` — storing and retrieving user preferences across sessions,
-`localStorage.getItem()`, `localStorage.setItem()`, the theme toggle IIFE
-(Immediately Invoked Function Expression) — what an IIFE is and why we use one here,
-`document.documentElement.setAttribute('data-theme', 'dark')`, the `data-*` attribute pattern.
-
-**HTML/CSS covered:** The full CSS custom property system in depth — light mode variables,
-dark mode overrides with `[data-theme="dark"]` selector, how `var()` cascades,
-WCAG AA contrast requirements (what they are and why they matter), `rem` units vs `px`
-and browser accessibility settings, the complete dark mode colour palette and how
-each variable was chosen, `transition: background 0.2s, color 0.2s` on `body`
-for smooth theme switching, the theme toggle button as a 44px circular touch target.
-
-**Ends with:** The app has a fully working dark/light mode toggle that persists across
-page reloads. Every colour in the app responds correctly to the theme switch.
-
----
-
-## Part 10 — Scales: Structure and Theory
-
-**Music theory covered:** What a scale is, the major scale and its whole-step/half-step pattern,
-the natural minor scale, the relationship between relative major and minor (same notes, different root),
-the harmonic minor (raised 7th) and why it exists, the melodic minor and its classical use,
-pentatonic scales — major and minor pentatonic and why they appear in every musical culture,
-the blues scale and the blue note, the whole tone scale and its symmetry, the augmented scale,
-the Prometheus scale.
-
-**Code covered:** The `SCALES` array structure, the four group boundaries
-(pentatonic / hexatonic / diatonic / octatonic), `filter()` to extract groups,
-`getActiveScalePool()`, the `selectedScales` Set, `currentScale` and `currentScaleRootMidi` state.
-
-**HTML/CSS covered:** The pool panel scale section — dynamically rendering scale chips by group,
-`pool-section-title` uppercase label styling, the All/None buttons and their `pool-all-btn` style,
-`text-transform: uppercase`, `letter-spacing`.
-
-**Ends with:** The scale library is in place with all pentatonic and hexatonic scales.
-The pool panel shows scale chips grouped by type. Selecting different scales updates the active pool.
+| Area | File |
+|---|---|
+| All state variables | `js/engine/state.js` |
+| Selected pool defaults | `js/engine/defaults.js` |
+| Shared helpers (`pickRandom`, `chooseRootMidi`, etc.) | `js/engine/helpers.js` |
+| Audio playback | `js/engine/audio.js` |
+| Notation rendering (VexFlow, `showNotation`) | `js/engine/notation.js` |
+| Breakdown panel (`showBreakdown`) | `js/breakdown/breakdown.js` |
+| Chord data (`CHORD_TYPES`, `INTERVALS`, `SCALES`) | `js/data/chords.js` |
+| Enharmonic spelling engine | `js/data/spelling.js` |
+| Key signature helpers | `js/data/keysig.js` |
+| Progression data (`PROGRESSIONS`) | `js/data/progressions.js` |
+| Chord quiz + answer logic | `js/modes/chords-mode.js` |
+| Interval quiz + answer logic | `js/modes/intervals-mode.js` |
+| Scale quiz + answer logic | `js/modes/scales-mode.js` |
+| Progression playback, notation, quiz, dict, `recomputeCurrentNotes`, `teardownProgressionUI` | `js/modes/progressions-mode.js` |
+| Answer dropdown, controls rendering | `js/ui/controls.js` |
+| Pool panel rendering | `js/ui/pool.js` |
+| Score, stats | `js/ui/stats.js` |
+| Mode switching, dictionary functions, boot, theme, register panel | `js/app.js` |
 
 ---
 
-## Part 11 — Greek Modes in Depth
+## TODO
 
-**Music theory covered:** What a mode is — not just "starting on a different note"
-but a genuinely different tonal colour, the seven Greek modes in full detail:
+### Point 38 — Chord progression mode ✓ COMPLETE
 
-- **Ionian** — the major scale, bright and settled
-- **Dorian** — minor with a raised 6th, the jazz minor sound (So What, Scarborough Fair)
-- **Phrygian** — minor with a flattened 2nd, dark and Spanish (flamenco, metal)
-- **Lydian** — major with a raised 4th, dreamy and floating (film scores, Simpsons theme)
-- **Mixolydian** — major with a flattened 7th, bluesy and rock (Norwegian Wood, Sweet Home Chicago)
-- **Aeolian** — the natural minor scale
-- **Locrian** — diminished tonic, theoretically complete but rarely used as a tonal centre
+#### Status: Fully implemented (Aug 2026)
 
-For each mode: its interval pattern, its characteristic interval, its emotional character,
-real-world examples from recorded music, and how it relates to its parent major scale.
-Also covered: Phrygian Dominant (mode 5 of harmonic minor), Lydian Dominant (mode 4 of melodic minor),
-the Altered scale (mode 7 of melodic minor) and its role in jazz.
+All items confirmed done by source file review and final fixes applied in this session.
 
-**Code covered:** Adding all modal scales to the `SCALES` array, the `symbol` naming convention,
-`scaleDirection` state ('asc' | 'desc' | 'both' | 'random'), `currentScaleDir` for resolved direction,
-the `playScale()` function — how sequential note playback is timed with `setTimeout`,
-`renderScaleDirChips()`.
-
-**HTML/CSS covered:** The scale direction chip row, the `scale-dir-chip` active state,
-`border-bottom: 2px solid var(--accent)` for the active mode tab underline,
-the mode tab bar — `display: flex`, `border-top`, `flex: 1` for equal-width tabs.
-
-**Ends with:** The full diatonic and modal scale library is playable. The quiz now includes
-a working scales mode with direction chips and correct pool panel grouping.
+#### Full implementation summary
+- ✓ Progressions tab: Intervals | Chords | Scales | Progressions
+- ✓ Audio playback (`playProgression`, `playProgressionSlowly`) with staggered chord onsets
+- ✓ Quiz mode: per-slot degree + quality chip grid, Submit, Hear Slowly, Next; all-or-nothing scoring; green/red slot feedback with correct answer revealed
+- ✓ Dictionary mode: single-select pool, immediate notation + breakdown on chip click
+- ✓ Pool panel: collapsible sections, two-line chips (symbol + name), All/None, unified quiz + dict appearance
+- ✓ Full progression collection — 13 genre groups: Cadences, Diminished, Classical, Short, Pop & Rock, Jazz, Blues (including standard 12-bar, quick-change 12-bar, jazz 12-bar), Minor, Rock, Reggae, Samba & Bossa, Metal, Extended (including Romanesca/Pachelbel 8-chord and Descending fifths 8-chord)
+- ✓ Single continuous score notation: one clef decision for whole progression based on union of all MIDI notes; one wide SVG with stave or grand staff; clef + key sig + chords separated by barlines; horizontal scroll handles overflow
+- ✓ Notation labels (two lines per chord slot): **Roman numeral + quality** on top (bold, prominent — what the mode teaches); **full chord name** below in teal (e.g. `G7`, `Dm7`, `Cmaj7` — real-world anchor). `ct.name` from `CHORD_TYPES` used directly; major triads show bare root only (convention)
+- ✓ Key/C chips for progression notation; grand staff when needed
+- ✓ Breakdown panel (quiz post-answer + dictionary): per-chord rows with degree label, full chord name, notes, intervals from root, harmonic function, chord scales
+- ✓ `HARMONIC_FUNCTION` table: all 12 semitone degrees × quality-specific overrides (secondary dominants, blues dominant on tonic, backdoor dominant, tritone sub context)
+- ✓ Root badge: `spelledRoot(pc)` used in both quiz and dictionary mode — correct flat/sharp spelling always
+- ✓ Root chip retransposition: changing root chip retransposes and re-renders notation, breakdown, and badge
+- ✓ `teardownProgressionUI()`: idempotent cleanup on mode switch, prevents DOM bleed into other modes
+- ✓ `playSlowly()` progressions branch delegates to `playProgressionSlowly()`
+- ✓ Horizontal scroll on slot UI: CSS `overflow-x: auto` + `flex: 0 0 auto` on `.prog-slot`; handles 8-chord progressions on mobile
 
 ---
 
-## Part 12 — Octatonic Scales and Scale Playback
+### Point 37 — Voice leading panel (redesign)
 
-**Music theory covered:** The diminished scales — whole-half and half-whole (octatonic),
-their symmetry (repeating at minor 3rd intervals), their use over diminished and dominant chords,
-the difference between W-H and H-W and which chord type each fits.
-A brief survey of all 28 scales in the library and how they are grouped.
+#### Status: Partially implemented — current code works but uses naive nearest-note algorithm
 
-**Code covered:** Completing the `SCALES` array with octatonic entries,
-the `chooseSimpleRootMidi()` function and how it differs from `chooseRootMidi()`,
-the full scale quiz question generation pipeline — `generateScaleQuestion()`,
-`updateRootBadge()`, the `showRoot` toggle and how it hides/shows the root before answering.
+The current implementation has `RESOLUTION_TARGETS` (lookup table), `computeVoiceLeading()`
+(nearest-note algorithm), `makeVoiceLeadingRow()`, and `playResolution()` all working. The
+redesign below replaces the resolution algorithm and adds an interactive multi-resolution UI.
 
-**HTML/CSS covered:** The root badge — `position: relative` vs `absolute`, badge styling
-with `border-radius`, `background: var(--bg-chip-active)`, the root note + octave register
-chip rows (`#rootChips`, `#octaveChips`), `renderRegisterPanel()` dissected.
+#### What exists now
+- `RESOLUTION_TARGETS` — static lookup: chord symbol → `{ offset, quality, label }`
+- `computeVoiceLeading(sourceMidi, targetMidi)` — nearest-note only; no tendency-tone awareness
+- `makeVoiceLeadingRow(panel)` — renders a voice leading table in the breakdown panel
+- `playResolution()` — plays source chord then resolution chord; "Resolve →" / "← Chord" toggle
+- `renderResolutionNotation()` — two-chord notation side by side (BUG-5 affects this)
+- Current timing: 1.8s source + 0.7s pause — confirmed too long
 
-**Ends with:** The complete scale quiz is working — all 28 scales, all directions,
-root badge, register control. The quiz now has two fully working modes: Chords and Scales.
+#### Resolution timing fix
+Tighten to **1.2s source + 0.3s pause** in `playResolution()`. Simple constant change.
 
----
+#### Resolution targets — hybrid algorithm
+Replace `RESOLUTION_TARGETS` with an algorithmic approach, keeping the table only for
+exotic/ambiguous cases:
 
-## Part 13 — Intervals Mode and Playback
+**Algorithm (runs first):**
+1. Detect the **tritone** in the chord — its two notes have unambiguous tendencies
+   (augmented 4th expands outward, diminished 5th contracts inward) and directly imply the
+   resolution root
+2. If no tritone, find the **strongest dissonance** present and resolve accordingly
+3. Fall back to conventional harmonic motion (P4 up for dominant function) if no clear
+   tension is found
 
-**Music theory covered:** Revisiting intervals in the context of ear training —
-how to recognise intervals by their sound rather than by calculation,
-harmonic vs melodic presentation, ascending vs descending recognition,
-classic interval mnemonics and why they work, consonance categories
-(perfect consonances, imperfect consonances, dissonances).
+**Lookup table (exception whitelist only):**
+- Augmented chords (three enharmonically equal resolutions — algorithm can't pick one)
+- Polychords and USTs (no single clear resolution target)
+- Sus chords (tension ambiguous by design)
+- Power chords (no harmonic information)
+- Any case where the algorithm produces a musically wrong result
 
-**Code covered:** The `INTERVALS` array, `INTERVAL_STYLES`, `intervalStyle` and
-`currentIntervalStyle` state, `generateIntervalQuestion()`, `playInterval()` —
-how harmonic playback differs from melodic (simultaneous vs sequential `setTimeout`),
-`renderIntervalStyleChips()`, the `random` direction resolution.
+New chord types get reasonable voice leading automatically without touching the table.
 
-**HTML/CSS covered:** The interval style chip row, `display` toggling for mode-specific
-panels (`chordStyleSection`, `intervalStyleSection`, `scaleDirSection`) using
-`style.display = mode === 'intervals' ? '' : 'none'`, the `switchMode()` function
-and how the tab bar connects to mode state.
+#### Voice leading — constraint satisfaction model
+Replace nearest-note-only with a **constraint satisfaction** approach:
 
-**Ends with:** All three quiz modes work — Chords, Intervals, Scales.
-The mode tabs switch correctly, each showing its own playback controls.
-This is now a three-mode ear training application.
+**Hard constraints (must satisfy):**
+- Leading tone (e.g. B in G7) **must rise** by m2 to the tonic
+- Chordal 7th (e.g. F in G7) **must fall** by m2
+- No two voices resolve to the same pitch class unless doubling rules permit it
+- Avoid doubling the 3rd of the target chord; prefer doubling the root
 
----
+**Soft constraints (scored and minimised):**
+- Total semitone motion across all voices (prefer minimal movement)
+- Parallel 5ths and octaves (penalise)
+- Poor doublings (penalise)
 
-## Part 14 — Music Notation: Reading the Staff
+The assignment with the best score after satisfying hard constraints is chosen.
 
-**Music theory covered:** How sheet music works — the staff (5 lines, 4 spaces),
-treble clef and its mnemonic, bass clef and its mnemonic, the grand staff
-(treble + bass joined by a brace), middle C and how it sits between the staves
-on a ledger line, note heads and stems, accidentals (sharp, flat, natural),
-key signatures vs accidentals, ledger lines above and below the staff,
-how pitch is determined by line/space position + clef + accidentals.
+**Example — G7 → C major (correct voice leading):**
+```
+B  → C   (m2 ↑  — leading tone, hard constraint)
+F  → E   (m2 ↓  — chordal 7th, hard constraint)
+G  → G   (common tone)
+D  → E or G  (flexible — complete the chord, avoid doubling 3rd)
+```
+The current code incorrectly moves D → C (nearest note) rather than D → E or G.
 
-**Code covered:** What VexFlow is — a JavaScript library for rendering music notation in SVG,
-loading VexFlow via CDN, `Renderer`, `Stave`, `StaveNote`, `Voice`, `Formatter`,
-how VexFlow key strings work (`"c/4"`, `"fn/4"`, `"bb/3"`), the `showNotation()` wrapper
-function, the `notation-svg` container, `Beam` for grouped notes.
+#### Multiple resolutions — interactive UI
+Show **all plausible resolution options** ranked by commonality. The most common one plays
+automatically. Clicking another plays it instead and updates the notation and voice leading table.
 
-**HTML/CSS covered:** The notation card — `.play-area` styles, `border-radius: 14px`,
-`background: var(--bg-card)`, why the notation card is fixed to `#fff` in both themes
-(Point 20c) — the reasoning behind overriding a CSS variable for a specific component,
-`overflow: hidden` to clip SVG to card boundaries.
+**Ranking order:**
+1. Functional resolution (tritone-driven, e.g. V→I) — always first, plays on load
+2. Deceptive cadence (e.g. V→vi)
+3. Modal / jazz alternatives (tritone sub, backdoor dominant, etc.)
+4. Exotic resolutions
 
-**Ends with:** The app now displays sheet music for every chord played. A cell that
-renders a user-defined list of notes on a grand staff. The student can change the
-notes and see the staff update.
+**UI — resolution pills (chips):**
+- Clickable chips consistent with the existing chip/pill design system
+- First pill pre-selected and highlighted with the active chip style
+- Label format: **chord name + cadence type**, e.g. `C (V→I)`, `Am (deceptive)`, `D♭ (tritone sub)`
+- Passively teaches cadence names while the user explores
+- Voice leading table and notation update to reflect the selected resolution only
 
----
-
-## Part 15 — Enharmonic Spelling and the Notation Engine
-
-**Music theory covered:** Why enharmonic spelling matters — C# and Db are the same pitch
-but different notes, how key context determines the correct spelling, the circle of fifths
-and spelling conventions, why a Cmaj7 chord uses B not Cb, why an Eb minor chord
-uses Gb not F#, how the app's `SYMBOL_SPELLING` table encodes these rules,
-figured bass notation for inversions.
-
-**Code covered:** The `SYMBOL_SPELLING` lookup table — its structure and design rationale,
-`spelledNote(pitchClass, chordSymbol, rootPitchClass)` dissected in full,
-how enharmonic VexFlow keys are chosen (`"bb/3"` vs `"as/3"`), the `showBreakdown()` function
-and its three row types (Notes, From root, Between notes), the figured bass header
-for inverted chords.
-
-**HTML/CSS covered:** The breakdown panel — `.breakdown-panel` layout, definition list
-(`<dl>`, `<dt>`, `<dd>`) vs table for the interval rows, `border-top` dividers,
-`font-family: var(--mono)` for numeric/interval data, `color: var(--text-muted)` hierarchy.
-
-**Ends with:** The notation now spells notes correctly for every chord type.
-The breakdown panel shows full interval analysis below every answered question.
+**Notation:**
+- Clicking a pill immediately updates notation to show source → selected resolution side by side
+- The "Resolve →" play button plays whichever pill is currently selected
 
 ---
 
-## Part 16 — Inversions
+### Point 40 — Clickable chord scales → Dictionary mode
 
-**Music theory covered:** What an inversion is — moving the lowest note up an octave,
-first inversion (third in the bass), second inversion (fifth in the bass),
-third inversion (seventh in the bass), figured bass labels (6, 6/4, 6/5, 4/3, 4/2),
-why inversions matter — smoother voice leading, bass line variety, how to recognise
-inversions by ear (the bass note is no longer the root).
+#### Status: Not yet implemented
 
-**Code covered:** `applyInversion(baseIntervals, rootMidi, invIndex)` — the `shift()` / `push()`
-pattern for rotating notes, `buildInversionPool()` — how inversion entries are generated
-from base chords, `invIndex` and `baseChord` properties, the `INV_LABELS` array,
-the `includeInversions` toggle and how it extends `getActivePool()`.
+When the breakdown panel shows the chord scales section (post-answer in quiz, or in dictionary
+mode), each scale name is **clickable** and opens that scale in Dictionary mode for immediate
+exploration.
 
-**HTML/CSS covered:** The inversions toggle row — `.pool-inv-row`, `<input type="checkbox">`,
-`<label>` with `display: flex` + `align-items: center`, associating a label with an input
-via `for` / `id` for accessibility, styling a custom checkbox.
+#### Behaviour
+- Clicking a scale name switches to **Dictionary mode, Scales tab**, loading that scale
+  instantly with notation and full breakdown
+- Scale opens at the **currently active root** — not the original quiz question root
+- **All current settings inherited** — key signature, notation style, direction, etc.
+- To return to quiz, user presses the **Quiz toggle** — no extra back button needed
+- Quiz session (score, streak, current question) **fully preserved** in memory while
+  exploring in Dictionary mode, restored immediately on switching back
 
-**Ends with:** Inversions are enabled. The quiz can now play and ask about inverted chords.
-The breakdown panel shows the correct figured bass label. Notation shows the inverted voicing.
-
----
-
-## Part 17 — Voicing Modes
-
-**Music theory covered:** What a voicing is vs what a chord is — same notes, different
-arrangement, full voicing (all notes), real voicing (omitting the fifth in jazz),
-shell voicing (root + third + seventh only), guide tones (third + seventh without root) —
-why guide tones define the chord quality and are essential in jazz comping,
-how different voicings suit different musical contexts.
-
-**Code covered:** The `VOICING_MODES` array, `applyVoicingMode(baseIntervals, mode)` —
-how interval roles are classified (`root`, `third`, `fifth`, `altfifth`, `seventh`, `extension`),
-the filtering logic for each mode, how `altfifth` overrides the `real` mode omission,
-`activeVoicingMode` state, `renderVoicingChips()`.
-
-**HTML/CSS covered:** The voicing chip row — `.voicing-mode-row`, `.voicing-chip`,
-`display` toggling for chord-only panels, how the Settings panel collapsible works —
-`classList.toggle('open')`, the arrow character rotation (`▸` vs `▾`), `user-select: none`.
-
-**Ends with:** All four voicing modes work — Full, Real, Shell, Guide. The student
-can compare how the same chord sounds in shell vs full voicing and hear the difference.
+#### Implementation notes
+- `makeChordScalesRow()` in `js/breakdown/breakdown.js` renders the scale name elements —
+  click handlers go here
+- Mode switching lives in `js/app.js` (`switchMode()`, `setAppMode()`) — the click handler
+  calls these with the target scale symbol and root already set
+- No new state variables needed; the existing `currentScale`, `currentScaleRootMidi`, and
+  `appMode` are sufficient
 
 ---
 
-## Part 18 — Slash Chords
+### Point 41 — Expanded voicing system (Chords mode)
 
-**Music theory covered:** What a slash chord is — an upper chord over a non-root bass note,
-why slash chords exist (pedal points, smooth bass lines, modal harmony), reading slash chord
-notation (C/E means C major with E in the bass), the difference between a slash chord
-and an inversion (slash chord bass can be completely outside the upper chord),
-common slash chords in pop and jazz, how the grand staff represents slash chords
-(bass note in bass clef, upper chord in treble).
+#### Status: Not yet implemented
 
-**Code covered:** The `slash` family in `CHORD_TYPES` — `upperIntervals`, `bassInterval`,
-`belowLabel`, `upperQuality` properties, `currentSlashBassMidi` and `currentUpperRootMidi`
-state variables, how slash chord playback merges bass into the shared pipeline,
-how the grand staff is built differently for slash chords vs regular chords in `showNotation()`.
+Replaces and greatly expands the current Point 23 voicing chips (Full / Real / Shell / Guide + Random).
+Applies to **Chords mode only** — not progressions or other modes.
 
-**HTML/CSS covered:** The grand staff layout in VexFlow — `StaveConnector` for the brace,
-positioning two staves vertically, sizing the SVG container dynamically based on
-whether a grand staff or single staff is needed.
+#### Open questions (to resolve before implementation)
+- **"Full" voicing** — is this close position (all notes within one octave, classical default)?
+  Or does it mean something else in the current implementation? Needs clarification before mapping.
+- **"Real" voicing** — is this open position (notes spread over more than one octave)?
+  Or something else? Needs clarification before mapping to the new system.
+- Once clarified, Full and Real will either be renamed to match standard terminology
+  (Close / Open) or retired if they duplicate other voicings.
 
-**Ends with:** Slash chords are fully playable and quizzable. The grand staff correctly
-shows the bass note below and the upper chord above.
+#### Excluded voicings (rhythmic — not applicable to static chord playback)
+- **Stride** — alternating bass + chord on beats; a performance style not a voicing
+- **Block chords / Locked Hands** — requires a melody line to harmonise; not applicable
 
----
+#### Voicing chip panel — 4 collapsible groups
+Same UI pattern as chord pool panel: collapsible sections, All/None per group, Random chip.
 
-## Part 19 — Polychords and Upper Structure Triads
+**Group 1 — Structural**
+| Voicing | Description | Status |
+|---|---|---|
+| Close | All notes within one octave. Dense, clear, classical | Possibly "Full" — TBC |
+| Open | Notes spread over more than one octave. Bigger, less muddy | Possibly "Real" — TBC |
+| Shell | Root + 3rd + 7th only | ✓ existing chip |
+| Rootless | Root omitted; bass player supplies it. Very common in jazz/bossa | ✓ rename from "Guide" |
+| Drop-2 | Second-highest note dropped an octave. Open sound, excellent voice leading | New |
+| Drop-3 | Third-highest note dropped an octave. More guitar/big band, but usable on piano | New |
+| Drop-2&4 | Second and fourth voices dropped. Wide, transparent, modern | New |
+| Spread | Large intervals throughout. Huge, orchestral feeling | New |
 
-**Music theory covered:** What a polychord is — two independent chords sounding simultaneously,
-written as a fraction (G major over C major = G/C in polychord notation),
-why polychords appear in 20th century classical music (Stravinsky, Bartók) and in jazz,
-the tritone and perfect fifth as the two most common distances between polychord roots.
-Upper Structure Triads (UST) — the jazz approach to extended dominant chords,
-the shell voicing ([M3, m7]) as the harmonic foundation, the seven UST types (I–VII),
-what tensions each UST produces (b9, #9, #11, b13, 9, 13), famous UST contexts
-(Bartók UST, McCoy Tyner sound), how to read and write UST notation.
+**Group 2 — Intervallic**
+| Voicing | Description |
+|---|---|
+| Quartal | Built from stacked fourths. Modern, modal, open. McCoy Tyner / Herbie Hancock |
+| Quintal | Built from stacked fifths. Spacious, cinematic |
+| Secundal | Built from stacked seconds. Cluster-like, tense |
+| Cluster | Adjacent semitones. Impressionistic, modern jazz, film |
+| Tenths | LH plays root + 10th (wide 3rd). Reduces muddiness; stride, jazz, contemporary |
 
-**Code covered:** The `poly` family — `upperIntervals`, `lowerIntervals`, `lowerOffset`,
-`currentPolyUpperMidi` / `currentPolyLowerMidi` state, how polychord playback combines
-two independent triads. The `ust` family — `shellIntervals`, `upperTriadRoot`,
-`upperTriadIntervals`, `currentUSTShellMidi` / `currentUSTUpperMidi` / `currentUSTRootMidi`,
-the rootless voicing concept in code, UST breakdown — `tensions` and `resultingChord` properties.
+**Group 3 — Style-specific**
+| Voicing | Description |
+|---|---|
+| So What | P4 + P4 + P4 + M3 + P4 stack. Named after Miles Davis. Essential modal jazz |
+| Bill Evans | Highly voice-led; typically 3–7–9–13, no root. Floating, rich, transparent |
+| Kenny Barron | LH: root + 7. RH: 3–5–9. Warm and smooth |
+| Herbie Hancock | Quartal plus clusters. Modern, angular, colorful |
+| McCoy Tyner | Powerful quartal stacks in LH. e.g. C–F–Bb–Eb |
+| Gospel | Added 2nds, added 6ths, quartal movement, passing diminished. Parallel motion |
+| Pop Piano | LH octave, RH: 3–5–9. Standard modern worship/pop ballad voicing |
 
-**HTML/CSS covered:** Handling the three different grand staff layouts (regular chord,
-slash chord, polychord/UST) inside `showNotation()` — conditional rendering based on
-`chord.family`, sizing the SVG height dynamically.
+**Group 4 — Texture-based**
+| Voicing | Description | Notes |
+|---|---|---|
+| Triad over Bass | Simple triad in RH over a different bass note | Overlaps with Slash chords family |
+| Upper Structure Triads | Major/minor triad over dominant chord shell | Already a chord family (UST) |
+| Pedal Point | Bass stays fixed while upper chords move | Requires multi-chord context |
+| Octave Doubling | Chord tones doubled in octaves. Full, orchestral | New |
+| Hybrid | Combines open voicing + rootless texture + added extensions | New |
+| Dense Extended | Five to seven chord tones including 7th, 9th, 11th, 13th. Rich, jazz ensemble | New |
+| Power Chord | Root + fifth only, sometimes doubled | Overlaps with existing power chord type |
 
-**Ends with:** The complete chord library is quizzable — all six families plus slash,
-polychords, and USTs. The breakdown panel shows tension analysis for USTs.
+#### Random chip
+Kept as-is — picks randomly from all enabled voicings in the expanded pool.
 
----
+#### Breakdown panel — voicing explanation row
+When any specific voicing is active (not Random), the breakdown panel gains a new row showing
+the voicing name, its defining structural rule, and its typical musical context.
 
-## Part 20 — The Breakdown Panel and Riemannian Analysis
+Examples:
+- **Drop-2**: "Second-highest note dropped an octave. Produces open sound with excellent voice leading. Common in jazz and big band arranging."
+- **So What**: "Stack of three perfect fourths + major third + perfect fourth (P4–P4–P4–M3–P4). Named after Miles Davis's 'So What'. Essential for modal jazz."
+- **Bill Evans**: "Highly voice-led; typically 3rd, 7th, 9th, 13th — no root. Root supplied by bass. Produces a floating, transparent, harmonically rich texture."
+- **Quartal**: "Built from stacked perfect fourths. Avoids the major/minor polarity of tertian harmony. Open, modern, modal sound. Associated with McCoy Tyner and Herbie Hancock."
 
-**Music theory covered:** Riemannian function theory — Tonic (T), Subdominant (S),
-Dominant (D), how chords relate to a key centre, the tritone substitution
-(substituting a chord a tritone away from the dominant), why dim and aug chords
-have special Riemannian ambiguity, Roman numeral analysis (I, ii, iii, IV, V, vi, vii°),
-qualified Roman numerals (bIII, #IV, bVI, bVII) for chromatic chords.
+#### Voicings that overlap with existing chord families
+- **Rootless** → rename existing "Guide" chip to "Rootless"
+- **Upper Structure Triads** → already implemented as a chord family; note in breakdown that UST is itself a texture-based voicing technique
+- **Slash chords / Triad over Bass** → already implemented as a chord family; cross-reference in breakdown
+- **Power Chord** → already exists as a chord type; the Power Chord voicing chip would apply power-chord spacing to any chord (root + fifth only, drop all other tones)
 
-**Code covered:** `SEMITONE_TO_ROMAN` lookup table, `semitoneToDegree()`,
-`computeDegreeNumerals()`, the full `showBreakdown()` function for all three modes —
-intervals (semitones, degree numeral, consonance, common context), scales (degree numerals,
-triad map, modal character, parent scale), chords (interval numerals, Riemannian relations,
-tritone sub, dim/aug/sus theory).
-
-**HTML/CSS covered:** The breakdown panel layout in full detail — `<dl>` semantic structure,
-`border-top` row dividers, `display: grid` for label/value alignment,
-`font-size` hierarchy (`.75rem` for labels, `1rem` for values), `color: var(--text-muted)`
-vs `color: var(--text)` for visual weight.
-
-**Ends with:** The breakdown panel is fully implemented for all three modes with complete
-harmonic analysis.
-
----
-
-## Part 21 — Responsive Design and Accessibility
-
-**Music theory covered:** (No new music theory.)
-
-**Code covered:** Keyboard shortcuts — `document.addEventListener('keydown')`,
-`e.code === 'Space'` for play, `e.key === 'Enter'` for next question,
-`e.target.tagName === 'INPUT'` guard to prevent shortcuts firing while typing,
-`e.preventDefault()` and when it is needed. The `New Session` button and `resetStats`
-both calling `resetSession()` — the DRY principle (Don't Repeat Yourself).
-
-**HTML/CSS covered:** Responsive design — `@media` queries, the `< 480px` breakpoint,
-`rem` units and how they scale with browser font-size settings,
-`min-height: 2.75rem` (44px) for every interactive element and why this is an
-accessibility requirement, `max-width: 580px` + `margin: 0 auto` for centred layouts,
-`padding: 0 1rem` for edge breathing room on small screens,
-`white-space: nowrap` for labels that must not break, `flex-shrink: 0` to protect
-fixed-size elements in flex rows, `object-fit: contain` for the logo image,
-`filter: invert(1) brightness(1.8)` for the dark-mode logo,
-the `[data-theme="dark"] .site-logo` scoped selector.
-
-**Ends with:** The complete, fully responsive app. Every feature works on mobile and desktop.
-All interactive elements meet accessibility touch target requirements.
-The app is identical to `ear_training_chord_quiz_v3.html`.
+#### Chord library dependency
+The existing chord library already covers extensions to 9ths and 13ths, which is sufficient for
+most voicings. Additional chord types may be added incrementally if specific voicings expose gaps
+(e.g. very dense extended voicings needing 11ths on non-dominant chords).
 
 ---
 
-## Appendix A — Reference Tables
+## Recommended implementation order
 
-- All 12 intervals with semitones, quality, consonance classification
-- All chord families and symbols (Berklee notation)
-- All 28 scales with interval arrays and group classification
-- All 7 Greek modes with characteristic intervals and real-world examples
-- All UST types with tensions and resulting chord symbols
-- CSS custom properties reference (light and dark values)
-- MIDI number chart (octaves 0–8)
+1. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
+   - Add click handlers to scale name elements in `makeChordScalesRow()` in `breakdown.js`
+   - Wire to mode/tab switching in `app.js`
+   - Files needed: `breakdown.js`, `app.js`
+
+2. **Point 37 — Voice leading redesign** (well-specced, algorithmic)
+   - Timing fix (trivial — two constant changes in `playResolution()`)
+   - Constraint satisfaction voice leading algorithm replacing nearest-note
+   - Multiple resolution UI with interactive chips
+   - Files needed: `breakdown.js`
+
+3. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first)
+   - Files needed: `chords-mode.js`, `app.js`, `components.css`
+
+4. **BUG-5** — Fix fragile two-chord VexFlow layout in resolution notation (defer until
+   confirmed visible problems in practice)
 
 ---
 
-## Appendix B — Exercises and Ear Training Challenges
+## Parking Lot
 
-- Interval recognition challenge list (hardest pairs to distinguish)
-- Chord family discrimination exercises
-- Modal recognition listening examples
-- Suggested practice routines using the finished app
-
----
-
-*This plan is a living document. Parts may be split into A/B as content develops.*
-*Current estimate: 21 parts + 2 appendices.*
+- Spaced repetition — weight pool toward weak spots rather than uniform random
+- Quiz history — prevent same chord/scale/interval repeating back-to-back
+- Timed mode — answer before the clock runs out
+- MIDI input — play answer on a connected keyboard instead of the dropdown
+- Export session stats as CSV
