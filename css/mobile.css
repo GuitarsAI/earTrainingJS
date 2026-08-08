@@ -73,4 +73,8 @@
 
   /* ── 15. Keyboard hint: hide on mobile (Space/Enter less relevant) ── */
   .kbd-hint { display: none; }
+
+  /* ── 16. Footer: YouTube on own row, three LinkedIn badges below ── */
+  .app-footer { margin-top: 1.5rem; }
+  .app-footer-badges a:first-child { width: 100%; display: flex; justify-content: center; }
 }

@@ -52,7 +52,7 @@
 - **35** More UST types — Minor shell [♭3 + ♭7]: IIm, IV, ♭VII, ♭VI upper triads → m7 contexts. Maj7 shell [3 + 7]: II, IIm, V, VIm upper triads → Maj7 contexts. Pool panel split into three UST sections (Dom7 / m7 / Maj7 shell). Breakdown, labels, notation and root badge all adapt per shell quality
 - **36** Chord scales breakdown row (all chord families): algorithmic set-intersection against all 25 scales in SCALE_REF. Scale root = chord root (upper root for slash, lower root for poly, implied root for UST); all sounding pitch classes must be contained in the scale. Collapsible "N scales fit ▸" sub-section within breakdown; each row shows scale name + teal tag (neutral/bright/tense/dark/etc.) + faint descriptive note. Applies in quiz (post-answer) and dictionary mode across normal chords, inversions, slash, polychords, and UST
 - **37** Voice leading panel — *partially implemented, redesign specced in TODO below*
-- **38** Chord progression mode — *substantially complete; 3 small fixes remain (see TODO)*
+- **38** Chord progression mode — complete ✓ (all fixes confirmed in source Aug 2026)
 - **39** Extended / compound intervals: 7 new entries: m9, M9, A9/♯9, P11, A11/♯11, m13, M13. Pool panel split into "Simple intervals" and "Extended / Compound" sections (compound collapsed and unselected by default). Breakdown: "Simple equivalent" row replaces inversion row for compound intervals. INTERVAL_CONSONANCE and INTERVAL_CONTEXT extended to cover all new semitone values
 - **Tab order** Tabs reordered to Intervals | Chords | Scales (was Chords | Intervals | Scales); Intervals is now the default landing mode
 - **Mobile** Full mobile responsive pass: fixed bottom play bar removed; dark mode toggle moved to score bar on mobile (duplicate button, CSS show/hide per breakpoint, JS syncs both); root panel open on desktop / collapsed on mobile via JS boot; all root chips visible via flex-wrap grid (was hidden horizontal scroll); dynamic body padding-top driven by actual sticky header height; default root set to C
@@ -191,54 +191,23 @@ table to find the right file.
 
 ## TODO
 
-### Point 38 — Chord progression mode (3 fixes remaining)
+### Point 38 — Chord progression mode
 
-#### Status: Substantially complete — 3 small targeted fixes outstanding
+#### Status: Complete ✓ (verified by reading source — Aug 2026)
 
-Everything listed below has been verified by reading the actual source files (Aug 2026 session).
-All previously listed "still to do" items are now confirmed done except the three below.
+All items confirmed done by reading `js/modes/progressions-mode.js`:
 
-#### Confirmed complete ✓
 - ✓ Single continuous score notation (`showProgressionNotation()` fully rewritten — BUG-7 fixed)
 - ✓ Key/C chip support for progression notation
 - ✓ Grand staff decision based on union of all MIDI notes across whole progression
-- ✓ Chord labels above stave: Roman numeral + quality + root name (two SVG text lines per slot)
-- ✓ Horizontal scroll for 5+ chord progressions (CSS: `overflow-x: auto` + `flex: 0 0 auto` on `.prog-slot`)
-- ✓ Full progression collection: all genres implemented — Cadences, Diminished, Classical, Short, Pop & Rock, Jazz, Blues (including 12-bar, quick-change, jazz 12-bar), Minor, Rock, Reggae, Samba & Bossa, Metal, Extended (including Romanesca/Pachelbel 8-chord and Descending fifths 8-chord)
-- ✓ `progFunctionNote()` implemented with full `HARMONIC_FUNCTION` table: covers all 12 semitone degrees with quality-specific overrides (secondary dominants, blues, backdoor dominant, tritone sub context)
-- ✓ `dictShowProgression` uses `spelledRoot(pc)` for root badge — already correct
-- ✓ Breakdown panel in quiz (post-answer) and dictionary mode: per-chord rows with degree label, chord name, notes, intervals from root, harmonic function, chord scales
+- ✓ Chord labels above stave: Roman numeral + quality on top (bold, prominent); full chord name below in teal (e.g. `G7` not bare `G`) — FIX-1 and FIX-2 confirmed in code at lines 468–496
+- ✓ Root badge uses `spelledRoot(pc)` in quiz mode — FIX-3 confirmed at line 89
+- ✓ Horizontal scroll for 5+ chord progressions
+- ✓ Full progression collection: all genres implemented
+- ✓ `progFunctionNote()` with full `HARMONIC_FUNCTION` table
+- ✓ Breakdown panel in quiz (post-answer) and dictionary mode
 - ✓ Audio playback, slow playback, root chip retransposition, pool panel, answer grading
-
-#### Remaining fixes (3 items) — all in `js/modes/progressions-mode.js`
-
-**Fix 1 — Notation label order** (2-line swap in `showProgressionNotation()`)
-
-Currently the two SVG text lines above each chord are ordered with the root name (e.g. `G`) on
-top in teal and the Roman numeral + quality (e.g. `V 7`) below in bold. This is pedagogically
-inverted — the Roman numeral is what the mode is teaching and should be the most prominent element.
-
-Fix: swap the vertical order so Roman numeral + quality is on top (larger, bold, `--text` colour)
-and root name is below (smaller, teal `--accent`). Adjust `y` offsets accordingly.
-
-**Fix 2 — Chord label shows bare root, not full chord name** (1-line change in `showProgressionNotation()`)
-
-The lower label currently shows `chord.rootName` (e.g. `G`), which omits the quality. A musician
-expects to see `G7`, `Dm7`, `Cmaj7` etc. — root name plus quality suffix.
-
-Fix: compute `chordDisplayName = rootName + (ct && ct.name !== 'maj' ? ct.name : '')` using the
-already-looked-up `ct` object (`ct.name` is the display-ready quality string from `CHORD_TYPES`,
-e.g. `'7'`, `'m7'`, `'Maj7'`). Major triads conventionally omit the quality suffix so `'maj'`
-maps to `''`. No lookup table needed — reuses existing chord data.
-
-**Fix 3 — Root badge uses sharp-only spelling in quiz mode** (1-word change in `generateProgressionQuestion()`)
-
-`generateProgressionQuestion()` calls `updateRootBadge(showRoot ? NOTE_NAMES[pc] : null)` at
-line 89. `NOTE_NAMES` always produces sharps (C#, D#, etc.) instead of the contextually correct
-spelling (Db, Eb, etc.).
-
-Fix: replace `NOTE_NAMES[pc]` with `spelledRoot(pc)`, which already handles flat/sharp preference
-via `pinnedRootSpelling`. `dictShowProgression()` already does this correctly — quiz mode should match.
+- ✓ `teardownProgressionUI()` — idempotent cleanup on mode switch (BUG-1 fix)
 
 ---
 
@@ -450,38 +419,33 @@ most voicings. Additional chord types may be added incrementally if specific voi
 
 ## Recommended implementation order
 
-1. **Point 38 — 3 remaining fixes** (`js/modes/progressions-mode.js` only, ~10 lines total)
-   - Fix 1: swap label order in `showProgressionNotation()` SVG text elements
-   - Fix 2: compute `chordDisplayName` using `ct.name` instead of bare `rootName`
-   - Fix 3: replace `NOTE_NAMES[pc]` with `spelledRoot(pc)` in `generateProgressionQuestion()`
-
-2. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
+1. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
    - Add click handlers to scale name elements in `makeChordScalesRow()` in `breakdown.js`
    - Wire to mode/tab switching in `app.js`
 
-3. **Point 37 — Voice leading redesign** (largest remaining feature, well-specced)
+2. **Point 37 — Voice leading redesign** (largest remaining feature, well-specced)
    - Timing fix (trivial — two constant changes)
    - Constraint satisfaction voice leading algorithm
    - Multiple resolution UI with interactive chips
 
-4. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first; superseded in scope by Point 46 — implement 41 first as a foundation, then extend with 46)
+3. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first; superseded in scope by Point 46 — implement 41 first as a foundation, then extend with 46)
 
-5. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
+4. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
    - Add all missing entries to `chords.js` by family
    - Add new pool panel sections for classical / quartal families in `pool.js`
    - Verify breakdown and chord scales logic handles new interval patterns
 
-6. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows; expand `js/data/scales.js`)
+5. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows; expand `js/data/scales.js`)
    - Prioritise named/literature scales; mathematical unnamed collections are out of scope for quiz
    - Add new pool panel sections by cardinality group in `pool.js`
    - Verify chord-scales intersection logic still works for new entries
 
-7. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md` section by section)
+6. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md` section by section)
    - Implement voicing formulas in `js/engine/audio.js` and `js/engine/notation.js`
    - Add voicing chip panel groups in `js/ui/pool.js`
    - Add breakdown voicing explanation row in `js/breakdown/breakdown.js`
 
-8. **BUG-5** — Fix fragile two-chord VexFlow layout in resolution notation (defer until BUG-5
+7. **BUG-5** — Fix fragile two-chord VexFlow layout in resolution notation (defer until BUG-5
    causes confirmed visible problems in practice)
 
 ---
