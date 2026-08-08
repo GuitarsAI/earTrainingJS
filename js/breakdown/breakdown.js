@@ -891,17 +891,258 @@ function computeVoiceLeading(sourceMidi, targetMidi) {
   });
 }
 
-// Add "Resolves to" row to breakdown panel (always shown for chords)
+// ── POINT 37 Pass 2: Multi-context voice leading row ─────────────────────────
+//
+// When currentVoiceLeadingAnalysis is populated, renders one collapsible
+// cs-section per harmonic context, each with:
+//   Header: roman · scale name · function label · tension dots
+//   Body:   one sub-section per resolution target with a vl-table
+//
+// Falls back to the original single-resolution display for ambiguous families
+// (aug, sus, poly) where isAmbiguous=true or cache is null.
+//
 function makeVoiceLeadingRow(panel) {
-  const info = getResolutionInfo();
-  if (!info) return;
 
+  // ── Helper: build a vl-table from engine move objects ────────────────────────
+  // moves: array of { fromMidi, toMidi, semitones, direction }
+  function buildVLTable(moves, rootMidi, rootPc, sym) {
+    const tbl = document.createElement('table');
+    tbl.className = 'vl-table';
+    moves.forEach(move => {
+      const semiFromRoot   = ((move.fromMidi - rootMidi) % 12 + 12) % 12;
+      const toSemiFromRoot = ((move.toMidi   - rootMidi) % 12 + 12) % 12;
+      const fromName  = spelledNote(semiFromRoot,   rootPc, sym);
+      const toName    = spelledNote(toSemiFromRoot, rootPc, sym);
+      const role      = vlRoleLabel(semiFromRoot);
+      const isCommon  = move.semitones === 0;
+      const dir       = move.direction === 'up' ? '↑' : move.direction === 'down' ? '↓' : '—';
+      const intName   = VL_INTERVAL_NAMES[move.semitones] || (move.semitones + 'st');
+      const tr = document.createElement('tr');
+      const tdFrom = document.createElement('td'); tdFrom.textContent = fromName + ' →';
+      const tdTo   = document.createElement('td'); tdTo.textContent   = toName;
+      const tdInt  = document.createElement('td'); tdInt.textContent  = isCommon ? '' : (dir + ' ' + intName);
+      const tdRole = document.createElement('td'); tdRole.textContent = role;
+      tr.appendChild(tdFrom); tr.appendChild(tdTo);
+      tr.appendChild(tdInt);  tr.appendChild(tdRole);
+      tbl.appendChild(tr);
+    });
+    return tbl;
+  }
+
+  // ── Helper: tension dots ●●●○○ (max 5) ───────────────────────────────────────
+  function tensionDots(tension) {
+    const filled = Math.round(tension * 5);
+    return '●'.repeat(filled) + '○'.repeat(5 - filled);
+  }
+
+  // ── Helper: engine quality → display suffix ───────────────────────────────────
+  function engineQualToSuffix(q) {
+    return { major: '', minor: 'm', dominant: '7', maj7: 'Maj7', m7: 'm7', dim: '°', aug: '+' }[q] || '';
+  }
+
+  // ── Helper: engine quality → buildResolutionMidi key ─────────────────────────
+  function engineQualToBuildKey(q) {
+    return { major: 'maj', minor: 'min', dominant: 'dom7', maj7: 'maj7', m7: 'm7' }[q] || 'maj';
+  }
+
+  // ── Helper: human-readable function label ─────────────────────────────────────
+  function fnLabel(fn) {
+    return { tonic: 'tonic', predominant: 'predominant',
+             subdominant: 'subdominant', dominant: 'dominant' }[fn] || fn;
+  }
+
+  // ── Helper: resolution type → display label ───────────────────────────────────
+  function resTypeLabel(t) {
+    return {
+      authentic:   'Authentic cadence',
+      deceptive:   'Deceptive cadence',
+      plagal:      'Plagal cadence',
+      to_dominant: 'Move to dominant',
+      tritone_sub: 'Tritone substitution',
+      departure:   'Departure path',
+      direct:      'Direct',
+    }[t] || t;
+  }
+
+  // Source midi for this chord family
   const sourceMidi = (() => {
-    if (currentChord?.family === 'poly') return [...currentPolyLowerMidi, ...currentPolyUpperMidi];
-    if (currentChord?.family === 'ust')  return [...currentMidiNotes];
+    if (currentChord?.family === 'poly')  return [...currentPolyLowerMidi, ...currentPolyUpperMidi];
+    if (currentChord?.family === 'ust')   return [...currentMidiNotes];
     if (currentChord?.family === 'slash') return [currentSlashBassMidi, ...currentMidiNotes];
     return [...currentMidiNotes];
   })();
+
+  // Root midi / pc / sym for note spelling
+  const rootMidi = (() => {
+    if (currentChord?.family === 'poly'  && currentPolyLowerRootMidi) return currentPolyLowerRootMidi;
+    if (currentChord?.family === 'ust'   && currentUSTRootMidi)       return currentUSTRootMidi;
+    if (currentChord?.family === 'slash' && currentUpperRootMidi)     return currentUpperRootMidi;
+    return currentChordRootMidi || 60;
+  })();
+  const rootPc = (rootMidi % 12 + 12) % 12;
+  const sym    = currentChord?.invIndex !== undefined
+    ? currentChord.baseChord.symbol
+    : (currentChord?.symbol || 'maj');
+
+  // ── PASS 2: rich multi-context display ───────────────────────────────────────
+  const cache = currentVoiceLeadingAnalysis;
+
+  if (cache && !cache.isAmbiguous && cache.contexts && cache.contexts.length) {
+
+    const rowWrap = document.createElement('div');
+    rowWrap.className = 'breakdown-row';
+    rowWrap.style.alignItems = 'flex-start';
+
+    const keyEl = document.createElement('span');
+    keyEl.className = 'breakdown-key';
+    keyEl.style.paddingTop = '0.25rem';
+    keyEl.textContent = 'Resolves to';
+    rowWrap.appendChild(keyEl);
+
+    const valEl = document.createElement('span');
+    valEl.className = 'breakdown-val';
+    valEl.style.flex = '1';
+
+    cache.contexts.forEach((ctx, ctxIdx) => {
+      const scaleRootName = spelledRoot(ctx.scaleRootPc);
+      const isDeparture   = ctx.harmonicFunction === 'tonic' && ctx.tension < 0.2;
+
+      // ── Context collapsible ─────────────────────────────────────────────────
+      const ctxSec = document.createElement('div');
+      ctxSec.className = 'cs-section';
+      ctxSec.style.margin = '0.25rem 0';
+
+      const ctxHdr = document.createElement('div');
+      ctxHdr.className = 'cs-header';
+
+      const romanEl = document.createElement('span');
+      romanEl.style.cssText = 'color:var(--accent);font-weight:700;margin-right:0.4rem;min-width:2rem;display:inline-block;';
+      romanEl.textContent = ctx.roman;
+
+      const scaleEl = document.createElement('span');
+      scaleEl.style.cssText = 'flex:1;font-size:0.85rem;';
+      scaleEl.textContent = scaleRootName + ' ' + ctx.scaleName;
+
+      const fnEl = document.createElement('span');
+      fnEl.style.cssText = 'font-size:0.75rem;color:var(--accent-text);margin-right:0.4rem;';
+      fnEl.textContent = fnLabel(ctx.harmonicFunction);
+
+      const dotsEl = document.createElement('span');
+      dotsEl.style.cssText = 'font-size:0.7rem;letter-spacing:-1px;color:var(--accent);margin-right:0.35rem;';
+      dotsEl.textContent = tensionDots(ctx.tension);
+
+      const ctxArrow = document.createElement('span');
+      ctxArrow.className = 'cs-arrow';
+      ctxArrow.textContent = ctxIdx === 0 ? '▾' : '▸';
+
+      ctxHdr.appendChild(romanEl);
+      ctxHdr.appendChild(scaleEl);
+      ctxHdr.appendChild(fnEl);
+      ctxHdr.appendChild(dotsEl);
+      ctxHdr.appendChild(ctxArrow);
+
+      const ctxBody = document.createElement('div');
+      ctxBody.className = ctxIdx === 0 ? 'cs-body open' : 'cs-body';
+      ctxBody.style.padding = '0.25rem 0.625rem 0.4rem';
+
+      ctxHdr.addEventListener('click', () => {
+        const isOpen = ctxBody.classList.toggle('open');
+        ctxArrow.textContent = isOpen ? '▾' : '▸';
+      });
+
+      // Stable tonic note
+      if (isDeparture) {
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:0.8rem;color:var(--accent-text);margin-bottom:0.3rem;padding:0.2rem 0;';
+        note.textContent = 'Stable tonic — no resolution needed. Departure paths:';
+        ctxBody.appendChild(note);
+      }
+
+      // ── One sub-section per resolution ───────────────────────────────────────
+      (ctx.resolutions || []).forEach((res, resIdx) => {
+        const targetRootName = spelledRoot(res.targetRootPc);
+        const targetLabel    = targetRootName + engineQualToSuffix(res.targetQuality);
+        const strengthPct    = Math.round(res.strength * 100) + '%';
+
+        const resSec = document.createElement('div');
+        resSec.className = 'cs-section';
+        resSec.style.margin = '0.2rem 0';
+
+        const resHdr = document.createElement('div');
+        resHdr.className = 'cs-header';
+        resHdr.style.paddingLeft = '0.5rem';
+
+        const resNameEl = document.createElement('span');
+        resNameEl.style.cssText = 'font-weight:600;margin-right:0.5rem;';
+        resNameEl.textContent = '→ ' + targetLabel;
+
+        const cadEl = document.createElement('span');
+        cadEl.style.cssText = 'flex:1;font-size:0.78rem;color:var(--accent-text);';
+        cadEl.textContent = resTypeLabel(res.resolutionType);
+
+        const strEl = document.createElement('span');
+        strEl.style.cssText = 'font-size:0.72rem;color:var(--accent-text);margin-right:0.3rem;';
+        strEl.textContent = strengthPct;
+
+        const resArrow = document.createElement('span');
+        resArrow.className = 'cs-arrow';
+        resArrow.textContent = (ctxIdx === 0 && resIdx === 0) ? '▾' : '▸';
+
+        resHdr.appendChild(resNameEl);
+        resHdr.appendChild(cadEl);
+        resHdr.appendChild(strEl);
+        resHdr.appendChild(resArrow);
+
+        const resBody = document.createElement('div');
+        resBody.className = (ctxIdx === 0 && resIdx === 0) ? 'cs-body open' : 'cs-body';
+        resBody.style.padding = '0.25rem 0.625rem';
+
+        resHdr.addEventListener('click', () => {
+          const isOpen = resBody.classList.toggle('open');
+          resArrow.textContent = isOpen ? '▾' : '▸';
+        });
+
+        // Voice leading table — pre-computed by analyseChord()
+        if (res.voiceLeading && res.voiceLeading.length) {
+          resBody.appendChild(buildVLTable(res.voiceLeading, rootMidi, rootPc, sym));
+        } else {
+          // On-demand fallback — fires only if voiceLeading wasn't pre-computed
+          const buildKey     = engineQualToBuildKey(res.targetQuality);
+          let tgtRootMidi    = (Math.floor(rootMidi / 12) * 12) + res.targetRootPc;
+          if (tgtRootMidi < rootMidi - 6) tgtRootMidi += 12;
+          if (tgtRootMidi > rootMidi + 6) tgtRootMidi -= 12;
+          const targetMidi   = buildResolutionMidi(tgtRootMidi, buildKey);
+          const oldVl        = computeVoiceLeading(sourceMidi, targetMidi);
+          const sorted       = [...sourceMidi].sort((a, b) => a - b);
+          const moves        = oldVl.map((v, i) => {
+            const fMidi = sorted[i] ?? rootMidi;
+            const semi  = v.absSemi ?? 0;
+            const dir   = v.dir === '↑' ? 'up' : v.dir === '↓' ? 'down' : 'none';
+            const toPc  = targetMidi.reduce((best, t) =>
+              Math.abs(t - fMidi) < Math.abs(best - fMidi) ? t : best, targetMidi[0]);
+            return { fromMidi: fMidi, toMidi: toPc, semitones: semi, direction: dir };
+          });
+          resBody.appendChild(buildVLTable(moves, rootMidi, rootPc, sym));
+        }
+
+        resSec.appendChild(resHdr);
+        resSec.appendChild(resBody);
+        ctxBody.appendChild(resSec);
+      });
+
+      ctxSec.appendChild(ctxHdr);
+      ctxSec.appendChild(ctxBody);
+      valEl.appendChild(ctxSec);
+    });
+
+    rowWrap.appendChild(valEl);
+    panel.appendChild(rowWrap);
+    return;
+  }
+
+  // ── FALLBACK: single-resolution (ambiguous family / cache unavailable) ────────
+  const info = getResolutionInfo();
+  if (!info) return;
 
   const vl = computeVoiceLeading(sourceMidi, info.targetMidi);
 
@@ -917,30 +1158,22 @@ function makeVoiceLeadingRow(panel) {
   valEl.className = 'breakdown-val';
   valEl.style.flex = '1';
 
-  // Target chord name + direction label
   const nameEl = document.createElement('div');
   nameEl.style.fontWeight = '600';
   nameEl.style.marginBottom = '0.3rem';
   nameEl.textContent = info.targetName + '  ' + info.label;
   valEl.appendChild(nameEl);
 
-  // Voice leading table
   const tbl = document.createElement('table');
   tbl.className = 'vl-table';
   vl.forEach(v => {
     const tr = document.createElement('tr');
-    const tdFrom = document.createElement('td');
-    tdFrom.textContent = v.fromName + ' →';
-    const tdTo = document.createElement('td');
-    tdTo.textContent = v.toName;
-    const tdInterval = document.createElement('td');
-    tdInterval.textContent = v.isCommonTone ? '' : (v.dir + ' ' + v.intervalName);
-    const tdRole = document.createElement('td');
-    tdRole.textContent = v.role;
-    tr.appendChild(tdFrom);
-    tr.appendChild(tdTo);
-    tr.appendChild(tdInterval);
-    tr.appendChild(tdRole);
+    const tdFrom = document.createElement('td'); tdFrom.textContent = v.fromName + ' →';
+    const tdTo   = document.createElement('td'); tdTo.textContent   = v.toName;
+    const tdInt  = document.createElement('td'); tdInt.textContent  = v.isCommonTone ? '' : (v.dir + ' ' + v.intervalName);
+    const tdRole = document.createElement('td'); tdRole.textContent = v.role;
+    tr.appendChild(tdFrom); tr.appendChild(tdTo);
+    tr.appendChild(tdInt);  tr.appendChild(tdRole);
     tbl.appendChild(tr);
   });
   valEl.appendChild(tbl);
@@ -1712,6 +1945,13 @@ function qualityFullName(sym) {
 }
 
 function showBreakdown() {
+  // POINT 37: ensure voice leading cache is populated for both quiz and dict mode.
+  // In quiz mode this is already set by submitChordAnswer(); in dict mode it's null
+  // until here. Building it now covers both paths with no duplication.
+  if (!currentVoiceLeadingAnalysis && typeof _buildVoiceLeadingAnalysis === 'function') {
+    currentVoiceLeadingAnalysis = _buildVoiceLeadingAnalysis();
+  }
+
   const panel = document.getElementById('breakdownPanel');
   panel.innerHTML = '';
 

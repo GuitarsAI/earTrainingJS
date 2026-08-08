@@ -10,7 +10,7 @@
 // All functions are pure and stateless — same input always returns same output.
 // No DOM access. No app state. Consumed by breakdown.js for rendering.
 
-'use strict';
+
 
 // ─── 1. CONSTANTS ────────────────────────────────────────────────────────────
 
