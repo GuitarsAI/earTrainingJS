@@ -56,7 +56,7 @@
 - **34** More polychord types: 16 new entries covering Aug upper/lower and Dom7 upper/lower (both P5 and TT positions). polyQualitySuffix() and polyQualityFull() helpers replace all hardcoded quality checks throughout label generation and breakdown. Contextual notes added: aug symmetry (3 enharmonic roots), dom7 tritone tension
 - **35** More UST types — Minor shell [♭3 + ♭7]: IIm, IV, ♭VII, ♭VI upper triads → m7 contexts. Maj7 shell [3 + 7]: II, IIm, V, VIm upper triads → Maj7 contexts. Pool panel split into three UST sections (Dom7 / m7 / Maj7 shell). Breakdown, labels, notation and root badge all adapt per shell quality
 - **36** Chord scales breakdown row (all chord families): algorithmic set-intersection against all 25 scales in SCALE_REF. Scale root = chord root (upper root for slash, lower root for poly, implied root for UST); all sounding pitch classes must be contained in the scale. Collapsible "N scales fit ▸" sub-section within breakdown; each row shows scale name + teal tag (neutral/bright/tense/dark/etc.) + faint descriptive note. Applies in quiz (post-answer) and dictionary mode across normal chords, inversions, slash, polychords, and UST
-- **37** Voice leading panel — *partially implemented, redesign specced in TODO below*
+- **37** Voice leading panel — Pass 1 complete ✓ (Aug 2026). Pass 2 not yet started. See Point 37 TODO section and `voice_leading_algorithm_plan.md`.
 - **38** Chord progression mode — complete ✓ (all fixes confirmed in source Aug 2026)
 - **39** Extended / compound intervals: 7 new entries: m9, M9, A9/♯9, P11, A11/♯11, m13, M13. Pool panel split into "Simple intervals" and "Extended / Compound" sections (compound collapsed and unselected by default). Breakdown: "Simple equivalent" row replaces inversion row for compound intervals. INTERVAL_CONSONANCE and INTERVAL_CONTEXT extended to cover all new semitone values
 - **Tab order** Tabs reordered to Intervals | Chords | Scales (was Chords | Intervals | Scales); Intervals is now the default landing mode
@@ -82,6 +82,13 @@
   - Root panel now starts collapsed (removed `open` class from `rootPanelBody` in `index.html`)
   - Progression quiz default pool reduced from 8 to 4 most common progressions: I–V–vi–IV, I–IV–V–I, ii–V–I, I–vi–IV–V
   - Files changed: `index.html`, `js/ui/pool.js`, `js/data/progressions.js`, `js/modes/progressions-mode.js`
+- **47** Harmonic field in scale breakdown — implemented and improved (Session: Aug 2026)
+  - `buildHarmonicField()` and `makeHarmonicFieldRow()` implemented in `breakdown.js`
+  - Collapsible "N degrees ▸" sub-section within scale breakdown
+  - `harmonicFieldSymbolSuffix()` added as single source of truth for all chord symbol → display suffix mappings (consistent with app notation: `Maj7` not `Δ`, `m7♭5` not `ø`, `°7` not `dim7`, etc.)
+  - Each pill shows three lines: Roman numeral with quality suffix (`viiø7` → corrected in this session to `viim7♭5`), root + quality shorthand (`Bm7♭5`), full quality name (`half-diminished`)
+  - Interval fallback (degrees with no clean triad) stores `null` for `chordSym`; pill omits quality name line gracefully rather than showing raw interval abbreviation
+  - Status: complete ✓
 
 ---
 
@@ -224,7 +231,7 @@ All items confirmed done by reading `js/modes/progressions-mode.js`:
 
 ### Point 37 — Voice leading panel (redesign)
 
-#### Status: Engine complete — wiring not yet started
+#### Status: Pass 1 complete ✓ — Pass 2 not yet started
 
 > ⚠️ **See `voice_leading_algorithm_plan.md` for the full algorithm spec before implementing.**
 > That document covers: what exists and can be reused, what must be replaced, the 7-step
@@ -240,9 +247,33 @@ All items confirmed done by reading `js/modes/progressions-mode.js`:
 All 7 steps of the algorithm are fully implemented as pure functions. No stubs. No DOM access.
 Ready to be wired into `breakdown.js`.
 
+#### Pass 1 — Data layer ✅ COMPLETE
+
+Files changed: `js/engine/state.js`, `js/modes/chords-mode.js`, `js/breakdown/breakdown.js`
+
+- ✅ `currentVoiceLeadingAnalysis = null` in `state.js`; reset in `generateChordQuestion()` for all four chord family paths
+- ✅ `_buildVoiceLeadingAnalysis()` called at answer-reveal time in `submitChordAnswer()`; handles all four families (normal, slash, UST, poly)
+- ✅ `getResolutionInfo()` reads from `currentVoiceLeadingAnalysis` when populated; falls back to `RESOLUTION_TARGETS` when cache is null
+- ✅ `targetQuality` is now a first-class field on the `getResolutionInfo()` return object — no fragile string parsing anywhere
+- ✅ UST label corrected from `'→ IVΔ7'` to `'→ IVMaj7'` (app uses `Maj7` not `Δ` consistently)
+- ✅ `computeVoiceLeading()` calls `computeVoiceLeadingRules()` when engine + context available; proximity loop retained as fallback
+- ⚠️ `RESOLUTION_TARGETS` retained as live fallback — not deleted yet. Will be removed in a future cleanup pass once engine is confirmed stable.
+
+#### Pass 2 — Multi-resolution pills UI (not yet started)
+
+**Goal:** Surface the full richness of `analyseChord()` output in the breakdown panel.
+
+- `makeVoiceLeadingRow()` renders one pill per resolution context
+- Each pill: roman numeral · scale name · cadence name · strength indicator
+- Expanding a pill shows the voice leading table for that resolution
+- Visual model: follow `makeRiemannRow()` pill pattern already in `breakdown.js`
+- `playResolution()` continues to play the single primary resolution — no change to audio
+
+**Files to change:** `js/breakdown/breakdown.js`, `css/components.css`
+
 #### What the algorithm replaces
-- `RESOLUTION_TARGETS` — hardcoded lookup table → deleted entirely; replaced by `deriveResolutionTargets()` in `voiceLeading.js`
-- Proximity loop in `computeVoiceLeading()` → replaced by 7-rule constraint satisfaction engine in `computeVoiceLeadingRules()`
+- `RESOLUTION_TARGETS` — hardcoded lookup table → superseded by `deriveResolutionTargets()` in `voiceLeading.js` (retained as fallback for now)
+- Proximity loop in `computeVoiceLeading()` → superseded by 7-rule constraint satisfaction engine in `computeVoiceLeadingRules()` (proximity loop retained as fallback)
 - `getResolutionInfo()` normal chord path → reads cached `analyseChord()` result instead of lookup table
 
 #### Family-by-family handling (decided Aug 2026)
@@ -254,55 +285,13 @@ Ready to be wired into `breakdown.js`.
 | Polychords | Merge upper + lower pitch class sets; use lower root; skip diatonic context discovery (polychords are polytonal by design — forcing into one scale gives misleading results); run voice leading computation only |
 | Aug / sus / power | Stay in `AMBIGUOUS_FAMILIES` whitelist; existing simple resolution logic unchanged |
 
-**Why polychords skip context discovery:** polychords intentionally span two tonal centres.
-The educational model is that the user investigates each triad individually, then the polychord
-is heard as its own entity — voice leading shows where the notes go without claiming the chord
-belongs to one key.
-
 #### Caching
 `analyseChord()` result stored in `currentVoiceLeadingAnalysis` state variable. Computed once
 when the answer is revealed. Not re-run on every `getResolutionInfo()` call. Reset to null on
 each new question.
 
-#### Pass 1 — Data layer (no visual change)
-**Goal:** Wire the engine. Existing UI continues to work identically.
-
-1. Add `currentVoiceLeadingAnalysis = null` to state variables; reset on each new chord
-2. Call `analyseChord()` when answer is revealed; store in `currentVoiceLeadingAnalysis`
-3. Update `getResolutionInfo()` normal chord path — read from cache, pick primary resolution
-   (highest tension context + highest strength resolution), map to existing flat shape
-   `{ targetRootMidi, targetMidi, targetName, label }` so all callers are unchanged
-4. Update `getResolutionInfo()` slash path — same, using upper chord data
-5. Update `getResolutionInfo()` UST path — construct implied pitch classes, run `analyseChord()`
-6. Update `getResolutionInfo()` poly path — merge pitch classes, use lower root, skip context
-   discovery, go straight to voice leading
-7. Replace `computeVoiceLeading()` proximity loop — call `computeVoiceLeadingRules()` from
-   `voiceLeading.js`, passing the context from `currentVoiceLeadingAnalysis`
-8. Delete `RESOLUTION_TARGETS`
-
-**Files changed:** `js/breakdown/breakdown.js` only.
-**Visual output:** identical to current.
-
-#### Pass 2 — Multi-resolution pills UI
-**Goal:** Surface the full richness of `analyseChord()` output in the breakdown panel.
-
-- `makeVoiceLeadingRow()` renders one pill per resolution context
-- Each pill: roman numeral · scale name · cadence name · strength indicator
-- Expanding a pill shows the voice leading table for that resolution
-- Visual model: follow `makeRiemannRow()` pill pattern already in `breakdown.js`
-- `playResolution()` continues to play the single primary resolution — no change to audio
-
-**Files changed:** `js/breakdown/breakdown.js`, `css/components.css`
-
 #### Resolution timing fix (simple)
-Tighten to **1.2s source + 0.3s pause** in `playResolution()`. Two constant changes.
-
-#### What exists now (untouched until Pass 1)
-- `RESOLUTION_TARGETS` — static lookup: chord symbol → `{ offset, quality, label }`
-- `computeVoiceLeading(sourceMidi, targetMidi)` — nearest-note only; no tendency-tone awareness
-- `makeVoiceLeadingRow(panel)` — renders a voice leading table in the breakdown panel
-- `playResolution()` — plays source chord then resolution chord; "Resolve →" / "← Chord" toggle
-- `renderResolutionNotation()` — two-chord notation side by side (BUG-5 affects this)
+Tighten to **1.2s source + 0.3s pause** in `playResolution()`. Two constant changes. Not yet done.
 
 ---
 
@@ -410,31 +399,26 @@ Applies to **Chords mode only** — not progressions or other modes.
 
 ## Recommended implementation order
 
-1. **Point 48 — Collapsible breakdown sub-sections** (self-contained, affects chords + scales only)
-   - Do this first as it restructures the breakdown panel that Point 47 and 37 will add into
+1. **Point 37 Pass 2 — Multi-resolution pills UI** (Pass 1 is done; Pass 2 is the natural next step)
+   - `makeVoiceLeadingRow()` renders one pill per context
+   - Follow `makeRiemannRow()` pill pattern
+   - CSS additions to `components.css`
 
-2. **Point 47 — Harmonic field in scale breakdown** (depends on Point 48 structure being in place)
-
-3. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
+2. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
    - Add click handlers to scale name elements in `makeChordScalesRow()` in `breakdown.js`
    - Wire to mode/tab switching in `app.js`
 
-4. **Point 37 — Voice leading redesign** (Option B — full algorithmic context discovery)
-   > **Read `voice_leading_algorithm_plan.md` before starting any of these steps.**
-   - **Pass 1:** Wire engine to `breakdown.js` — data layer only, no visual change
-   - **Pass 2:** Multi-resolution pills UI in `makeVoiceLeadingRow()`
-   - **Timing fix:** 1.2s source + 0.3s pause — trivial, do in Pass 1
-   - **BUG-5:** Defer unless confirmed causing visible problems
+3. **Point 48 — Collapsible breakdown sub-sections** (self-contained, affects chords + scales only)
 
-5. **Point 41 — Expanded voicing system** (largest scope; superseded in scope by Point 46 — implement 41 first as foundation, then extend with 46)
+4. **Point 41 — Expanded voicing system** (largest scope; superseded in scope by Point 46 — implement 41 first as foundation, then extend with 46)
 
-6. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
+5. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
 
-7. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows)
+6. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows)
 
-8. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md`)
+7. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md`)
 
-9. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+8. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
 
 ---
 
@@ -545,33 +529,22 @@ architectural foundation; Point 46 then completes the system.
 
 ## Point 47 — Harmonic field in scale breakdown
 
-### Status: Not yet started
+### Status: Complete ✓ (Session: Aug 2026)
 
-Show the diatonic seventh chords built on every degree of the scale in the breakdown panel.
+Show the diatonic chords built on every degree of the scale in the breakdown panel.
 
-### Algorithm
-- For each scale degree, stack thirds using only pitch classes present in the scale
-- Build as many thirds as possible: four scale tones → seventh chord; three → triad
-- Handles all scale types automatically — pentatonics and hexatonics show whatever fits
-- Respects the selected root; chord symbols use existing Berklee conventions from `CHORD_TYPES`
+### What was implemented
+- `buildHarmonicField(intervals, rootMidi, sym)` — returns array of `{ roman, rootName, chordSym }` per scale degree
+- `harmonicFieldSymbolSuffix(sym)` — single source of truth mapping all internal chord symbols to display suffixes consistent with app notation
+- `makeHarmonicFieldRow(panel, intervals, rootMidi, sym)` — renders collapsible "N degrees ▸" sub-section
+- Each pill: Roman numeral with quality suffix (line 1), root + quality shorthand e.g. `Dm7`, `G7`, `B°` (line 2), full quality name e.g. `minor 7th`, `dominant 7th`, `diminished` (line 3)
+- Degrees with no clean triad (`chordSym = null`) suppress the quality name line gracefully
+- Covers all scale types: 7-note scales get seventh chords; pentatonic/hexatonic show triads where possible; very sparse scales show degree only
 
-### Display
-- One row per scale degree: Roman numeral · chord symbol · chord name
-- Collapsible sub-section within breakdown (collapsed by default)
-- Label: "Harmonic Field"
-- Scales mode only — quiz post-answer and dictionary mode
-
-### Files to change
+### Files changed
 | Change | File |
 |---|---|
-| `makeHarmonicFieldRow()` — build and render the row | `js/breakdown/breakdown.js` |
-| Call from scale breakdown branch | `js/breakdown/breakdown.js` |
-
-### Implementation steps
-1. Write `buildHarmonicField(scalePitchClasses, rootMidi)` — returns array of `{ degree, roman, symbol, name }`
-2. Write `makeHarmonicFieldRow()` — renders collapsible sub-section
-3. Call from scales branch of `showBreakdown()` after existing rows
-4. Verify for: Major, Harmonic Minor, Melodic Minor, Diminished, Whole Tone, pentatonics
+| `harmonicFieldSymbolSuffix()`, `buildHarmonicField()`, `makeHarmonicFieldRow()` | `js/breakdown/breakdown.js` |
 
 ---
 

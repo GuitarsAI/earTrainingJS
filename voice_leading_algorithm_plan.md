@@ -12,6 +12,11 @@
 - **Session Aug 2026 (Pass 1 design)** — Full scope discussion completed. Decisions recorded
   in §3, §4, §8. `voiceLeading.js` confirmed complete as a pure engine (all 7 steps
   implemented, no stubs). Pass 1 and Pass 2 scope locked. Poly/UST/slash handling decided.
+- **Session Aug 2026 (Pass 1 implementation)** — Pass 1 complete. All three files delivered.
+  `state.js`, `chords-mode.js`, and `breakdown.js` updated. See §8 for full status.
+  Two improvements added beyond the original Pass 1 spec: `targetQuality` added as a
+  first-class field on `getResolutionInfo()` return value (eliminates fragile string parsing);
+  harmonic field pills redesigned with proper musical notation throughout.
 
 ---
 
@@ -75,12 +80,12 @@ Everything else — contexts, tensions, resolutions, voice leading — is **comp
 ### Replace entirely
 | Existing code | Problem | Replacement |
 |---|---|---|
-| `RESOLUTION_TARGETS` | Hardcoded lookup table, one resolution per chord symbol | `analyseChord()` — algorithmic derivation for all normal chords, slash, UST |
-| Proximity loop in `computeVoiceLeading()` | Nearest-note only, no tendency-tone awareness | `computeVoiceLeadingRules()` — 7-rule priority engine already implemented in `voiceLeading.js` |
-| `getResolutionInfo()` normal chord path | Reads from `RESOLUTION_TARGETS` | Calls `analyseChord()`, picks primary resolution from result |
-| Poly/UST/slash hardcoded offsets in `getResolutionInfo()` | Small hardcoded tables | See §4 — each family gets proper treatment |
+| `RESOLUTION_TARGETS` | Hardcoded lookup table, one resolution per chord symbol | `analyseChord()` — algorithmic derivation for all normal chords, slash, UST. **Kept as fallback in current implementation until `analyseChord()` cache is populated.** |
+| Proximity loop in `computeVoiceLeading()` | Nearest-note only, no tendency-tone awareness | `computeVoiceLeadingRules()` — 7-rule priority engine in `voiceLeading.js`. **Wired in Pass 1; proximity loop kept as fallback when engine unavailable.** |
+| `getResolutionInfo()` normal chord path | Reads from `RESOLUTION_TARGETS` | Now reads from `currentVoiceLeadingAnalysis` cache when populated; falls back to `RESOLUTION_TARGETS` when cache is null. **RESOLUTION_TARGETS not yet deleted — serves as live fallback.** |
+| Poly/UST/slash hardcoded offsets in `getResolutionInfo()` | Small hardcoded tables | Each family now has a clean path in `getResolutionInfo()`. `targetQuality` is a first-class return field — no string parsing. |
 
-### `voiceLeading.js` status — COMPLETE
+### `voiceLeading.js` status — COMPLETE ✓
 All 7 steps fully implemented as of Aug 2026. No stubs. Pure functions, no DOM access.
 - `findDiatonicContexts()` — Step 3, iterates SCALES × 12 roots (~300 checks per chord)
 - `scoreTension()` — Step 4, BASE_TENSION + tritone + alteration modifiers
@@ -94,7 +99,7 @@ All 7 steps fully implemented as of Aug 2026. No stubs. Pure functions, no DOM a
 
 ### Normal chords
 Run `analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi, family)` directly.
-`RESOLUTION_TARGETS` deleted. All resolution targets derived algorithmically.
+`RESOLUTION_TARGETS` retained as fallback but superseded by cache when populated.
 
 ### Slash chords
 Pass upper chord root as `chordRootPc`, full pitch class set (upper notes only — bass is a
@@ -148,15 +153,15 @@ STEP 3: Diatonic Context Discovery        ← extends getChordScales()
 STEP 4: Tension Scoring per Context
   │
   ▼
-STEP 5: Resolution Target Derivation      ← replaces RESOLUTION_TARGETS
+STEP 5: Resolution Target Derivation      ← supersedes RESOLUTION_TARGETS
   │
   ▼
-STEP 6: Voice Leading Computation         ← replaces proximity loop
+STEP 6: Voice Leading Computation         ← supersedes proximity loop
   │        (constraint satisfaction, 7-rule priority engine)
   ▼
 STEP 7: Ranking & Final Output
 
-OUTPUT: structured data per context — feeds multi-resolution pill UI
+OUTPUT: structured data per context — feeds multi-resolution pill UI (Pass 2)
 ```
 
 ---
@@ -210,38 +215,36 @@ The **only** encoded knowledge is:
 
 ---
 
-## 8. Implementation Plan — Updated Aug 2026
+## 8. Implementation Plan — Updated Aug 2026 (Pass 1 complete)
 
 ### Current status
-`voiceLeading.js` is complete. All Pass 1 work is in `breakdown.js`.
 
-### Pass 1 — Data layer (no visual change to UI)
+| File | Status |
+|---|---|
+| `js/engine/voiceLeading.js` | ✅ Complete — all 7 steps, no stubs |
+| `js/engine/state.js` | ✅ Updated — `currentVoiceLeadingAnalysis = null` added |
+| `js/modes/chords-mode.js` | ✅ Updated — cache reset in `generateChordQuestion()`; `_buildVoiceLeadingAnalysis()` called at answer-reveal in `submitChordAnswer()` |
+| `js/breakdown/breakdown.js` | ✅ Updated — `getResolutionInfo()` reads cache; `computeVoiceLeading()` uses `computeVoiceLeadingRules()`; `targetQuality` is a first-class return field; harmonic field pills redesigned |
 
-**Goal:** Wire `analyseChord()` into `breakdown.js`. Existing UI continues to work
-identically, but voice leading is now rule-based and resolutions are algorithmically derived.
+### Pass 1 — Data layer ✅ COMPLETE
 
-**Steps:**
-1. Add `currentVoiceLeadingAnalysis = null` state variable (reset on each new chord)
-2. Call `analyseChord()` once when answer is revealed — store result in
-   `currentVoiceLeadingAnalysis`
-3. Update `getResolutionInfo()` normal chord path — read from `currentVoiceLeadingAnalysis`,
-   pick primary resolution (highest tension context, highest strength resolution), map to
-   existing flat `{ targetRootMidi, targetMidi, targetName, label }` shape so all callers
-   unchanged
-4. Update slash chord path in `getResolutionInfo()` — same as above using upper root
-5. Update UST path in `getResolutionInfo()` — construct implied pitch classes from
-   `shellIntervals + upperTriadIntervals offset by upperTriadRoot`, run `analyseChord()`
-6. Update poly path in `getResolutionInfo()` — merge pitch class sets, use lower root,
-   skip context discovery, go straight to voice leading
-7. Replace `computeVoiceLeading()` proximity loop — call `computeVoiceLeadingRules()` from
-   `voiceLeading.js`, passing the cached context from `currentVoiceLeadingAnalysis`
-8. Delete `RESOLUTION_TARGETS`
+**Goal:** Wire `analyseChord()` into the app. Existing UI continues to work identically.
 
-**Files changed:** `js/breakdown/breakdown.js` only.
-**Files deleted:** nothing (RESOLUTION_TARGETS removed from `breakdown.js`).
-**Visual output:** identical to current — same single resolution shown, same table layout.
+**Steps completed:**
+1. ✅ `currentVoiceLeadingAnalysis = null` added to `state.js`; reset in `generateChordQuestion()` for all four chord family paths
+2. ✅ `_buildVoiceLeadingAnalysis()` called in `submitChordAnswer()` after `answered = true`; result stored in `currentVoiceLeadingAnalysis`; handles all four families (normal, slash, UST, poly)
+3. ✅ `getResolutionInfo()` normal chord path reads from `currentVoiceLeadingAnalysis` when populated; maps primary resolution to flat return shape; falls back to `RESOLUTION_TARGETS` when cache is null
+4. ✅ Slash path: clean `targetQuality` return, no fragile suffix parsing
+5. ✅ UST path: clean `targetQuality` return; label corrected from `'→ IVΔ7'` to `'→ IVMaj7'` (app uses `Maj7`, not `Δ`)
+6. ✅ Poly path: clean `targetQuality` return; voice leading goes straight to proximity/rules engine
+7. ✅ `computeVoiceLeading()` calls `computeVoiceLeadingRules()` when engine + context available; proximity fallback retained
+8. ⚠️ `RESOLUTION_TARGETS` **retained as live fallback** — not yet deleted. Will be deleted in a future cleanup pass once the engine is confirmed stable in production.
 
-### Pass 2 — UI upgrade (multi-resolution pills)
+**Improvements added beyond original Pass 1 spec:**
+- `targetQuality` is now a first-class field on the `getResolutionInfo()` return object. `computeVoiceLeading()` reads it directly — no string parsing of `targetName`. `qualSuffix()` helper inside `getResolutionInfo()` ensures display labels (`'7'`, `'Maj7'`, `'m'`) are derived from `targetQuality` in one place.
+- `harmonicFieldSymbolSuffix()` added to `breakdown.js` — single source of truth mapping all internal chord symbols to display suffixes consistent with app notation (no triangles, no `ø`). Harmonic field pills now show three lines: Roman numeral with quality suffix, root + quality shorthand (`Dm7`, `G7`, `B°`), full quality name (`minor 7th`, `dominant 7th`, `diminished`). Interval fallback cases (`chordSym = null`) suppress the quality name line gracefully.
+
+### Pass 2 — Multi-resolution pills UI (not yet started)
 
 **Goal:** Expose the full richness of `analyseChord()` output in the breakdown panel.
 
@@ -251,7 +254,7 @@ identically, but voice leading is now rule-based and resolutions are algorithmic
 - Pill pattern follows `makeRiemannRow()` as the model
 - `playResolution()` continues to play the primary resolution (no change)
 
-**Files changed:** `js/breakdown/breakdown.js`, `css/components.css`
+**Files to change:** `js/breakdown/breakdown.js`, `css/components.css`
 
 ### New file: `js/engine/voiceLeading.js` — COMPLETE ✓
 
@@ -260,19 +263,21 @@ js/engine/voiceLeading.js
   ├── identifyChord()            — Step 1
   ├── findDiatonicContexts()     — Step 3, extends getChordScales()
   ├── scoreTension()             — Step 4
-  ├── deriveResolutionTargets()  — Step 5, replaces RESOLUTION_TARGETS
-  ├── computeVoiceLeadingRules() — Step 6, replaces proximity loop
+  ├── deriveResolutionTargets()  — Step 5, supersedes RESOLUTION_TARGETS
+  ├── computeVoiceLeadingRules() — Step 6, supersedes proximity loop
   └── analyseChord()             — public entry point
 ```
 
 ### Changes to existing files
-| File | Change |
-|---|---|
-| `js/breakdown/breakdown.js` | Pass 1: wire `analyseChord()`, replace proximity loop, delete `RESOLUTION_TARGETS` |
-| `js/breakdown/breakdown.js` | Pass 2: `makeVoiceLeadingRow()` — multi-resolution pills |
-| `css/components.css` | Pass 2: pill styles for resolution cards |
-| `js/data/chords.js` | No changes |
-| `js/data/spelling.js` | No changes |
+| File | Change | Status |
+|---|---|---|
+| `js/engine/state.js` | Added `currentVoiceLeadingAnalysis = null` | ✅ Done |
+| `js/modes/chords-mode.js` | Cache reset + `_buildVoiceLeadingAnalysis()` wiring | ✅ Done |
+| `js/breakdown/breakdown.js` | Pass 1: `getResolutionInfo()` reads cache; `computeVoiceLeading()` uses rules engine; `targetQuality` field; harmonic field pills redesigned | ✅ Done |
+| `js/breakdown/breakdown.js` | Pass 2: `makeVoiceLeadingRow()` — multi-resolution pills | Not yet started |
+| `css/components.css` | Pass 2: pill styles for resolution cards | Not yet started |
+| `js/data/chords.js` | No changes | — |
+| `js/data/spelling.js` | No changes | — |
 
 ---
 
