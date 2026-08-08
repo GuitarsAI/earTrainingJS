@@ -585,6 +585,8 @@ document.addEventListener('keydown', e => {
   });
 })();
 
+// ── About mode — see js/modes/about-mode.js ───────────────────────────────────
+
 initAudio();
 
 // ── Dynamic header offset — keeps body clear of sticky shell regardless of height ──

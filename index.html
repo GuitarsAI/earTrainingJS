@@ -19,6 +19,8 @@
     <div class="header-left">
       <img class="site-logo" src="assets/logo.png" alt="The Sound Travels logo">
       <div class="title">The Sound Travels Ear Training</div>
+      <!-- About button — sits tight next to title -->
+      <button class="about-btn" id="aboutBtn" aria-label="About The Sound Travels">ℹ</button>
     </div>
     <!-- 21b: theme toggle stays on branding row -->
     <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">☀️</button>
@@ -165,6 +167,54 @@
   <!-- POINT 11: Keyboard shortcut hint (1-4 removed; dropdown replaces buttons) -->
   <div class="kbd-hint">Space = play &nbsp;·&nbsp; Enter = next</div>
 
+  <!-- About view — shown when ⓘ is clicked, hidden otherwise -->
+  <div id="aboutView" style="display:none">
+    <div class="about-section">
+
+      <!-- Credits -->
+      <div class="about-card">
+        <div class="about-card-title">About</div>
+        <p class="about-card-text">
+          <strong>The Sound Travels Ear Training</strong> is a free, open ear training tool
+          built with love for musicians at every level. Created by <strong>Renato Fera</strong>.
+        </p>
+        <div class="about-badges">
+          <a href="https://www.youtube.com/@the-sound-travels" target="_blank" rel="noopener noreferrer">
+            <img src="https://img.shields.io/badge/The%20Sound%20Travels-FF0000?style=flat&logo=youtube&logoColor=white" alt="YouTube">
+          </a>
+          <a href="https://www.linkedin.com/in/renato-profeta/" target="_blank" rel="noopener noreferrer">
+            <img src="https://img.shields.io/badge/Renato%20Fera-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn">
+          </a>
+          <a href="https://www.linkedin.com/company/the-sound-travels/" target="_blank" rel="noopener noreferrer">
+            <img src="https://img.shields.io/badge/The%20Sound%20Travels-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="The Sound Travels LinkedIn">
+          </a>
+          <a href="https://www.linkedin.com/company/brics-audio-acoustics-music-technology" target="_blank" rel="noopener noreferrer">
+            <img src="https://img.shields.io/badge/BRICS%2B%20Audio-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="BRICS+ Audio LinkedIn">
+          </a>
+        </div>
+      </div>
+
+      <!-- YouTube embed placeholder -->
+      <div class="about-card">
+        <div class="about-card-title">Watch</div>
+        <div class="about-youtube-placeholder">
+          <span>📺 YouTube video embed coming soon</span>
+        </div>
+      </div>
+
+      <!-- Sponsor / donate -->
+      <div class="about-card">
+        <div class="about-card-title">Support this project</div>
+        <p class="about-card-text">If this tool helps your musical journey, consider buying me a coffee ☕</p>
+        <a href="#" class="about-sponsor-btn" target="_blank" rel="noopener noreferrer">☕ Sponsor / Donate</a>
+        <div class="about-qr-placeholder">
+          <span>QR code coming soon</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="app-footer">
     <div class="app-footer-badges">
@@ -217,6 +267,7 @@
 <script src="js/modes/intervals-mode.js"></script>
 <script src="js/modes/scales-mode.js"></script>
 <script src="js/modes/progressions-mode.js"></script>
+<script src="js/modes/about-mode.js"></script>
 
 <!-- App boot — last, depends on everything above -->
 <script src="js/app.js"></script>

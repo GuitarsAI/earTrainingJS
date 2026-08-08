@@ -61,6 +61,14 @@
   - Decision: implement every chord in practical music theory; if `chords.js` grows too large, split by family into separate files all feeding into `CHORD_TYPES`
   - Status: reference complete, implementation not yet started — see Point 44 TODO section
 
+- **About** About view + ⓘ header button (Session: Aug 2026)
+  - ⓘ info-circle button added to sticky header, inline between title and dark/light toggle
+  - Always visible on all screen sizes including mobile; dark/light toggle fixed to stay in header on mobile (duplicate score-bar toggle hidden)
+  - About view replaces main content area when ⓘ is clicked — same switchMode infrastructure; mode tabs remain visible and clickable to return to training
+  - About view cards: Credits + badges, YouTube embed placeholder, Sponsor/donate button + QR placeholder
+  - New file: `js/modes/about-mode.js` — `showAbout()`, `hideAbout()`, ⓘ button listener, tab intercept
+  - Files changed: `index.html`, `js/modes/about-mode.js` (new), `js/app.js`, `css/components.css`, `css/mobile.css`
+
 - **43** Breakdown default state + full chip sync (Session: Aug 2026)
   - Breakdown panel now starts collapsed by default (removed `open` from `breakdownPanelBody` in `index.html`)
   - All chip selections in dictionary mode and quiz post-answer now trigger full notation + breakdown refresh: chord style chips, interval style chips, scale direction chips (`js/ui/pool.js`), Key/C chip (`js/data/keysig.js`), root/octave chips via `recomputeCurrentNotes()` (`js/modes/progressions-mode.js`). Voicing chips already routed through `recomputeCurrentNotes()` — no extra change needed
@@ -419,33 +427,38 @@ most voicings. Additional chord types may be added incrementally if specific voi
 
 ## Recommended implementation order
 
-1. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
+1. **Point 48 — Collapsible breakdown sub-sections** (self-contained, affects chords + scales only)
+   - Do this first as it restructures the breakdown panel that Point 47 will add into
+
+2. **Point 47 — Harmonic field in scale breakdown** (depends on Point 48 structure being in place)
+
+3. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
    - Add click handlers to scale name elements in `makeChordScalesRow()` in `breakdown.js`
    - Wire to mode/tab switching in `app.js`
 
-2. **Point 37 — Voice leading redesign** (largest remaining feature, well-specced)
+4. **Point 37 — Voice leading redesign** (largest remaining feature, well-specced)
    - Timing fix (trivial — two constant changes)
    - Constraint satisfaction voice leading algorithm
    - Multiple resolution UI with interactive chips
 
-3. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first; superseded in scope by Point 46 — implement 41 first as a foundation, then extend with 46)
+5. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first; superseded in scope by Point 46 — implement 41 first as a foundation, then extend with 46)
 
-4. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
+6. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
    - Add all missing entries to `chords.js` by family
    - Add new pool panel sections for classical / quartal families in `pool.js`
    - Verify breakdown and chord scales logic handles new interval patterns
 
-5. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows; expand `js/data/scales.js`)
+7. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows; expand `js/data/scales.js`)
    - Prioritise named/literature scales; mathematical unnamed collections are out of scope for quiz
    - Add new pool panel sections by cardinality group in `pool.js`
    - Verify chord-scales intersection logic still works for new entries
 
-6. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md` section by section)
+8. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md` section by section)
    - Implement voicing formulas in `js/engine/audio.js` and `js/engine/notation.js`
    - Add voicing chip panel groups in `js/ui/pool.js`
    - Add breakdown voicing explanation row in `js/breakdown/breakdown.js`
 
-7. **BUG-5** — Fix fragile two-chord VexFlow layout in resolution notation (defer until BUG-5
+9. **BUG-5** — Fix fragile two-chord VexFlow layout in resolution notation (defer until BUG-5
    causes confirmed visible problems in practice)
 
 ---
@@ -629,3 +642,80 @@ Triad over Bass (→ Slash chords), Upper Structure Triads (→ UST), Octave Dou
 5. Add voicing explanation row to breakdown for all Tier 1 voicings (name, structural rule, musical context, source citation)
 6. Add Tier 2 breakdown descriptions for Block, Classical, Impressionist, Pop/Gospel — displayed when the nearest Tier 1 chip is active, not as separate chips
 7. Update `chords_reference.md` and this plan as each voicing is confirmed working
+
+---
+
+## Point 47 — Harmonic field in scale breakdown
+
+### Status: Not yet started
+
+Show the diatonic seventh chords (or best-fit chords) built on every degree of the scale in the breakdown panel, in both quiz post-answer and dictionary mode.
+
+### Algorithm
+- For each scale degree, stack thirds using only pitch classes present in the scale
+- Build as many thirds as possible: if four scale tones stack, show a seventh chord; if three, show a triad; if fewer, show the available interval
+- This handles all scale types automatically — pentatonics and hexatonics show whatever fits each degree without hardcoding exceptions
+- Respects the selected root — all chord roots transpose with the scale root
+- Chord symbols use the same Berklee symbol conventions already in the app (`CHORD_TYPES`)
+
+### Display
+- One row per scale degree
+- Each row: Roman numeral (qualified, e.g. ♭III, ♯IV) · chord symbol (e.g. Cmaj7) · chord name (e.g. Major seventh)
+- Shown as a collapsible sub-section within the breakdown panel (collapsed by default)
+- Label: "Harmonic Field"
+
+### Scope
+- Applies to scales mode only
+- Quiz post-answer and dictionary mode
+- Does not apply to intervals or chords breakdown
+
+### Files to change
+| Change | File |
+|---|---|
+| `makeHarmonicFieldRow()` — build and render the row | `js/breakdown/breakdown.js` |
+| Call `makeHarmonicFieldRow()` from scale breakdown branch | `js/breakdown/breakdown.js` |
+
+### Implementation steps
+1. Write `buildHarmonicField(scalePitchClasses, rootMidi)` in `breakdown.js` — returns array of `{ degree, roman, symbol, name }` per scale degree
+2. Write `makeHarmonicFieldRow()` — renders a collapsible sub-section using the collapsible pattern from Point 48
+3. Call it from the scales branch of `showBreakdown()` after the existing rows
+4. Verify output for: Major, Harmonic Minor, Melodic Minor, Diminished, Whole Tone, pentatonics
+
+---
+
+## Point 48 — Collapsible breakdown sub-sections
+
+### Status: Not yet started
+
+Make specific top-level row groups within the breakdown panel individually collapsible. The outer breakdown panel wrapper already collapses (Point 43); this point makes the sub-sections inside it collapsible too.
+
+### Scope
+Intervals breakdown — no changes. Too compact to warrant collapsing.
+
+**Chords breakdown — collapsible groups:**
+- Resolutions (resolve row + target chord info)
+- Neo-Riemannian relations (Riemannian pills row)
+
+**Scales breakdown — collapsible groups:**
+- Modal character (the character/mood description row)
+- Harmonic field (Point 47 — collapsible from birth)
+
+### Behaviour
+- Collapsed by default
+- Toggle arrow (▸ / ▾) on the group header, same pattern as pool panel sections
+- Group header uses existing `.pool-section-title` style for visual consistency
+- State is not persisted — resets to collapsed on every new question or mode switch
+
+### Files to change
+| Change | File |
+|---|---|
+| Wrap target row groups in collapsible markup | `js/breakdown/breakdown.js` |
+| Collapsible toggle JS (inline, same pattern as pool sections) | `js/breakdown/breakdown.js` |
+| Any new CSS needed for breakdown sub-section headers | `css/components.css` |
+
+### Implementation steps
+1. Identify the exact DOM output for each target group in `breakdown.js`
+2. Wrap each group in a collapsible container: header row with arrow + group label, body div toggled by click
+3. Wire click handlers inline at render time (same pattern as `makeCollapsible()` in `app.js`)
+4. Verify collapse/expand works in both quiz post-answer and dictionary mode
+5. Verify state resets correctly on new question and mode switch
