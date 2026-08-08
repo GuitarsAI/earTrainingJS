@@ -877,7 +877,7 @@ function recomputeCurrentNotes() {
   // ── Always refresh UI ────────────────────────────────────────────────────────
   // In dict mode: always. In quiz mode: only after answering.
   // showCurrentView() dispatches to chord or resolution view as appropriate.
-  if (appMode === 'dict' || answered) showCurrentView();
+  if (appMode === 'dict' || answered) { showCurrentView(); showBreakdown(); }
   // Always update the root badge to reflect the new pitch
   if (currentMode === 'chords' && currentChord) {
     updateRootBadge(appMode === 'dict' || answered ? getChordRootName() : (showRoot ? getChordRootName() : null));

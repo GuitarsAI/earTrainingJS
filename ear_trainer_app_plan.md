@@ -56,6 +56,16 @@
 - **39** Extended / compound intervals: 7 new entries: m9, M9, A9/♯9, P11, A11/♯11, m13, M13. Pool panel split into "Simple intervals" and "Extended / Compound" sections (compound collapsed and unselected by default). Breakdown: "Simple equivalent" row replaces inversion row for compound intervals. INTERVAL_CONSONANCE and INTERVAL_CONTEXT extended to cover all new semitone values
 - **Tab order** Tabs reordered to Intervals | Chords | Scales (was Chords | Intervals | Scales); Intervals is now the default landing mode
 - **Mobile** Full mobile responsive pass: fixed bottom play bar removed; dark mode toggle moved to score bar on mobile (duplicate button, CSS show/hide per breakpoint, JS syncs both); root panel open on desktop / collapsed on mobile via JS boot; all root chips visible via flex-wrap grid (was hidden horizontal scroll); dynamic body padding-top driven by actual sticky header height; default root set to C
+- **44** Complete chord library — decision & reference file (Session: Aug 2026)
+  - `chords_reference.md` created as master checklist for all chord types across all theory traditions
+  - Decision: implement every chord in practical music theory; if `chords.js` grows too large, split by family into separate files all feeding into `CHORD_TYPES`
+  - Status: reference complete, implementation not yet started — see Point 44 TODO section
+
+- **43** Breakdown default state + full chip sync (Session: Aug 2026)
+  - Breakdown panel now starts collapsed by default (removed `open` from `breakdownPanelBody` in `index.html`)
+  - All chip selections in dictionary mode and quiz post-answer now trigger full notation + breakdown refresh: chord style chips, interval style chips, scale direction chips (`js/ui/pool.js`), Key/C chip (`js/data/keysig.js`), root/octave chips via `recomputeCurrentNotes()` (`js/modes/progressions-mode.js`). Voicing chips already routed through `recomputeCurrentNotes()` — no extra change needed
+  - Files changed: `index.html`, `js/ui/pool.js`, `js/data/keysig.js`, `js/modes/progressions-mode.js`
+
 - **42** Pool panel UX overhaul (Session: Aug 2026)
   - All collapsible sections collapsed by default; sections with any selected items auto-expand on load
   - Global All / None buttons added at the top of every training pool panel (Chords, Intervals, Scales, Progressions), toggling all items across all subcategories at once
@@ -454,9 +464,24 @@ most voicings. Additional chord types may be added incrementally if specific voi
    - Constraint satisfaction voice leading algorithm
    - Multiple resolution UI with interactive chips
 
-4. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first)
+4. **Point 41 — Expanded voicing system** (largest scope; resolve "Full/Real" question first; superseded in scope by Point 46 — implement 41 first as a foundation, then extend with 46)
 
-5. **BUG-5** — Fix fragile two-chord VexFlow layout in resolution notation (defer until BUG-5
+5. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
+   - Add all missing entries to `chords.js` by family
+   - Add new pool panel sections for classical / quartal families in `pool.js`
+   - Verify breakdown and chord scales logic handles new interval patterns
+
+6. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows; expand `js/data/scales.js`)
+   - Prioritise named/literature scales; mathematical unnamed collections are out of scope for quiz
+   - Add new pool panel sections by cardinality group in `pool.js`
+   - Verify chord-scales intersection logic still works for new entries
+
+7. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md` section by section)
+   - Implement voicing formulas in `js/engine/audio.js` and `js/engine/notation.js`
+   - Add voicing chip panel groups in `js/ui/pool.js`
+   - Add breakdown voicing explanation row in `js/breakdown/breakdown.js`
+
+8. **BUG-5** — Fix fragile two-chord VexFlow layout in resolution notation (defer until BUG-5
    causes confirmed visible problems in practice)
 
 ---
@@ -468,3 +493,175 @@ most voicings. Additional chord types may be added incrementally if specific voi
 - Timed mode — answer before the clock runs out
 - MIDI input — play answer on a connected keyboard instead of the dropdown
 - Export session stats as CSV
+
+---
+
+## Point 44 — Complete chord library
+
+### Status: Reference complete — implementation not yet started
+
+A comprehensive chord reference file `chords_reference.md` has been created (Aug 2026 session) as the master checklist for every chord type that should be in the app. It was built by cross-referencing the taxonomy document provided, Berklee harmony materials, and other authoritative jazz and classical theory sources.
+
+### Reference file
+`chords_reference.md` — lives alongside the plan. Contains every chord family with name, formula, semitone intervals, and an "in app / missing" status column. This is the source of truth for what needs to be implemented.
+
+### Scope
+Every chord type in practical music theory, including:
+- All triads, seventh chords, extended chords (9th, 11th, 13th) — mostly done
+- Added-tone chords (add2, add4, add9, 6/9 variants)
+- Sixth chords (maj6, m6, 6/9, m6/9) — partially done
+- Augmented 7th (aug7 = 1–3–♯5–♭7) — missing from augmented family
+- All altered dominant combinations
+- Suspended chord extensions (9sus4, 13sus4, sus2 with 7th)
+- Classical chords: Neapolitan (♭II), Italian/French/German augmented sixths
+- Quartal, quintal, and cluster chords — require architectural consideration (don't follow standard interval-from-root model; may need a separate rendering path or a dedicated family with a custom note in the breakdown)
+
+### File splitting
+If `js/data/chords.js` grows too large, split by family into separate files loaded in `index.html` in order:
+- `js/data/chords-basic.js` — triads, seventh chords, sixth chords, added-tone
+- `js/data/chords-dominant.js` — dominant, altered dominant, suspended dominant
+- `js/data/chords-extended.js` — major extended, minor extended
+- `js/data/chords-special.js` — slash, poly, UST
+- `js/data/chords-classical.js` — Neapolitan, augmented sixths, quartal/quintal/cluster
+
+All files must expose their entries into the shared `CHORD_TYPES` object so the rest of the codebase requires no changes.
+
+### Implementation steps
+1. Work through `chords_reference.md` row by row — every "missing" row becomes a new entry in `chords.js` (or the appropriate split file)
+2. Verify breakdown logic in `breakdown.js` handles any new interval patterns correctly
+3. Add new families (classical, quartal) to the pool panel in `pool.js` with their own collapsible sections
+4. Confirm chord scales logic in `breakdown.js` still works for the new entries
+5. Update `chords_reference.md` status column to "in app" as each chord is added
+
+---
+
+## Point 45 — Complete scale library
+
+### Status: Reference complete — implementation not yet started
+
+A comprehensive scale reference file `complete_12_TET_piano_scales.md` exists as the master catalogue for every named pitch collection that should be in the app. It was built from an exhaustive mathematical enumeration of all 2,048 C-rooted subsets of the 12-tone chromatic piano, cross-referenced against established literature (Ian Ring, Aaron Freed, Slonimsky).
+
+### Reference file
+`complete_12_TET_piano_scales.md` — lives alongside the plan. Contains a named/literature index of every scale with an established name, including notes, interval pattern, and PC set. The full mathematical table of 2,048 collections is also present but the vast majority are unnamed and out of scope for quiz training.
+
+### Scope
+The **named/literature index** (approximately 50 named entries) is the implementation target. This covers:
+
+- Japanese pentatonics: Iwato, In-sen, Hirajoshi, Yo, Ritsu
+- Pentatonics: Major, Minor, Dominant, Suspended/Egyptian
+- Hexatonics: Tritone Hexatonic, Prometheus Liszt, Major Blues, Minor Blues, Whole Tone, Prometheus/Mystic, Augmented Hexatonic, Messiaen Mode 5
+- Heptatonics (diatonic and non-diatonic): all 7 modes (Ionian through Locrian), Harmonic Minor, Melodic Minor, Harmonic Major, Neapolitan Minor, Double Harmonic Major/Byzantine, Spanish/Flamenco/Phrygian-Dominant, Hungarian Minor, Hungarian/Byzantine, Romanian Minor/Ukrainian Dorian, Dorian ♯4, Enigmatic-type, Phrygian ♮6
+- Octatonics: Half-Whole Diminished, Messiaen Mode 2, Messiaen Mode 3, Messiaen Mode 4, Messiaen Mode 6
+- Any additional named entries already in the app (Augmented scale, Prometheus from Point 28) should be audited against the reference to confirm their interval patterns are correct
+
+**Unnamed mathematical collections** (the bulk of the 2,048 entries) are explicitly out of scope for quiz training — the app teaches music, not combinatorics.
+
+### Relationship to existing scale library
+The app currently has 25 scales organised into four cardinality groups (Pentatonic / Hexatonic / Diatonic / Octatonic — Point 28). Point 45 audits and expands that set to match the named-index rows in the reference file, adding missing entries and correcting any interval pattern discrepancies.
+
+### Pool panel structure
+New entries follow the existing cardinality-group structure in `pool.js`. Add within the appropriate group (Pentatonic, Hexatonic, Diatonic, Octatonic). If a named scale has an unusual note count (e.g. a 6-note Japanese scale), it goes in the group that matches its note count.
+
+### File splitting
+If `js/data/chords.js` already contains `SCALES` alongside chord data, consider splitting scales into `js/data/scales.js` as a standalone file if the data grows large. All entries must feed into the shared `SCALES` object the rest of the codebase reads.
+
+### Implementation steps
+1. Audit the current 25 scales against the reference file named index — correct any wrong interval patterns
+2. Work through each named-index row that is not yet in the app and add it as a new entry
+3. For each new entry verify: interval pattern matches the reference, enharmonic spelling engine handles it correctly, breakdown degree numerals compute correctly
+4. Add new pool panel chips in `pool.js` within the appropriate cardinality group
+5. Confirm chord-scales intersection logic in `breakdown.js` (`makeChordScalesRow()`) still works for all new entries — the set-intersection algorithm is cardinality-agnostic so this should require no changes
+6. Update the reference file status column to "in app" as each scale is added
+
+---
+
+## Point 46 — Complete voicing system
+
+### Status: Reference complete — implementation not yet started
+
+A comprehensive voicing reference file `complete_literature_based_piano_chord_voicings.md` exists as the master catalogue for every documented piano voicing concept. It is literature-grounded (Levine, Felts/Berklee, Ted Greene, Bill Dobbins, Persichetti, Hindemith) rather than a mathematical enumeration, covering 33 sections of voicing types with C examples throughout.
+
+This point supersedes and greatly extends Point 41 (Expanded voicing system). Point 41 should be implemented first as the architectural foundation; Point 46 then completes the system by filling in all remaining voicing categories from the reference.
+
+### Reference file
+`complete_literature_based_piano_chord_voicings.md` — lives alongside the plan. Organised into 33 sections with appendices. Key sections for implementation:
+
+| Section | Content |
+|---|---|
+| 2–5 | Basic triadic voicings, inversions, closed/open position, doubling and spacing |
+| 6 | Seventh-chord voicings — all families in close, open, drop, rootless, shell, extended forms |
+| 7 | Shell voicings (root+3+7, root+7+3, rootless 3+7) |
+| 8 | Three-note voicings (all quality families) |
+| 9 | Rootless voicings (maj7, min7, dom7, altered dom) |
+| 10–11 | Left-hand and right-hand/melody voicings |
+| 12 | Drop voicings: Drop-2, Drop-3, Drop-2&4, Drop-2&3 |
+| 13–14 | Extended and altered-dominant voicings |
+| 15 | Sus and Phrygian voicings |
+| 16 | 6th and 6/9 voicings |
+| 17–18 | Quartal and quintal voicings |
+| 19 | Upper-structure triads (cross-reference: already a chord family) |
+| 20 | Polychords and slash structures (cross-reference: already a chord family) |
+| 21 | Pentatonic voicings |
+| 22 | So What / modal voicings |
+| 23 | Block chords (locked-hands, four-way close, drop-2 block) |
+| 24 | Stride and Bud Powell traditions |
+| 25 | Classical/chorale-derived voicing (SATB, figured bass, 6/4 chords) |
+| 26 | Impressionist / planed / added-tone structures |
+| 27 | Clusters and secundal structures |
+| 28 | Symmetrical and synthetic structures |
+| 29 | Contemporary / pop / gospel / R&B approaches |
+| 30 | Voice-leading systems (common-tone, guide-tone, planing, chromatic, constant-structure) |
+
+### Scope decision
+Not every section maps to a quiz-mode voicing chip. The scope breaks into three tiers:
+
+**Tier 1 — Voicing chips (implement in pool panel, apply to playback and notation)**
+Close, Open, Spread, Shell, Rootless, Drop-2, Drop-3, Drop-2&4, Quartal, Quintal, Secundal/Cluster, So What, Upper Structure (cross-reference only), Pentatonic, Three-note
+
+**Tier 2 — Breakdown explanation only (show description row, no separate chip)**
+Left-hand voicings, Right-hand/melody voicings, Block chords, Classical/SATB, Impressionist/planed, Symmetrical structures, Pop/Gospel approaches. These are performance contexts rather than discrete algorithmic voicings; describe them in the breakdown when the closest Tier 1 chip is active.
+
+**Tier 3 — Out of scope for app (rhythmic/performance styles, not static voicing)**
+Stride, Bud Powell, Locked-hands, Pedal point (requires multi-chord context). Note in documentation but do not implement as chips.
+
+### Terminology note
+The reference file (Appendix B) explicitly warns that terms like "open voicing", "spread voicing", "rootless", "shell", "drop-2", and "quartal" have overlapping and sometimes conflicting meanings across sources. The implementation must choose one consistent definition per chip, document it in the breakdown explanation row, and cite the primary source (Levine for jazz voicings, Felts/Berklee for basic structures).
+
+### Relationship to Point 41
+Point 41 defined four chip groups (Structural, Intervallic, Style-specific, Texture-based) and raised the open "Full/Real" naming question. Point 46 resolves this:
+- **Full** → rename to **Close** (all notes within one octave, classical default; Appendix A, Section 4)
+- **Real** → rename to **Open** (notes spread over more than one octave; Section 4)
+- **Guide** → rename to **Rootless** (already noted in Point 41)
+- All other Point 41 chip names are confirmed by the reference and kept as-is
+
+### Voicing chip panel — final group structure (resolves Point 41)
+
+**Group 1 — Structural** (from Point 41 + Section 4, 12 of reference)
+Close, Open, Shell, Rootless, Drop-2, Drop-3, Drop-2&4, Spread, Three-note
+
+**Group 2 — Intervallic** (from Point 41 + Sections 17–18, 27–28 of reference)
+Quartal, Quintal, Secundal, Cluster, So What
+
+**Group 3 — Style-specific** (from Point 41 + Sections 22–24, 29 of reference)
+So What (modal), Bill Evans, Kenny Barron, Herbie Hancock, McCoy Tyner, Gospel, Pop Piano
+
+**Group 4 — Texture-based** (from Point 41 — cross-reference existing chord families)
+Triad over Bass (→ Slash chords), Upper Structure Triads (→ UST), Octave Doubling, Dense Extended
+
+### Files to change
+| Change | File |
+|---|---|
+| Voicing formulas, note generation per voicing type | `js/engine/audio.js` |
+| Notation rendering for non-standard voicings | `js/engine/notation.js` |
+| Voicing chip panel groups (collapsible, All/None, Random) | `js/ui/pool.js` |
+| Voicing explanation row in breakdown | `js/breakdown/breakdown.js` |
+| Voicing state variable | `js/engine/state.js` |
+
+### Implementation steps
+1. Resolve Full/Real → Close/Open rename (update chip labels in `pool.js`, update state variable in `state.js`)
+2. Implement Tier 1 voicings one group at a time — start with Structural (Drop-2, Drop-3, Drop-2&4, Spread, Three-note), as these are purely algorithmic transformations of the existing note array
+3. Add Intervallic voicings (Quartal, Quintal, Secundal, Cluster) — these require generating notes from intervals rather than from the chord's standard formula; may need a separate note-generation path in `audio.js`
+4. Add Style-specific voicings (So What, Bill Evans, Kenny Barron, etc.) — implement as fixed interval formulas applied above the chord root or shell; cross-check formulas against the reference
+5. Add voicing explanation row to breakdown for all Tier 1 voicings (name, structural rule, musical context, source citation)
+6. Add Tier 2 breakdown descriptions for Block, Classical, Impressionist, Pop/Gospel — displayed when the nearest Tier 1 chip is active, not as separate chips
+7. Update `chords_reference.md` and this plan as each voicing is confirmed working
