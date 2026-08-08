@@ -44,7 +44,61 @@ function makePoolPanelShell(panel, title, metaFn) {
   return { body, meta, updateMeta: metaFn ? () => { meta.textContent = metaFn(); } : () => {} };
 }
 
-function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = false) {
+// Add a global All / None row at the top of a pool panel body.
+// allItems: flat array of all items across all sections for this mode.
+// selectedSet: the shared Set for this mode.
+// getAllChips: function returning all chip elements currently in the body.
+// onChangeFn: called after every toggle.
+function makeGlobalAllNone(body, allItems, selectedSet, getAllChips, onChangeFn) {
+  const row = document.createElement('div');
+  row.className = 'pool-global-row';
+  row.style.display = 'flex';
+  row.style.gap = '8px';
+  row.style.padding = '4px 0 8px 0';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'pool-all-btn';
+  allBtn.textContent = 'All';
+  allBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    allItems.forEach(it => selectedSet.add(it.symbol));
+    getAllChips().forEach(c => c.classList.add('active'));
+    // Also update per-section counts by re-rendering — simplest: trigger onChangeFn
+    // then re-render counts by querying count elements
+    body.querySelectorAll('.pool-section-count').forEach(countEl => {
+      const sec = countEl.closest('.pool-section');
+      if (!sec) return;
+      const chips = sec.querySelectorAll('.pool-chip');
+      countEl.textContent = chips.length + ' / ' + chips.length;
+    });
+    onChangeFn();
+  });
+
+  const noneBtn = document.createElement('button');
+  noneBtn.className = 'pool-all-btn';
+  noneBtn.textContent = 'None';
+  noneBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    allItems.forEach(it => selectedSet.delete(it.symbol));
+    getAllChips().forEach(c => c.classList.remove('active'));
+    body.querySelectorAll('.pool-section-count').forEach(countEl => {
+      const sec = countEl.closest('.pool-section');
+      if (!sec) return;
+      const chips = sec.querySelectorAll('.pool-chip');
+      countEl.textContent = '0 / ' + chips.length;
+    });
+    onChangeFn();
+  });
+
+  row.appendChild(allBtn);
+  row.appendChild(noneBtn);
+  body.appendChild(row);
+}
+
+function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = true) {
+  const hasSelected = items.some(it => selectedSet.has(it.symbol));
+  const startCollapsed = hasSelected ? false : collapsed;
+
   const sec = document.createElement('div');
   sec.className = 'pool-section';
 
@@ -56,7 +110,7 @@ function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = fa
 
   const chevron = document.createElement('span');
   chevron.className = 'pool-section-chevron';
-  chevron.textContent = collapsed ? '▸' : '▾';
+  chevron.textContent = startCollapsed ? '▸' : '▾';
   titleEl.appendChild(chevron);
   titleEl.appendChild(document.createTextNode(title));
 
@@ -83,7 +137,7 @@ function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = fa
   hdr.appendChild(right);
 
   const sectionBody = document.createElement('div');
-  sectionBody.className = 'pool-section-body' + (collapsed ? ' collapsed' : '');
+  sectionBody.className = 'pool-section-body' + (startCollapsed ? ' collapsed' : '');
 
   const chipsEl = document.createElement('div');
   chipsEl.className = 'pool-chips';
@@ -147,13 +201,21 @@ function renderChordPoolPanel(panel) {
 
   const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateChordQuestion();
 
-  // POINT 9b: Six quality families + POINT 25: Slash
-  // Open by default: Major, Minor, Diminished, Augmented. Collapsed: Dominant, Suspended, Slash, Polychords, UST
-  makeSection(body, 'Major',           CHORD_TYPES.major,      selectedChords, onChange, false);
-  makeSection(body, 'Minor',           CHORD_TYPES.minor,      selectedChords, onChange, false);
+  // Global All / None — must be added before sections so it sits at the top
+  const allChordItems = [
+    ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
+    ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
+    ...CHORD_TYPES.slash, ...CHORD_TYPES.poly, ...CHORD_TYPES.ust,
+  ];
+  makeGlobalAllNone(body, allChordItems, selectedChords,
+    () => body.querySelectorAll('.pool-chip'), onChange);
+
+  // POINT 9b: Six quality families + POINT 25: Slash — all collapsed by default
+  makeSection(body, 'Major',           CHORD_TYPES.major,      selectedChords, onChange, true);
+  makeSection(body, 'Minor',           CHORD_TYPES.minor,      selectedChords, onChange, true);
   makeSection(body, 'Dominant',        CHORD_TYPES.dominant,   selectedChords, onChange, true);
-  makeSection(body, 'Diminished',      CHORD_TYPES.diminished, selectedChords, onChange, false);
-  makeSection(body, 'Augmented',       CHORD_TYPES.augmented,  selectedChords, onChange, false);
+  makeSection(body, 'Diminished',      CHORD_TYPES.diminished, selectedChords, onChange, true);
+  makeSection(body, 'Augmented',       CHORD_TYPES.augmented,  selectedChords, onChange, true);
   makeSection(body, 'Suspended / Other', CHORD_TYPES.suspended, selectedChords, onChange, true);
   makeSection(body, 'Slash chords',    CHORD_TYPES.slash,      selectedChords, onChange, true); // POINT 25
   makeSection(body, 'Polychords',      CHORD_TYPES.poly,       selectedChords, onChange, true); // POINT 26
@@ -181,28 +243,41 @@ function renderChordPoolPanel(panel) {
 
 function renderIntervalPoolPanel(panel) {
   const { body } = makePoolPanelShell(panel, 'Training pool — Intervals', null);
-  // POINT 39: split into simple and compound sections
+  // POINT 39: split into simple and compound sections — all collapsed by default
   const onChange39 = () => appMode === 'dict' ? setAppMode('dict') : generateIntervalQuestion();
-  makeSection(body, 'Simple intervals',   INTERVALS.filter(i => !i.compound), selectedIntervals, onChange39, false);
+
+  const allIntervalItems = [...INTERVALS];
+  makeGlobalAllNone(body, allIntervalItems, selectedIntervals,
+    () => body.querySelectorAll('.pool-chip'), onChange39);
+
+  makeSection(body, 'Simple intervals',    INTERVALS.filter(i => !i.compound), selectedIntervals, onChange39, true);
   makeSection(body, 'Extended / Compound', INTERVALS.filter(i =>  i.compound), selectedIntervals, onChange39, true);
 }
 
 function renderScalePoolPanel(panel) {
-  // POINT 28: Four groups by note count
+  // POINT 28: Four groups by note count — all collapsed by default
   const pentatonic = SCALES.slice(0, 7);   // 5-note
   const hexatonic  = SCALES.slice(7, 11);  // 6-note
   const diatonic   = SCALES.slice(11, 23); // 7-note
   const octatonic  = SCALES.slice(23);     // 8-note
   const { body } = makePoolPanelShell(panel, 'Training pool — Scales', null);
   const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateScaleQuestion();
-  makeSectionWithDisplayName(body, 'Pentatonic (5 notes)', pentatonic, selectedScales, onChange);
-  makeSection(body, 'Hexatonic (6 notes)',      hexatonic,  selectedScales, onChange);
-  makeSection(body, 'Diatonic / Modal (7 notes)', diatonic, selectedScales, onChange);
-  makeSection(body, 'Octatonic (8 notes)',      octatonic,  selectedScales, onChange);
+
+  const allScaleItems = [...SCALES];
+  makeGlobalAllNone(body, allScaleItems, selectedScales,
+    () => body.querySelectorAll('.pool-chip'), onChange);
+
+  makeSectionWithDisplayName(body, 'Pentatonic (5 notes)',     pentatonic, selectedScales, onChange, true);
+  makeSection(body, 'Hexatonic (6 notes)',                     hexatonic,  selectedScales, onChange, true);
+  makeSection(body, 'Diatonic / Modal (7 notes)',              diatonic,   selectedScales, onChange, true);
+  makeSection(body, 'Octatonic (8 notes)',                     octatonic,  selectedScales, onChange, true);
 }
 
 // Like makeSection but uses item.displayName for the chip label when present (POINT 27)
-function makeSectionWithDisplayName(body, title, items, selectedSet, onChangeFn, collapsed = false) {
+function makeSectionWithDisplayName(body, title, items, selectedSet, onChangeFn, collapsed = true) {
+  const hasSelected = items.some(it => selectedSet.has(it.symbol));
+  const startCollapsed = hasSelected ? false : collapsed;
+
   const sec = document.createElement('div');
   sec.className = 'pool-section';
 
@@ -214,7 +289,7 @@ function makeSectionWithDisplayName(body, title, items, selectedSet, onChangeFn,
 
   const chevron = document.createElement('span');
   chevron.className = 'pool-section-chevron';
-  chevron.textContent = collapsed ? '▸' : '▾';
+  chevron.textContent = startCollapsed ? '▸' : '▾';
   titleEl.appendChild(chevron);
   titleEl.appendChild(document.createTextNode(title));
 
@@ -241,7 +316,7 @@ function makeSectionWithDisplayName(body, title, items, selectedSet, onChangeFn,
   hdr.appendChild(right);
 
   const sectionBody = document.createElement('div');
-  sectionBody.className = 'pool-section-body' + (collapsed ? ' collapsed' : '');
+  sectionBody.className = 'pool-section-body' + (startCollapsed ? ' collapsed' : '');
 
   const chipsEl = document.createElement('div');
   chipsEl.className = 'pool-chips';
@@ -322,7 +397,7 @@ function renderChordStyleChips() {
       // last-played until Play is hit — nothing to show until resolved.
       if (s.symbol !== 'random') {
         currentChordPlayStyle = s.symbol;
-        if (appMode === 'dict' || answered) showCurrentView();
+        if (appMode === 'dict' || answered) { showCurrentView(); showBreakdown(); }
       }
     });
     row.appendChild(chip);
@@ -350,7 +425,7 @@ function renderIntervalStyleChips() {
       // POINT 33: update notation to mirror new style if currently visible
       if (s.symbol !== 'random') {
         currentIntervalStyle = s.symbol;
-        if (appMode === 'dict' || answered) showNotation();
+        if (appMode === 'dict' || answered) { showNotation(); showBreakdown(); }
       }
     });
     row.appendChild(chip);
@@ -377,10 +452,9 @@ function renderScaleDirChips() {
       // POINT 33: update notation to mirror new direction if currently visible
       if (d.symbol !== 'random') {
         currentScaleDir = d.symbol;
-        if (appMode === 'dict' || answered) showNotation();
+        if (appMode === 'dict' || answered) { showNotation(); showBreakdown(); }
       }
     });
     row.appendChild(chip);
   });
 }
-

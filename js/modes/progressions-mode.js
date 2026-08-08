@@ -507,9 +507,13 @@ function renderProgressionPoolPanel(panel) {
 
   const onChangeFn = () => { updateMeta(); };
 
+  // Global All / None
+  makeGlobalAllNone(body, PROGRESSIONS, selectedProgressions,
+    () => body.querySelectorAll('.pool-chip'), onChangeFn);
+
   PROG_GROUPS.forEach(group => {
     const items = PROGRESSIONS.filter(p => p.group === group);
-    const collapsed = PROG_GROUP_COLLAPSED[group] ?? false;
+    const collapsed = PROG_GROUP_COLLAPSED[group] ?? true;
     makeProgSection(body, group, items, collapsed, onChangeFn);
   });
 
@@ -517,7 +521,10 @@ function renderProgressionPoolPanel(panel) {
 }
 
 // Two-line chip section for progressions quiz pool (symbol + name, multi-select + All/None)
-function makeProgSection(body, title, items, collapsed = false, onChangeFn = () => {}) {
+function makeProgSection(body, title, items, collapsed = true, onChangeFn = () => {}) {
+  const hasSelected = items.some(it => selectedProgressions.has(it.symbol));
+  const startCollapsed = hasSelected ? false : collapsed;
+
   const sec = document.createElement('div');
   sec.className = 'pool-section';
 
@@ -528,7 +535,7 @@ function makeProgSection(body, title, items, collapsed = false, onChangeFn = () 
   titleEl.className = 'pool-section-title';
   const chevron = document.createElement('span');
   chevron.className = 'pool-section-chevron';
-  chevron.textContent = collapsed ? '▸' : '▾';
+  chevron.textContent = startCollapsed ? '▸' : '▾';
   titleEl.appendChild(chevron);
   titleEl.appendChild(document.createTextNode(title));
 
@@ -555,7 +562,7 @@ function makeProgSection(body, title, items, collapsed = false, onChangeFn = () 
   hdr.appendChild(right);
 
   const sectionBody = document.createElement('div');
-  sectionBody.className = 'pool-section-body' + (collapsed ? ' collapsed' : '');
+  sectionBody.className = 'pool-section-body' + (startCollapsed ? ' collapsed' : '');
 
   const chipsEl = document.createElement('div');
   chipsEl.className = 'pool-chips';

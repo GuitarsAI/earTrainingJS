@@ -276,15 +276,15 @@ const PROG_GROUPS = ['Cadences', 'Diminished', 'Classical', 'Short', 'Pop & Rock
 
 // Which groups start collapsed in the pool panel
 const PROG_GROUP_COLLAPSED = {
-  Diminished: true, Classical: false, Short: false,
-  'Pop & Rock': false, Jazz: false, Blues: false,
-  Minor: false, Rock: true, Reggae: true,
+  Diminished: true, Classical: true, Short: true,
+  'Pop & Rock': true, Jazz: true, Blues: true,
+  Minor: true, Rock: true, Reggae: true,
   'Samba & Bossa': true, Metal: true, Extended: true,
 };
 
 // ─── Progression state ────────────────────────────────────────────────────────
 const selectedProgressions = new Set(
-  PROGRESSIONS.filter(p => ['V-I', 'V7-I', 'IV-I', 'I-V-vi-IV', 'ii-V-I', 'ii-V-I-VI', 'I-IV-V', 'i-VII-VI'].includes(p.symbol)).map(p => p.symbol)
+  PROGRESSIONS.filter(p => ['I-V-vi-IV', 'I-IV-V-I', 'ii-V-I', 'I-vi-IV-V'].includes(p.symbol)).map(p => p.symbol)
 );
 // Default: a handful of common ones across cadences + short + pop
 // If none match, fall back to first 8

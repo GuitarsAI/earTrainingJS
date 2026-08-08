@@ -11,11 +11,14 @@ function setKeySig(mode) {
   // For progressions, re-render the mini staves directly
   if (currentMode === 'progressions' && currentProgression && progAnswered) {
     showProgressionNotation();
+    if (appMode === 'dict' || answered) showBreakdown();
   } else if (currentMode === 'chords') {
     // BUG-4: use dispatcher so Key/C chip works in both chord and resolution views
     showCurrentView();
+    if (appMode === 'dict' || answered) showBreakdown();
   } else {
     showNotation();
+    if (appMode === 'dict' || answered) showBreakdown();
   }
 }
 
