@@ -719,96 +719,174 @@ function buildResolutionMidi(targetRootMidi, quality) {
 }
 
 // Get resolution info for current chord state.
-// Returns { targetRootMidi, targetMidi[], targetName, label } or null.
+// Returns { targetRootMidi, targetMidi[], targetName, targetQuality, label } or null.
+// targetQuality is passed directly to computeVoiceLeading() — no string parsing needed.
 function getResolutionInfo() {
   if (currentMode !== 'chords') return null;
 
-  // ── POLYCHORD: resolve both chords together to a single target ──────────────
+  // Helper: build display suffix from quality string (consistent with app notation)
+  function qualSuffix(q) {
+    if (q === 'dom7') return '7';
+    if (q === 'maj7') return 'Maj7';
+    if (q === 'm7')   return 'm7';
+    if (q === 'min')  return 'm';
+    return '';
+  }
+
+  // ── POLYCHORD: resolve as lower root → IV (P4 up) ───────────────────────────
   if (currentChord?.family === 'poly' && currentPolyLowerRootMidi !== null) {
-    const loPc = currentPolyLowerRootMidi % 12;
-    // Resolve the polychord as its lower chord root → IV (P4 up)
-    const targetRootMidi = currentPolyLowerRootMidi + 5;
-    const targetMidi = buildResolutionMidi(targetRootMidi, 'maj');
-    const targetName = spelledRoot((targetRootMidi % 12 + 12) % 12);
-    return { targetRootMidi, targetMidi, targetName, label: '→ IV of lower root' };
+    const targetRootMidi  = currentPolyLowerRootMidi + 5;
+    const targetQuality   = 'maj';
+    const targetMidi      = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName      = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV of lower root' };
   }
 
   // ── UST: resolve as implied chord ────────────────────────────────────────────
   if (currentChord?.family === 'ust' && currentUSTRootMidi !== null) {
     const shellQ = currentChord.shellQuality || 'dom7';
-    const rootPc = currentUSTRootMidi % 12;
-    let offset, quality, label;
-    if (shellQ === 'dom7') { offset = 5; quality = 'maj';  label = '→ I'; }
-    else if (shellQ === 'min') { offset = 5; quality = 'dom7'; label = '→ V7'; }
-    else { offset = 5; quality = 'maj7'; label = '→ IVΔ7'; } // maj7
+    let offset, targetQuality, label;
+    if      (shellQ === 'dom7') { offset = 5; targetQuality = 'maj';  label = '→ I'; }
+    else if (shellQ === 'min')  { offset = 5; targetQuality = 'dom7'; label = '→ V7'; }
+    else                        { offset = 5; targetQuality = 'maj7'; label = '→ IVMaj7'; }
     const targetRootMidi = currentUSTRootMidi + offset;
-    const targetMidi = buildResolutionMidi(targetRootMidi, quality);
-    const targetName = spelledRoot((targetRootMidi % 12 + 12) % 12) +
-      (quality === 'dom7' ? '7' : quality === 'maj7' ? 'Δ7' : quality === 'm7' ? 'm7' : '');
-    return { targetRootMidi, targetMidi, targetName, label };
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label };
   }
 
-  // ── SLASH CHORD ──────────────────────────────────────────────────────────────
+  // ── SLASH CHORD: resolve upper chord → IV ────────────────────────────────────
   if (currentChord?.family === 'slash' && currentUpperRootMidi !== null) {
-    // Resolve the upper chord as a major triad → P4 up
     const targetRootMidi = currentUpperRootMidi + 5;
-    const targetMidi = buildResolutionMidi(targetRootMidi, 'maj');
-    const targetName = spelledRoot((targetRootMidi % 12 + 12) % 12);
-    return { targetRootMidi, targetMidi, targetName, label: '→ IV of upper root' };
+    const targetQuality  = 'maj';
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV of upper root' };
   }
 
   // ── NORMAL CHORD ─────────────────────────────────────────────────────────────
   if (!currentChord || !currentChordRootMidi) return null;
+
+  // Read from cache if available (Pass 1: analyseChord() wired in)
+  if (currentVoiceLeadingAnalysis) {
+    const { contexts, isAmbiguous } = currentVoiceLeadingAnalysis;
+
+    if (!isAmbiguous && contexts && contexts.length) {
+      const primaryCtx = contexts[0];
+      const primaryRes = (primaryCtx.resolutions || [])[0];
+
+      if (primaryRes) {
+        const qualMap = { major: 'maj', minor: 'min', dominant: 'dom7', maj7: 'maj7', m7: 'm7' };
+        const targetQuality  = qualMap[primaryRes.targetQuality] || 'maj';
+        const srcMidi        = currentChordRootMidi || 60;
+        const targetRootPc   = primaryRes.targetRootPc;
+        let targetRootMidi   = (Math.floor(srcMidi / 12) * 12) + targetRootPc;
+        if (targetRootMidi < srcMidi - 6) targetRootMidi += 12;
+        if (targetRootMidi > srcMidi + 6) targetRootMidi -= 12;
+        const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+        const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
+        const label          = primaryRes.cadenceName || primaryRes.resolutionType || '→';
+        return { targetRootMidi, targetMidi, targetName, targetQuality, label };
+      }
+    }
+
+    // Ambiguous or no context found — P4 up fallback
+    const targetRootMidi = currentChordRootMidi + 5;
+    const targetQuality  = 'maj';
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV' };
+  }
+
+  // ── Fallback: RESOLUTION_TARGETS (used before analyseChord() is wired) ───────
   const sym = currentChord.invIndex !== undefined ? currentChord.baseChord.symbol : currentChord.symbol;
   const tgt = RESOLUTION_TARGETS[sym];
   if (!tgt) {
-    // Fallback: resolve to P4 above as major
     const targetRootMidi = currentChordRootMidi + 5;
-    const targetMidi = buildResolutionMidi(targetRootMidi, 'maj');
-    const targetName = spelledRoot((targetRootMidi % 12 + 12) % 12);
-    return { targetRootMidi, targetMidi, targetName, label: '→ IV' };
+    const targetQuality  = 'maj';
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV' };
   }
   const targetRootMidi = currentChordRootMidi + tgt.offset;
-  const targetMidi = buildResolutionMidi(targetRootMidi, tgt.quality);
-  const qualSuffix = tgt.quality === 'dom7' ? '7' : tgt.quality === 'maj7' ? 'Δ7' : tgt.quality === 'm7' ? 'm7' : tgt.quality === 'min' ? 'm' : '';
-  const targetName = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix;
-  return { targetRootMidi, targetMidi, targetName, label: tgt.label };
+  const targetQuality  = tgt.quality;
+  const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+  const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
+  return { targetRootMidi, targetMidi, targetName, targetQuality, label: tgt.label };
 }
 
-// Compute voice leading: for each source note, find the nearest target note.
-// Returns array of { from, to, semitones (signed), dir, role }
+// Compute voice leading: for each source note, find its resolution target.
+// Uses computeVoiceLeadingRules() from voiceLeading.js when a context is
+// available; falls back to proximity loop otherwise.
+// Returns array of { fromName, toName, dir, absSemi, intervalName, role, isCommonTone }
 function computeVoiceLeading(sourceMidi, targetMidi) {
-  const src = [...sourceMidi].sort((a, b) => a - b);
-  const tgt = [...targetMidi].sort((a, b) => a - b);
+  // Shared root/symbol helpers
+  function getVLRoot() {
+    let rootMidi = currentChordRootMidi;
+    if (currentChord?.family === 'poly'  && currentPolyLowerRootMidi) rootMidi = currentPolyLowerRootMidi;
+    if (currentChord?.family === 'ust'   && currentUSTRootMidi)       rootMidi = currentUSTRootMidi;
+    if (currentChord?.family === 'slash' && currentUpperRootMidi)     rootMidi = currentUpperRootMidi;
+    return rootMidi;
+  }
+  function getVLSym() {
+    return currentChord?.invIndex !== undefined
+      ? currentChord.baseChord.symbol
+      : (currentChord?.symbol || '');
+  }
+
+  // ── Rule-based engine (requires voiceLeading.js + cached analysis) ───────────
+  const info = getResolutionInfo();
+  const ctx  = currentVoiceLeadingAnalysis?.contexts?.[0] || null;
+
+  if (typeof computeVoiceLeadingRules === 'function' && info && ctx) {
+    const targetRootPc = (info.targetRootMidi % 12 + 12) % 12;
+    // info.targetQuality is already in the right format for computeVoiceLeadingRules
+    // which expects 'major'|'minor'|'dominant'|'maj7'|'m7'
+    const qualMap = { maj: 'major', min: 'minor', dom7: 'dominant', maj7: 'maj7', m7: 'm7' };
+    const targetQuality = qualMap[info.targetQuality] || 'major';
+
+    const moves   = computeVoiceLeadingRules(sourceMidi, targetRootPc, targetQuality, ctx);
+    const rootMidi = getVLRoot();
+    const rootPc   = (rootMidi % 12 + 12) % 12;
+    const sym      = getVLSym();
+
+    return moves.map(m => {
+      const semiFromRoot = ((m.fromMidi - rootMidi) % 12 + 12) % 12;
+      const role         = vlRoleLabel(semiFromRoot);
+      const fromName     = spelledNote(semiFromRoot, rootPc, sym);
+      const toSemi       = ((m.toMidi - rootMidi) % 12 + 12) % 12;
+      const toName       = spelledNote(toSemi, rootPc, sym);
+      const dir          = m.direction === 'up' ? '↑' : m.direction === 'down' ? '↓' : '—';
+      const intervalName = VL_INTERVAL_NAMES[m.semitones] || (m.semitones + 'st');
+      return { fromName, toName, dir, absSemi: m.semitones, intervalName, role, isCommonTone: m.semitones === 0 };
+    });
+  }
+
+  // ── Proximity fallback ────────────────────────────────────────────────────────
+  const rootMidi = getVLRoot();
+  const rootPc   = (rootMidi % 12 + 12) % 12;
+  const sym      = getVLSym();
+  const src      = [...sourceMidi].sort((a, b) => a - b);
+  const tgt      = [...targetMidi].sort((a, b) => a - b);
+
   return src.map(s => {
-    // Find nearest target note (by absolute semitone distance, prefer closest)
     let best = null, bestDist = Infinity;
     for (const t of tgt) {
-      // Try unison match, octave up, octave down
       for (const offset of [0, 12, -12, 24, -24]) {
         const cand = t + offset;
         const dist = Math.abs(cand - s);
         if (dist < bestDist) { bestDist = dist; best = cand; }
       }
     }
-    const delta = best - s;
-    const dir = delta === 0 ? '—' : delta > 0 ? '↑' : '↓';
-    const absSemi = Math.abs(delta);
+    const delta        = best - s;
+    const dir          = delta === 0 ? '—' : delta > 0 ? '↑' : '↓';
+    const absSemi      = Math.abs(delta);
     const intervalName = VL_INTERVAL_NAMES[absSemi] || (absSemi + 'st');
-    // Role: semitones from harmonic root
-    let rootMidi = currentChordRootMidi;
-    if (currentChord?.family === 'poly' && currentPolyLowerRootMidi) rootMidi = currentPolyLowerRootMidi;
-    if (currentChord?.family === 'ust' && currentUSTRootMidi) rootMidi = currentUSTRootMidi;
-    if (currentChord?.family === 'slash' && currentUpperRootMidi) rootMidi = currentUpperRootMidi;
     const semiFromRoot = ((s - rootMidi) % 12 + 12) % 12;
-    const role = vlRoleLabel(semiFromRoot);
-    // Note names
-    const sym = currentChord?.invIndex !== undefined ? currentChord.baseChord.symbol : (currentChord?.symbol || '');
-    const rootPc = (rootMidi % 12 + 12) % 12;
-    const fromName = spelledNote(semiFromRoot, rootPc, sym);
-    const toRootPc = (best % 12 + 12) % 12;
-    const toSemi = ((best - rootMidi) % 12 + 12) % 12;
-    const toName = spelledNote(toSemi, rootPc, sym);
+    const role         = vlRoleLabel(semiFromRoot);
+    const fromName     = spelledNote(semiFromRoot, rootPc, sym);
+    const toSemi       = ((best - rootMidi) % 12 + 12) % 12;
+    const toName       = spelledNote(toSemi, rootPc, sym);
     return { fromName, toName, dir, absSemi, intervalName, role, isCommonTone: delta === 0 };
   });
 }
@@ -1377,6 +1455,26 @@ function progFunctionNote(degSemis, qualSym) {
 
 // ─── POINT 47: Harmonic field ─────────────────────────────────────────────────
 
+// Map internal chord symbol to display suffix — consistent with app notation.
+// Used for both the Roman numeral suffix and the root+quality label in harmonic field pills.
+function harmonicFieldSymbolSuffix(sym) {
+  const map = {
+    'maj':     '',        // uppercase Roman numeral already signals major
+    'm':       'm',
+    'dim':     '°',
+    'aug':     '+',
+    '7':       '7',
+    'Maj7':    'Maj7',
+    'm7':      'm7',
+    'mMaj7':   'mMaj7',
+    'm7b5':    'm7♭5',
+    'o7':      '°7',
+    'aug7':    '+7',
+    'Maj7s5':  'Maj7♯5',
+  };
+  return map[sym] ?? null; // null = not a recognised chord symbol (interval fallback)
+}
+
 // Map interval pair (third + fifth from degree root) to chord symbol and Roman suffix
 function harmonicFieldQuality(third, fifth) {
   if (third === 4 && fifth === 7)  return { sym: 'maj',  suffix: '',  case: 'upper' };
@@ -1437,15 +1535,18 @@ function buildHarmonicField(intervals, rootMidi, sym) {
 
       if (sevSym) {
         chordSym = sevSym;
-        // Roman numeral: base on triad quality, add seventh suffix
+        // Roman numeral: base on triad quality, add seventh suffix from display map
         const romanBase = triQ
           ? (triQ.case === 'lower'
               ? SEMITONE_TO_ROMAN[degSemi % 12].roman.toLowerCase()
               : SEMITONE_TO_ROMAN[degSemi % 12].roman)
           : SEMITONE_TO_ROMAN[degSemi % 12].roman;
-        const prefix = SEMITONE_TO_ROMAN[degSemi % 12]?.prefix || '';
-        const suffix = triQ ? triQ.suffix : '';
-        roman = prefix + romanBase + suffix;
+        const prefix      = SEMITONE_TO_ROMAN[degSemi % 12]?.prefix || '';
+        const triadSuffix = triQ ? triQ.suffix : '';
+        const sevSuffix   = harmonicFieldSymbolSuffix(sevSym) ?? '';
+        // Remove triad suffix when seventh suffix already encodes it (e.g. '°7' already implies dim)
+        const combinedSuffix = (sevSym === 'o7' || sevSym === 'm7b5') ? sevSuffix : triadSuffix + sevSuffix.replace(/^m/, '').replace(/^°/, '');
+        roman = prefix + romanBase + combinedSuffix;
       } else if (triQ) {
         // Seventh didn't match but triad does — show triad
         chordSym = triQ.sym;
@@ -1455,8 +1556,8 @@ function buildHarmonicField(intervals, rootMidi, sym) {
         const prefix = SEMITONE_TO_ROMAN[degSemi % 12]?.prefix || '';
         roman = prefix + romanBase + triQ.suffix;
       } else {
-        // Fall back to interval
-        chordSym = INTERVAL_ABBR[third] || (third + 'st');
+        // No clean triad — mark as null so pill renders gracefully
+        chordSym = null;
         const entry = SEMITONE_TO_ROMAN[degSemi % 12];
         roman = entry ? entry.prefix + entry.roman : '?';
       }
@@ -1471,14 +1572,14 @@ function buildHarmonicField(intervals, rootMidi, sym) {
         const prefix = SEMITONE_TO_ROMAN[degSemi % 12]?.prefix || '';
         roman = prefix + romanBase + triQ.suffix;
       } else {
-        // Only an interval fits
-        chordSym = INTERVAL_ABBR[third] || (third + 'st');
+        // No clean triad
+        chordSym = null;
         const entry = SEMITONE_TO_ROMAN[degSemi % 12];
         roman = entry ? entry.prefix + entry.roman : '?';
       }
     } else {
-      // Very sparse scale — just show interval
-      chordSym = INTERVAL_ABBR[third] || (third + 'st');
+      // Very sparse scale — no triad possible
+      chordSym = null;
       const entry = SEMITONE_TO_ROMAN[degSemi % 12];
       roman = entry ? entry.prefix + entry.roman : '?';
     }
@@ -1531,6 +1632,22 @@ function makeHarmonicFieldRow(panel, intervals, rootMidi, sym) {
     arrow.textContent = open ? '▾' : '▸';
   });
 
+  // Full quality name for the bottom line of each pill
+  const QUALITY_FULL_NAMES = {
+    'maj':    'major',
+    'm':      'minor',
+    'dim':    'diminished',
+    'aug':    'augmented',
+    '7':      'dominant 7th',
+    'Maj7':   'major 7th',
+    'm7':     'minor 7th',
+    'mMaj7':  'minor major 7th',
+    'm7b5':   'half-diminished',
+    'o7':     'diminished 7th',
+    'aug7':   'augmented 7th',
+    'Maj7s5': 'augmented major 7th',
+  };
+
   // Pills row
   const pillsWrap = document.createElement('div');
   pillsWrap.className = 'breakdown-pills';
@@ -1540,23 +1657,33 @@ function makeHarmonicFieldRow(panel, intervals, rootMidi, sym) {
     const pill = document.createElement('div');
     pill.className = 'breakdown-pill';
 
+    // Line 1: Roman numeral (already includes quality suffix from buildHarmonicField)
     const romanEl = document.createElement('span');
     romanEl.className = 'breakdown-pill-label';
     romanEl.textContent = roman;
 
+    // Line 2: Root name + quality shorthand (e.g. "Dm7", "G7", "B°")
+    const displaySuffix = chordSym !== null ? (harmonicFieldSymbolSuffix(chordSym) ?? '') : '';
     const rootEl = document.createElement('span');
     rootEl.className = 'breakdown-pill-value';
-    rootEl.textContent = rootName;
-
-    const symEl = document.createElement('span');
-    symEl.className = 'breakdown-pill-label';
-    symEl.style.color = 'var(--accent-text)';
-    symEl.style.marginTop = '1px';
-    symEl.textContent = chordSym;
+    rootEl.textContent = rootName + displaySuffix;
 
     pill.appendChild(romanEl);
     pill.appendChild(rootEl);
-    pill.appendChild(symEl);
+
+    // Line 3: Full quality name — only when a clean chord was found
+    if (chordSym !== null) {
+      const fullName = QUALITY_FULL_NAMES[chordSym];
+      if (fullName) {
+        const nameEl = document.createElement('span');
+        nameEl.className = 'breakdown-pill-label';
+        nameEl.style.color = 'var(--accent-text)';
+        nameEl.style.marginTop = '1px';
+        nameEl.textContent = fullName;
+        pill.appendChild(nameEl);
+      }
+    }
+
     pillsWrap.appendChild(pill);
   });
 

@@ -59,5 +59,10 @@ let pinnedRoot         = 0;      // 0 = C by default; null = random
 let pinnedRootSpelling = null;   // null = auto, 'sharp' | 'flat' = user chose an enharmonic spelling
 let pinnedOctave       = null;   // null = random, 'low'|'mid'|'high' = band
 
+// POINT 37: Voice leading analysis cache.
+// Set once when answer is revealed (submitChordAnswer); reset to null on each new question.
+// Populated by analyseChord() from js/engine/voiceLeading.js.
+// Shape: { contexts: [...], isAmbiguous: bool } — see voice_leading_algorithm_plan.md.
+let currentVoiceLeadingAnalysis = null;
 
 // POINT 38: Progression mode state — declared in js/data/progressions.js
