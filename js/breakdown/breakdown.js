@@ -2433,9 +2433,34 @@ function showBreakdown() {
   }
   const { body: mainBody } = makeNameHeader(panel, hdrLabelEl);
 
-  // POINT 23: Voicing mode label (only shown when not Full)
-  if (currentVoicingMode && currentVoicingMode !== 'full') {
-    const voicingLabels = { real:'Real (no P5)', shell:'Shell (R+3+7)', guide:'Guide tones (3+7)' };
+  // POINT 41: Voicing mode label — shown for all voicings except 'close' (the default baseline)
+  if (currentVoicingMode && currentVoicingMode !== 'close') {
+    const voicingLabels = {
+      // Group 1 — Structural
+      open:        'Open — alternate notes raised one octave',
+      spread:      'Spread — root in bass, upper notes across oct 4–5',
+      shell:       'Shell — root + 3rd + 7th only',
+      rootless:    'Rootless — 3rd + 7th only, no root',
+      drop2:       'Drop-2 — second-highest note dropped an octave (arranging literature)',
+      drop3:       'Drop-3 — third-highest note dropped an octave (arranging literature)',
+      drop24:      'Drop-2&4 — second and fourth voices dropped an octave (arranging literature)',
+      piano:       'Piano — LH: root in bass; RH: upper notes close in oct 4–5',
+      // Group 2 — Intervallic
+      quartal:     'Quartal — stacked perfect fourths',
+      quintal:     'Quintal — stacked perfect fifths',
+      secundal:    'Secundal — stacked major seconds',
+      cluster:     'Cluster — stacked semitones',
+      // Group 3 — Style
+      so_what:     'So What — P4 + P4 + P4 + M3 fixed shape (Miles Davis / Bill Evans)',
+      bill_evans:  'Bill Evans — 3rd + 7th + 9th + 13th, no root (The Jazz Piano Book)',
+      kenny_barron:'Kenny Barron — LH: root + 7th; RH: 3rd + 5th + 9th',
+      mccoy_tyner: 'McCoy Tyner — LH: stacked quartal; RH: upper quartal cluster',
+      pop_piano:   'Pop Piano — LH: root octave; RH: 3rd + 5th + 9th',
+      gospel:      'Gospel — close voicing + 9th, extensions stacked tightly',
+      // Group 4 — Texture
+      oct_double:  'Octave Doubling — root position with root doubled an octave above',
+      dense_ext:   'Dense Extended — all chord tones across two octaves',
+    };
     const vLabel = voicingLabels[currentVoicingMode] || currentVoicingMode;
     makeBDRow(mainBody, 'Voicing', vLabel);
   }

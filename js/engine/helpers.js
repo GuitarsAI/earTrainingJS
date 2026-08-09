@@ -179,100 +179,10 @@ function updateRootBadge(rootName) {
   }
 }
 
-// ─── POINT 23: Voicing modes ─────────────────────────────────────────────────
+// ─── POINT 41: Voicing system ─────────────────────────────────────────────────
+// VOICING_MODES, applyVoicing(), resolveVoicingMode() all live in js/engine/voicings.js.
+// Chip rendering lives in js/ui/pool.js (renderChordPoolPanel → voicing section).
 
-const VOICING_MODES = [
-  { name: 'Full',  symbol: 'full',   desc: 'All notes as written' },
-  { name: 'Real',  symbol: 'real',   desc: 'Omit P5 (unless altered)' },
-  { name: 'Shell', symbol: 'shell',  desc: 'Root + 3rd + 7th only' },
-  { name: 'Guide', symbol: 'guide',  desc: '3rd + 7th only (no root)' },
-  { name: 'Rnd',   symbol: 'random', desc: 'Random voicing each question' },
-];
-
-// Given base intervals (semitones from root) and a voicing mode,
-// return the filtered subset of interval indices to keep.
-// "From root" / "Numerals" always show the full set — this only affects
-// what actually sounds and what appears in Notes / Between notes.
-function applyVoicingMode(baseIntervals, mode) {
-  // Resolve random
-  const resolved = mode === 'random'
-    ? ['full','real','shell','guide'][Math.floor(Math.random() * 4)]
-    : mode;
-
-  // Identify interval roles by semitone value (mod 12)
-  const roles = baseIntervals.map(i => {
-    const s = i % 12;
-    if (s === 0)  return 'root';
-    if (s === 3 || s === 4)  return 'third';   // m3 or M3
-    if (s === 7)  return 'fifth';              // P5
-    if (s === 6 || s === 8)  return 'altfifth'; // b5 or #5 — keep always
-    if (s === 10 || s === 11) return 'seventh'; // m7 or M7
-    return 'extension'; // 9, 11, 13 etc.
-  });
-
-  const hasAltFifth = roles.includes('altfifth');
-
-  let keep;
-  if (resolved === 'real') {
-    // Omit P5 unless it's altered (b5 / #5)
-    keep = baseIntervals.filter((_, i) => roles[i] !== 'fifth');
-  } else if (resolved === 'shell') {
-    // Root + 3rd + 7th — drop 5th and extensions
-    // If no 7th exists (triads), fall back to full
-    const hasSeventh = roles.includes('seventh');
-    if (!hasSeventh) {
-      keep = [...baseIntervals];
-    } else {
-      keep = baseIntervals.filter((_, i) =>
-        roles[i] === 'root' || roles[i] === 'third' || roles[i] === 'seventh'
-      );
-    }
-  } else if (resolved === 'guide') {
-    // 3rd + 7th only — no root, no 5th, no extensions
-    // If no 7th (triads), fall back to full
-    const hasSeventh = roles.includes('seventh');
-    if (!hasSeventh) {
-      keep = [...baseIntervals];
-    } else {
-      keep = baseIntervals.filter((_, i) =>
-        roles[i] === 'third' || roles[i] === 'seventh'
-      );
-    }
-  } else {
-    // full: all notes
-    keep = [...baseIntervals];
-  }
-
-  // Safety: never return empty
-  return keep.length ? keep : [...baseIntervals];
-}
-
-// Resolve the current voicing mode for a question (stores resolved random)
-let currentVoicingMode = 'full';    // resolved per-question
+// Per-question resolved state — set by generateChordQuestion / dictLoadSymbol
+let currentVoicingMode    = 'close'; // resolved voicing symbol for the current question
 let currentChordPlayStyle = 'block'; // POINT 32: resolved at play time, read by showNotation
-
-function resolveVoicingMode() {
-  if (activeVoicingMode === 'random') {
-    const opts = ['full','real','shell','guide'];
-    return opts[Math.floor(Math.random() * opts.length)];
-  }
-  return activeVoicingMode;
-}
-
-function renderVoicingChips() {
-  const row = document.getElementById('voicingModeRow');
-  row.innerHTML = '';
-  VOICING_MODES.forEach(v => {
-    const chip = document.createElement('button');
-    chip.className = 'voicing-chip' + (activeVoicingMode === v.symbol ? ' active' : '');
-    chip.textContent = v.name;
-    chip.title = v.desc;
-    chip.addEventListener('click', () => {
-      activeVoicingMode = v.symbol;
-      row.querySelectorAll('.voicing-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      recomputeCurrentNotes(); // POINT 33: reapply to current item, never discard it
-    });
-    row.appendChild(chip);
-  });
-}

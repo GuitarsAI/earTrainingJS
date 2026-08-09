@@ -37,8 +37,11 @@ var intervalStyle = 'harmonic';      // 'harmonic' | 'ascending' | 'descending' 
 var currentIntervalStyle = 'harmonic'; // POINT 20b: resolved style for the current question
 var chordPlayStyle = 'block';          // POINT 6: 'block'|'ascending'|'descending'|'broken'|'random'
 
-// POINT 23: Voicing mode state — which mode is active
-var activeVoicingMode = 'full'; // 'full' | 'real' | 'shell' | 'guide' | 'random'
+// POINT 41: Voicing mode state
+// activeVoicingMode — the currently selected chip in dict/post-answer (single-select)
+// selectedVoicings  — the quiz training pool (multi-select Set); 'close' on by default
+var activeVoicingMode = 'close'; // symbol of active voicing in dict/post-answer mode
+var selectedVoicings  = new Set(['close']); // quiz pool — user picks which voicings to train
 
 // POINT 7: Scale mode state
 var currentScale = null;             // { name, symbol, intervals }

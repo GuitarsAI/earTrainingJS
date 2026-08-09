@@ -199,30 +199,46 @@ function renderChordPoolPanel(panel) {
   const totalSelected = () => getActivePool().length + ' items';
   const { body } = makePoolPanelShell(panel, 'Training pool — Chords', totalSelected);
 
+  // ── Section 1: Chord quality ───────────────────────────────────────────────
+  _renderChordQualitySection(body);
+
+  // ── Section 2: Voicing ────────────────────────────────────────────────────
+  _renderVoicingSection(body);
+}
+
+function _renderChordQualitySection(body) {
   const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateChordQuestion();
 
-  // Global All / None — must be added before sections so it sits at the top
+  // Top-level label
+  const groupHdr = document.createElement('div');
+  groupHdr.className = 'pool-group-header';
+  groupHdr.textContent = 'Chord quality';
+  body.appendChild(groupHdr);
+
+  // Global All / None for chord quality only
   const allChordItems = [
     ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
     ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
     ...CHORD_TYPES.slash, ...CHORD_TYPES.poly, ...CHORD_TYPES.ust,
   ];
   makeGlobalAllNone(body, allChordItems, selectedChords,
-    () => body.querySelectorAll('.pool-chip'), onChange);
+    () => body.querySelectorAll('.chord-quality-chip'), onChange);
 
-  // POINT 9b: Six quality families + POINT 25: Slash — all collapsed by default
-  makeSection(body, 'Major',           CHORD_TYPES.major,      selectedChords, onChange, true);
-  makeSection(body, 'Minor',           CHORD_TYPES.minor,      selectedChords, onChange, true);
-  makeSection(body, 'Dominant',        CHORD_TYPES.dominant,   selectedChords, onChange, true);
-  makeSection(body, 'Diminished',      CHORD_TYPES.diminished, selectedChords, onChange, true);
-  makeSection(body, 'Augmented',       CHORD_TYPES.augmented,  selectedChords, onChange, true);
-  makeSection(body, 'Suspended / Other', CHORD_TYPES.suspended, selectedChords, onChange, true);
-  makeSection(body, 'Slash chords',    CHORD_TYPES.slash,      selectedChords, onChange, true); // POINT 25
-  makeSection(body, 'Polychords',      CHORD_TYPES.poly,       selectedChords, onChange, true); // POINT 26
-  // POINT 35: UST split into three shell families
-  makeSection(body, 'UST — Dom7 shell (3 + ♭7)',  CHORD_TYPES.ust.filter(u => !u.shellQuality),        selectedChords, onChange, true);
-  makeSection(body, 'UST — m7 shell (♭3 + ♭7)',   CHORD_TYPES.ust.filter(u => u.shellQuality === 'min'),  selectedChords, onChange, true);
-  makeSection(body, 'UST — Maj7 shell (3 + 7)',    CHORD_TYPES.ust.filter(u => u.shellQuality === 'maj7'), selectedChords, onChange, true);
+  // POINT 9b / 25 / 26 / 35: all family sections, all collapsed by default
+  const makeQSection = (title, items) =>
+    makeSection(body, title, items, selectedChords, onChange, true);
+
+  makeQSection('Major',                   CHORD_TYPES.major);
+  makeQSection('Minor',                   CHORD_TYPES.minor);
+  makeQSection('Dominant',               CHORD_TYPES.dominant);
+  makeQSection('Diminished',             CHORD_TYPES.diminished);
+  makeQSection('Augmented',              CHORD_TYPES.augmented);
+  makeQSection('Suspended / Other',      CHORD_TYPES.suspended);
+  makeQSection('Slash chords',           CHORD_TYPES.slash);
+  makeQSection('Polychords',             CHORD_TYPES.poly);
+  makeQSection('UST — Dom7 shell (3 + ♭7)',  CHORD_TYPES.ust.filter(u => !u.shellQuality));
+  makeQSection('UST — m7 shell (♭3 + ♭7)',   CHORD_TYPES.ust.filter(u => u.shellQuality === 'min'));
+  makeQSection('UST — Maj7 shell (3 + 7)',    CHORD_TYPES.ust.filter(u => u.shellQuality === 'maj7'));
 
   // Inversions toggle
   const invRow = document.createElement('div');
@@ -239,6 +255,236 @@ function renderChordPoolPanel(panel) {
   invLabel.appendChild(document.createTextNode(' Include inversions'));
   invRow.appendChild(invLabel);
   body.appendChild(invRow);
+}
+
+// ─── POINT 41: Voicing section in the chord pool panel ───────────────────────
+//
+// Quiz mode:        multi-select — user builds a voicing training pool (selectedVoicings Set)
+// Dict/post-answer: single-select — selecting immediately re-voices and re-renders
+//
+// Random chip sits above the 4 groups, always visible.
+// Groups 2–4 chips are wired but their algorithms stub to 'close' until Phases 2–4.
+
+function _renderVoicingSection(body) {
+  // Top-level label
+  const groupHdr = document.createElement('div');
+  groupHdr.className = 'pool-group-header';
+  groupHdr.style.marginTop = '0.75rem';
+  groupHdr.textContent = 'Voicing';
+  body.appendChild(groupHdr);
+
+  const isQuiz = appMode === 'quiz' && !answered;
+
+  // ── Random chip — above all groups ──────────────────────────────────────
+  const randomRow = document.createElement('div');
+  randomRow.style.padding = '0 0 0.4rem 0';
+  const randomChip = document.createElement('button');
+
+  if (isQuiz) {
+    // Quiz: Random means "pick from my selected pool each question"
+    randomChip.className = 'pool-chip' + (selectedVoicings.has('random') ? ' active' : '');
+    randomChip.textContent = 'Random';
+    randomChip.title = 'Pick randomly from your selected voicings each question';
+    randomChip.addEventListener('click', () => {
+      if (selectedVoicings.has('random')) selectedVoicings.delete('random');
+      else selectedVoicings.add('random');
+      randomChip.classList.toggle('active', selectedVoicings.has('random'));
+    });
+  } else {
+    // Dict/post-answer: Random means "pick from all 21 right now"
+    randomChip.className = 'pool-chip' + (activeVoicingMode === 'random' ? ' active' : '');
+    randomChip.textContent = 'Random';
+    randomChip.title = 'Pick a random voicing from all options';
+    randomChip.addEventListener('click', () => {
+      activeVoicingMode = 'random';
+      _syncVoicingChipActive(body);
+      recomputeCurrentNotes();
+    });
+  }
+
+  randomRow.appendChild(randomChip);
+  body.appendChild(randomRow);
+
+  // ── 4 collapsible groups ─────────────────────────────────────────────────
+  const groups = [
+    {
+      label: 'Structural',
+      symbols: ['close','open','spread','shell','rootless','drop2','drop3','drop24','piano'],
+    },
+    {
+      label: 'Intervallic',
+      symbols: ['quartal','quintal','secundal','cluster'],
+    },
+    {
+      label: 'Style',
+      symbols: ['so_what','bill_evans','kenny_barron','mccoy_tyner','pop_piano','gospel'],
+    },
+    {
+      label: 'Texture',
+      symbols: ['oct_double','dense_ext'],
+    },
+  ];
+
+  groups.forEach(group => {
+    const items = group.symbols.map(sym => VOICING_MODES.find(v => v.symbol === sym)).filter(Boolean);
+    if (isQuiz) {
+      _makeVoicingGroupQuiz(body, group.label, items);
+    } else {
+      _makeVoicingGroupDict(body, group.label, items);
+    }
+  });
+}
+
+// Quiz mode group — multi-select into selectedVoicings Set
+function _makeVoicingGroupQuiz(body, title, items) {
+  const hasSelected = items.some(v => selectedVoicings.has(v.symbol));
+
+  const sec = document.createElement('div');
+  sec.className = 'pool-section';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'pool-section-header';
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'pool-section-title';
+  const chevron = document.createElement('span');
+  chevron.className = 'pool-section-chevron';
+  chevron.textContent = hasSelected ? '▾' : '▸';
+  titleEl.appendChild(chevron);
+  titleEl.appendChild(document.createTextNode(title));
+
+  const right = document.createElement('span');
+  right.style.cssText = 'display:flex;align-items:center;gap:8px';
+  const countEl = document.createElement('span');
+  countEl.className = 'pool-section-count';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'pool-all-btn';
+  allBtn.textContent = 'All';
+  const noneBtn = document.createElement('button');
+  noneBtn.className = 'pool-all-btn';
+  noneBtn.textContent = 'None';
+
+  right.appendChild(countEl);
+  right.appendChild(allBtn);
+  right.appendChild(noneBtn);
+  hdr.appendChild(titleEl);
+  hdr.appendChild(right);
+
+  const sectionBody = document.createElement('div');
+  sectionBody.className = 'pool-section-body' + (hasSelected ? '' : ' collapsed');
+
+  const chipsEl = document.createElement('div');
+  chipsEl.className = 'pool-chips';
+  chipsEl.style.marginBottom = '0.4rem';
+
+  hdr.addEventListener('click', e => {
+    if (e.target === allBtn || e.target === noneBtn) return;
+    const isCollapsed = sectionBody.classList.toggle('collapsed');
+    chevron.textContent = isCollapsed ? '▸' : '▾';
+  });
+
+  const chips = [];
+
+  function updateCount() {
+    const active = items.filter(v => selectedVoicings.has(v.symbol)).length;
+    countEl.textContent = active + ' / ' + items.length;
+  }
+
+  allBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    items.forEach(v => selectedVoicings.add(v.symbol));
+    chips.forEach(c => c.classList.add('active'));
+    updateCount();
+  });
+  noneBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    items.forEach(v => selectedVoicings.delete(v.symbol));
+    chips.forEach(c => c.classList.remove('active'));
+    updateCount();
+  });
+
+  items.forEach(v => {
+    const chip = document.createElement('button');
+    chip.className = 'pool-chip' + (selectedVoicings.has(v.symbol) ? ' active' : '');
+    chip.textContent = v.name;
+    chip.title = v.desc;
+    chip.addEventListener('click', () => {
+      if (selectedVoicings.has(v.symbol)) selectedVoicings.delete(v.symbol);
+      else selectedVoicings.add(v.symbol);
+      chip.classList.toggle('active', selectedVoicings.has(v.symbol));
+      updateCount();
+    });
+    chips.push(chip);
+    chipsEl.appendChild(chip);
+  });
+
+  updateCount();
+  sectionBody.appendChild(chipsEl);
+  sec.appendChild(hdr);
+  sec.appendChild(sectionBody);
+  body.appendChild(sec);
+}
+
+// Dict/post-answer mode group — single-select, immediate re-render
+function _makeVoicingGroupDict(body, title, items) {
+  const hasActive = items.some(v => v.symbol === activeVoicingMode);
+
+  const sec = document.createElement('div');
+  sec.className = 'pool-section';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'pool-section-header';
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'pool-section-title';
+  const chevron = document.createElement('span');
+  chevron.className = 'pool-section-chevron';
+  chevron.textContent = hasActive ? '▾' : '▸';
+  titleEl.appendChild(chevron);
+  titleEl.appendChild(document.createTextNode(title));
+  hdr.appendChild(titleEl);
+
+  const sectionBody = document.createElement('div');
+  sectionBody.className = 'pool-section-body' + (hasActive ? '' : ' collapsed');
+
+  const chipsEl = document.createElement('div');
+  chipsEl.className = 'pool-chips';
+  chipsEl.style.marginBottom = '0.4rem';
+
+  hdr.addEventListener('click', () => {
+    const isCollapsed = sectionBody.classList.toggle('collapsed');
+    chevron.textContent = isCollapsed ? '▸' : '▾';
+  });
+
+  items.forEach(v => {
+    const chip = document.createElement('button');
+    chip.className = 'pool-chip voicing-dict-chip' + (activeVoicingMode === v.symbol ? ' active' : '');
+    chip.textContent = v.name;
+    chip.title = v.desc;
+    chip.dataset.voicingSymbol = v.symbol;
+    chip.addEventListener('click', () => {
+      activeVoicingMode = v.symbol;
+      _syncVoicingChipActive(body);
+      recomputeCurrentNotes();
+    });
+    chipsEl.appendChild(chip);
+  });
+
+  sectionBody.appendChild(chipsEl);
+  sec.appendChild(hdr);
+  sec.appendChild(sectionBody);
+  body.appendChild(sec);
+}
+
+// Sync active state across all voicing chips in the panel after a selection
+function _syncVoicingChipActive(body) {
+  body.querySelectorAll('.voicing-dict-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.voicingSymbol === activeVoicingMode);
+  });
+  // Also sync the Random chip
+  const randomChip = body.querySelector('.pool-chip:not(.voicing-dict-chip)');
+  if (randomChip) randomChip.classList.toggle('active', activeVoicingMode === 'random');
 }
 
 function renderIntervalPoolPanel(panel) {

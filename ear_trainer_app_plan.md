@@ -380,42 +380,54 @@ per-question resolved state, not voicing logic.
 
 ---
 
-**UI: Voicing chips move into the chord pool panel**
+**UI: Chord pool panel restructured into two collapsible sub-groups**
 
-The old `voicingModeSection` in the Settings panel is removed. Voicing chips now live
-inside `renderChordPoolPanel()` in `pool.js`, as a second top-level section alongside
-chord quality — because the pool panel already has the right infrastructure
-(collapsible sections, correct density) and these are both chord-mode configuration axes.
+The old `voicingModeSection` in the Settings panel is removed. The chord pool panel now
+contains two clearly labelled, collapsible sub-groups sitting inside the main panel body.
+Both start **collapsed by default**.
+
+```
+Training pool — Chords  [▸]
+  ├── Chord quality  [▸]   collapsed by default — All/None at group level
+  │     Major, Minor, Dominant, Diminished, Augmented,
+  │     Suspended, Slash, Polychords, UST ×3
+  │     [ ] Include inversions  (quiz mode only)
+  └── Voicing  [▸]         collapsed by default — All/None at group level (quiz only)
+        Random chip
+        Structural, Intervallic, Style, Texture
+```
 
 **Chord quality and voicing are kept completely separate** — they are different axes
 (what you train vs. how it sounds) and must never be mixed in the same section.
 
-`renderChordPoolPanel()` becomes two clearly labelled top-level sections:
+**Single render path for both quiz and dict modes**
 
-1. **"Chord quality"** — all existing family sections (Major, Minor, Dominant, Diminished,
-   Augmented, Suspended, Slash, Polychords, UST ×3) plus inversions toggle. Unchanged content,
-   just wrapped in a named group.
+`renderDictPoolPanel()` previously duplicated the chord quality section independently of
+`renderChordPoolPanel()`. This duplication is eliminated. Both quiz and dict now call the
+same two internal functions — `_renderChordQualitySection(body)` and
+`_renderVoicingSection(body)` — into the same two collapsible sub-group containers.
 
-2. **"Voicing"** — Random chip at the top (always visible, above all groups), then 4
-   collapsible sub-sections: Structural, Intervallic, Style, Texture.
+The only behavioural differences between quiz and dict are handled inside those functions
+by reading `appMode`:
 
-**Chip behaviour differs by app state:**
+**Chord quality chips:**
+- Quiz: multi-select, All/None per family section, All/None at group level, inversions checkbox
+- Dict: single-select, no All/None buttons, no inversions checkbox, clicking a chip immediately
+  calls `dictLoadSymbol()` + `dictShow()`
 
-- **Quiz mode (before answering):** Voicing section is **multi-select**. User builds a voicing
-  pool — e.g. "train me on Close, Drop-2, and Shell." Engine picks one from the selected set
-  each question. This is new behaviour — does not exist in current code.
-  State: `selectedVoicings` Set (new, declared in `state.js` or `defaults.js`).
+**Voicing chips:**
+- Quiz: multi-select into `selectedVoicings` Set, Random adds to pool
+- Dict/post-answer: single-select, clicking immediately calls `recomputeCurrentNotes()`,
+  Random re-voices instantly
+- Already handled by the existing `isQuiz` check inside `_renderVoicingSection()` — no change needed
 
-- **Quiz post-answer + Dictionary mode:** Voicing section is **single-select**. Selecting a
-  chip immediately re-voices the current chord and re-renders notation + breakdown.
-  State: writes directly to `activeVoicingMode`.
+`renderDictPoolPanel()` chords branch is reduced to: build the two sub-group containers,
+call `_renderChordQualitySection(body)` and `_renderVoicingSection(body)`. Intervals and
+scales branches of `renderDictPoolPanel()` are unchanged.
 
-`makeSection()` as written does multi-select into a Set. A new `makeVoicingSection()` variant
-(or a `singleSelect` flag) handles the mode-aware behaviour — multi-select in quiz,
-single-select with immediate re-render in dict/post-answer.
-
-**Changes to `app.js`:** Remove the `voicingModeSection` show/hide line from `switchMode()`.
-Remove `renderVoicingChips()` call from boot sequence. No other changes.
+**Changes to `app.js`:** Remove `voicingModeSection` show/hide from `switchMode()`.
+Remove `renderVoicingChips()` from boot. Collapse `renderDictPoolPanel()` chords branch
+to call the shared section renderers. No other changes.
 
 **Changes to `index.html`:** Remove `voicingModeSection` div from Settings panel.
 No other HTML changes needed.
@@ -431,8 +443,8 @@ No other HTML changes needed.
 | `js/engine/state.js` | `activeVoicingMode` default `'full'` → `'close'`; add `selectedVoicings` Set | Symbol rename + new quiz pool state |
 | `js/modes/chords-mode.js` | Call site: `applyVoicingMode(baseIntervals, mode)` → `applyVoicing(rootMidi, baseIntervals, mode)`; resolve from `selectedVoicings` in quiz | New signature + pool selection |
 | `js/breakdown/breakdown.js` | Voicing label row — update symbol map to all 21 symbols + descriptions; suppress row for `close` | Display label |
-| `js/ui/pool.js` | `renderChordPoolPanel()` restructured into "Chord quality" + "Voicing" sections; new `makeVoicingSection()` with mode-aware single/multi-select | UI |
-| `js/app.js` | Remove `voicingModeSection` show/hide from `switchMode()`; remove `renderVoicingChips()` from boot | Cleanup |
+| `js/ui/pool.js` | `renderChordPoolPanel()` and `_renderChordQualitySection()` restructured into two collapsible sub-groups; `_renderChordQualitySection()` reads `appMode` to switch between multi-select (quiz) and single-select (dict); `_renderVoicingSection()` already mode-aware via `isQuiz` check | UI |
+| `js/app.js` | Remove `voicingModeSection` show/hide from `switchMode()`; remove `renderVoicingChips()` from boot; collapse `renderDictPoolPanel()` chords branch to call shared `_renderChordQualitySection()` + `_renderVoicingSection()` — eliminating the duplicated chord section | Cleanup + dedup |
 | `index.html` | Remove `voicingModeSection` div from Settings panel; add `voicings.js` script tag | Cleanup + new file |
 | `js/engine/notation.js` | **No changes needed** | Confirmed in audit |
 | `js/engine/audio.js` | **No changes needed** | Confirmed in audit |
@@ -523,8 +535,18 @@ Only `voicings.js` changes.
 4. Update `state.js` — `'full'` → `'close'`; add `selectedVoicings` Set with sensible default
 5. Update `chords-mode.js` — new call site signature; resolve voicing from `selectedVoicings` in quiz
 6. Update `breakdown.js` — full 21-symbol voicing label map
-7. Update `pool.js` — restructure `renderChordPoolPanel()` into Chord quality + Voicing sections
-8. Update `app.js` — remove `voicingModeSection` show/hide; remove `renderVoicingChips()` boot call
+7. Update `pool.js`:
+   - Wrap `_renderChordQualitySection()` and `_renderVoicingSection()` calls in their own
+     collapsible sub-group containers inside the main panel body (both collapsed by default)
+   - `_renderChordQualitySection()` reads `appMode`: quiz → multi-select + All/None + inversions
+     checkbox; dict → single-select via `dictLoadSymbol()` + `dictShow()`, no All/None, no checkbox
+   - `_renderVoicingSection()` already mode-aware — no change needed
+8. Update `app.js`:
+   - Remove `voicingModeSection` show/hide from `switchMode()`
+   - Remove `renderVoicingChips()` from boot
+   - Collapse `renderDictPoolPanel()` chords branch: replace the duplicated `makeDictSection()`
+     calls with the same two sub-group containers + `_renderChordQualitySection()` +
+     `_renderVoicingSection()` calls already used by `renderChordPoolPanel()`
 9. Test Group 1 voicings in order; mark each ✓ below as confirmed working
 
 #### Voicing confirmation checklist

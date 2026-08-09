@@ -78,11 +78,7 @@
       <span class="settings-panel-arrow" id="settingsPanelArrow">▸</span>
     </div>
     <div class="settings-panel-body" id="settingsPanelBody">
-      <!-- POINT 23: Voicing mode chips (shown in chord mode only) -->
-      <div class="settings-section" id="voicingModeSection" style="display:none">
-        <div class="settings-section-label">Voicing</div>
-        <div class="voicing-mode-row" id="voicingModeRow"></div>
-      </div>
+      <!-- POINT 41: Voicing chips moved to chord pool panel (renderChordPoolPanel) -->
       <!-- Chord playback style chips (shown in chord mode, POINT 6) -->
       <div class="settings-section" id="chordStyleSection" style="display:none">
         <div class="settings-section-label">Playback style</div>
@@ -251,6 +247,7 @@
 
 <!-- Engine -->
 <script src="js/engine/helpers.js"></script>
+<script src="js/engine/voicings.js"></script>
 <script src="js/engine/audio.js"></script>
 <script src="js/engine/notation.js"></script>
 

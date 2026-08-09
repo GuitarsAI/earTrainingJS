@@ -14,9 +14,9 @@ function switchMode(mode) {
   // POINT 10: Rebuild pool panel for new mode; show/hide playback style rows
   renderPoolPanel();
   document.getElementById('chordStyleSection').style.display    = mode === 'chords'       ? '' : 'none';
-  document.getElementById('voicingModeSection').style.display   = mode === 'chords'       ? '' : 'none'; // POINT 23
   document.getElementById('intervalStyleSection').style.display = mode === 'intervals'    ? '' : 'none';
   document.getElementById('scaleDirSection').style.display      = mode === 'scales'       ? '' : 'none';
+  // POINT 41: voicingModeSection removed from Settings — voicing chips now in chord pool panel
 
   // Play label
   document.getElementById('playLabel').textContent =
@@ -191,8 +191,11 @@ function dictLoadSymbol(symbol) {
       const rootMidi = chooseSimpleRootMidi(Math.max(...item.intervals.map(Math.abs)));
       currentChordRootMidi = rootMidi;
       currentVoicingMode = resolveVoicingMode();
-      const voicedIntervals = applyVoicingMode(item.intervals, currentVoicingMode);
-      currentMidiNotes = applyInversion(voicedIntervals, rootMidi, Math.min(dictInversionIndex, voicedIntervals.length - 1));
+      const voicedMidi = applyVoicing(rootMidi, item.intervals, currentVoicingMode);
+      const sorted = [...voicedMidi].sort((a, b) => a - b);
+      const invIdx = Math.min(dictInversionIndex, sorted.length - 1);
+      for (let i = 0; i < invIdx; i++) { const lo = sorted.shift(); sorted.push(lo + 12); }
+      currentMidiNotes = sorted;
     }
 
   } else if (currentMode === 'intervals') {
@@ -239,6 +242,8 @@ function renderDictPoolPanel() {
     makeDictSection(body, 'UST — Dom7 shell (3 + ♭7)',  CHORD_TYPES.ust.filter(u => !u.shellQuality),        false, true);
     makeDictSection(body, 'UST — m7 shell (♭3 + ♭7)',   CHORD_TYPES.ust.filter(u => u.shellQuality === 'min'),  false, true);
     makeDictSection(body, 'UST — Maj7 shell (3 + 7)',    CHORD_TYPES.ust.filter(u => u.shellQuality === 'maj7'), false, true);
+    // POINT 41: Voicing section — same as quiz pool panel, single-select in dict mode
+    _renderVoicingSection(body);
   } else if (currentMode === 'intervals') {
     // POINT 39: split into simple and compound
     makeDictSection(body, 'Simple intervals',    INTERVALS.filter(i => !i.compound), false, false);
@@ -309,8 +314,11 @@ function dictApplyInversion(invIdx) {
   dictInversionIndex = invIdx;
   const baseChord      = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
   const baseIntervals  = baseChord.intervals;
-  const voicedIntervals = applyVoicingMode(baseIntervals, currentVoicingMode);
-  currentMidiNotes = applyInversion(voicedIntervals, currentChordRootMidi, Math.min(invIdx, voicedIntervals.length - 1));
+  const voicedMidi = applyVoicing(currentChordRootMidi, baseIntervals, currentVoicingMode);
+  const sortedVoiced = [...voicedMidi].sort((a, b) => a - b);
+  const safeInvIdx = Math.min(invIdx, sortedVoiced.length - 1);
+  for (let i = 0; i < safeInvIdx; i++) { const lo = sortedVoiced.shift(); sortedVoiced.push(lo + 12); }
+  currentMidiNotes = sortedVoiced;
   answered = true;
   // Update notation chord name label to reflect the selected inversion
   const INV_LABELS = ['', ' — 1st inv', ' — 2nd inv', ' — 3rd inv', ' — 4th inv'];
@@ -502,7 +510,7 @@ document.querySelectorAll('.mode-tab').forEach(tab => {
 
 renderPoolPanel(); // POINT 10
 renderChordStyleChips();
-renderVoicingChips();  // POINT 23
+// POINT 41: renderVoicingChips() removed — voicing chips now rendered inside renderChordPoolPanel()
 renderIntervalStyleChips();
 renderScaleDirChips();
 renderRegisterPanel(); // POINT 12

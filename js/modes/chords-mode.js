@@ -86,11 +86,18 @@ function generateChordQuestion() {
     ? currentChord.baseChord.intervals
     : currentChord.intervals;
 
-  const voicedIntervals = applyVoicingMode(baseIntervals, currentVoicingMode);
+  const voicedMidi = applyVoicing(rootMidi, baseIntervals, currentVoicingMode);
   if (currentChord.invIndex !== undefined) {
-    currentMidiNotes = applyInversion(voicedIntervals, rootMidi, Math.min(currentChord.invIndex, voicedIntervals.length - 1));
+    // Inversion: rotate the voiced MIDI notes so the correct bass note is lowest
+    const invIdx = Math.min(currentChord.invIndex, voicedMidi.length - 1);
+    const sorted = [...voicedMidi].sort((a, b) => a - b);
+    for (let i = 0; i < invIdx; i++) {
+      const lowest = sorted.shift();
+      sorted.push(lowest + 12);
+    }
+    currentMidiNotes = sorted;
   } else {
-    currentMidiNotes = voicedIntervals.map(i => rootMidi + i);
+    currentMidiNotes = voicedMidi;
   }
 
   resetQuizUI();
