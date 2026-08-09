@@ -311,38 +311,60 @@ function _renderChordQualitySection(body) {
 // Quiz mode:        multi-select — user builds a voicing training pool (selectedVoicings Set)
 // Dict/post-answer: single-select — selecting immediately re-voices and re-renders
 //
-// Random chip sits above the 4 groups, always visible.
-// Groups 2–4 chips are wired but their algorithms stub to 'close' until Phases 2–4.
+// Random chip sits above the 6 groups, always visible.
+// All 63 algorithms are implemented in voicings.js.
 
 // ─── POINT 41: Voicing section ────────────────────────────────────────────────
 //
 // Quiz before answering — multi-select:
-//   Global All/None (covers all 21 voicings + Random)
-//   All/None per sub-section (Structural, Intervallic, Style, Texture)
+//   Global All/None (covers all 63 voicings + Random)
+//   All/None per sub-section (Position, Doubling, Shell/Rootless, Drop, Intervallic, Style)
 //   Random is a regular chip in the pool, toggled like any other
 //   No immediate re-render — selectedVoicings Set is updated; engine picks at next question
 //
 // Quiz post-answer + Dict — single-select:
 //   Clicking any chip (including Random) immediately re-voices and re-renders
 //   No All/None buttons
-//   Random picks from all 21 instantly via recomputeCurrentNotes()
+//   Random picks from all 63 instantly via recomputeCurrentNotes()
 
 const VOICING_GROUPS = [
   {
-    label: 'Structural',
-    symbols: ['close','open','spread','shell','rootless','drop2','drop3','drop24','piano'],
+    label: 'Position',
+    symbols: ['close','open','spread'],
+  },
+  {
+    label: 'Doubling',
+    symbols: ['dbl_root_oct','dbl_root_above5','dbl_fifth','dbl_root_wrap'],
+  },
+  {
+    label: 'Shell / Rootless',
+    symbols: [
+      'shell','shell_alt','shell_rootless',
+      'tn_maj_135','tn_maj_357','tn_maj_137',
+      'tn_dom_13b7','tn_dom_35b7','tn_dom_3b79',
+      'tn_min_1b3b7','tn_min_b35b7','tn_min_b3b79',
+      'rl_maj7','rl_maj7_ext','rl_min7','rl_dom7',
+      'rl_alt_a','rl_alt_b','rl_alt_c','rl_alt_d','rl_sharp9',
+      'sus_voicing','phrygian',
+      'sixth_maj','sixth_min','sixth_nine','rl_sixth_nine',
+    ],
+  },
+  {
+    label: 'Drop',
+    symbols: ['drop2','drop3','drop24','drop23'],
   },
   {
     label: 'Intervallic',
-    symbols: ['quartal','quintal','secundal','cluster'],
+    symbols: ['quartal','quintal','secundal','cluster_chrom','cluster_diaton','cluster_pent','cluster_wt','cluster_modal'],
   },
   {
     label: 'Style',
-    symbols: ['so_what','bill_evans','kenny_barron','mccoy_tyner','pop_piano','gospel'],
-  },
-  {
-    label: 'Texture',
-    symbols: ['oct_double','dense_ext'],
+    symbols: [
+      'so_what','evans_a','evans_b','kenny_barron','mccoy_tyner',
+      'pop_piano','gospel','oct_bass_triad','oct_bass_7th','open5_triad',
+      'block_close','block_locked','four_way_close','block_drop2',
+      'oct_melody_inner','pedal_point','spread_2h',
+    ],
   },
 ];
 
@@ -362,7 +384,7 @@ function _renderVoicingSection(body) {
 // ── Multi-select (quiz before answering) ──────────────────────────────────────
 
 function _renderVoicingMulti(body) {
-  // Global All / None — covers Random + all 21 concrete voicings
+  // Global All / None — covers Random + all 63 concrete voicings
   const globalRow = document.createElement('div');
   globalRow.style.cssText = 'display:flex;gap:8px;padding:4px 0 8px 0;';
 
@@ -414,7 +436,7 @@ function _renderVoicingMulti(body) {
   randomSec.appendChild(randomChipsEl);
   body.appendChild(randomSec);
 
-  // ── 4 collapsible groups ─────────────────────────────────────────────────
+  // ── 6 collapsible groups ─────────────────────────────────────────────────
   VOICING_GROUPS.forEach(group => {
     const items = group.symbols
       .map(sym => VOICING_MODES.find(v => v.symbol === sym))
@@ -539,7 +561,7 @@ function _renderVoicingSingle(body) {
   randomRow.appendChild(randomChip);
   body.appendChild(randomRow);
 
-  // 4 collapsible groups — single-select
+  // 6 collapsible groups — single-select
   VOICING_GROUPS.forEach(group => {
     const items = group.symbols
       .map(sym => VOICING_MODES.find(v => v.symbol === sym))

@@ -74,6 +74,13 @@
   - About view cards: Credits + badges, YouTube embed placeholder, Sponsor/donate button + QR placeholder
   - New file: `js/modes/about-mode.js` — `showAbout()`, `hideAbout()`, ⓘ button listener, tab intercept
   - Files changed: `index.html`, `js/modes/about-mode.js` (new), `js/app.js`, `css/components.css`, `css/mobile.css`
+- **41/46** Voicing system — UI and infrastructure complete ✓ (Session: Aug 2026)
+  - `pool.js` updated — `VOICING_GROUPS` corrected to 6 groups / 63 symbols matching `VOICING_MODES` exactly (was stale 4-group / 21-symbol schema with wrong symbol names); all comments updated
+  - `breakdown.js` updated — stale 21-entry `voicingLabels` object replaced with single `VOICING_MODES.find()` lookup; DRY, zero maintenance burden going forward
+  - `recomputeCurrentNotes()` confirmed already correct in `app.js` — the old bug note in the plan was stale; fix had already been applied
+  - `progressions-mode.js` — no changes needed; `recomputeCurrentNotes` lives in `app.js`
+  - `index.html` load order confirmed correct — `voicings.js` in place after `helpers.js`
+  - **Known algorithmic bug** — Group 5 (Intervallic) and some Group 6 (Style) voicings generate pitch classes not present in the chord (e.g. quartal stacking on a C major triad produces F and B♭ which are not chord tones). Decision: fix with Option A (see Point 41 TODO — Intervallic algorithm redesign). All other groups unaffected.
 - **43** Breakdown default state + full chip sync (Session: Aug 2026)
   - Breakdown panel now starts collapsed by default (removed `open` from `breakdownPanelBody` in `index.html`)
   - All chip selections in dictionary mode and quiz post-answer now trigger full notation + breakdown refresh: chord style chips, interval style chips, scale direction chips (`js/ui/pool.js`), Key/C chip (`js/data/keysig.js`), root/octave chips via `recomputeCurrentNotes()` (`js/modes/progressions-mode.js`). Voicing chips already routed through `recomputeCurrentNotes()` — no extra change needed
@@ -327,22 +334,27 @@ Each scale name in the chord scales breakdown is clickable and opens that scale 
 
 ### Point 41 — Expanded voicing system (Chords mode)
 
-#### Status: Infrastructure partially complete — UI wired, one critical bug remaining (Aug 2026)
+#### Status: UI and infrastructure complete — algorithmic bug in Group 5 pending (Aug 2026)
 
 **What is done ✓**
-- `voicings.js` created — `VOICING_MODES`, `applyVoicing()` (Group 1 algorithms + stubs for Groups 2–4), `resolveVoicingMode()`
+- `voicings.js` created — `VOICING_MODES` (all 63), `applyVoicing()` (all groups implemented), `resolveVoicingMode()`
 - `helpers.js` updated — voicing section removed, pointer comment added; `currentVoicingMode` / `currentChordPlayStyle` retained as per-question state
-- `index.html` updated — `voicingModeSection` div removed from Settings; `voicings.js` script tag added
-- `pool.js` updated — chord pool panel restructured into two collapsible sub-groups ("Chord quality" and "Voicing"); `_renderChordQualitySection()` is mode-aware (quiz = multi-select + All/None + inversions checkbox; dict = single-select); `_renderVoicingSection()` split into `_renderVoicingMulti()` (quiz before answering: global All/None, per-group All/None, Random as pool chip) and `_renderVoicingSingle()` (dict + post-answer: single-select, immediate re-render, no All/None); `renderDictPoolPanel()` chords branch collapsed to call shared `_renderChordSubGroups()`
-- `app.js` updated — `voicingModeSection` show/hide removed from `switchMode()`; `renderVoicingChips()` removed from boot; `renderDictPoolPanel()` chords branch simplified
+- `index.html` updated — `voicingModeSection` div removed from Settings; `voicings.js` script tag added; load order confirmed correct
+- `pool.js` updated — `VOICING_GROUPS` corrected to 6 groups / 63 symbols matching `VOICING_MODES`; chord pool panel restructured into two collapsible sub-groups ("Chord quality" and "Voicing"); all chip render functions correct
+- `breakdown.js` updated — voicing label row now reads from `VOICING_MODES.find()` instead of stale hardcoded map; suppressed for `close`
+- `app.js` updated — `recomputeCurrentNotes()` fully implemented with correct `applyVoicing(rootMidi, baseIntervals, mode)` signature; all chord families handled (slash, poly, UST, normal + inversions)
+- `chords-mode.js` — correct `applyVoicing()` call site confirmed
 
-**What is broken 🔴 — must fix before testing voicings**
-- `recomputeCurrentNotes()` chords branch (in `progressions-mode.js`) still calls the old `applyVoicingMode(baseIntervals, mode)` signature (line 843) instead of the new `applyVoicing(rootMidi, baseIntervals, mode)`. This means changing a voicing chip in dict or post-answer chord mode does not update the notation, breakdown, or playback.
-- Fix: update the normal chord branch of `recomputeCurrentNotes()` to call `applyVoicing(rootMidi, baseIntervals, currentVoicingMode)` and assign the result directly to `currentMidiNotes` (not intervals). The inversion path also needs updating to work with the MIDI-array return value of `applyVoicing()`.
+**What is broken 🔴 — Group 5 (Intervallic) algorithmic bug**
+- Intervallic voicings (`quartal`, `quintal`, `secundal`, `cluster_*`) generate pitch classes not present in the chord. Example: quartal stacking on C major triad {C, E, G} produces {C, F, B♭} — F and B♭ are not chord tones. This is musically wrong; it changes the chord identity, not just the voicing.
+- Same issue applies to some Style voicings with fixed shapes (`so_what`, `mccoy_tyner`) that ignore chord tones entirely.
+- **Decision: Option A** — constrain all intervallic voicings to only use pitch classes present in `baseIntervals`, arranged to best approximate the target interval stack. See Intervallic algorithm redesign section below.
+- Groups 1–4 and most of Group 6 are unaffected (they select/rearrange existing chord tones).
 
 **What is not yet done**
-- `breakdown.js` — voicing label row not yet updated with all 63 symbols
-- Voicing confirmation checklist — none confirmed working yet (blocked by bug above)
+- Voicing confirmation checklist — testing not yet started
+- Group 5 Intervallic algorithm redesign (see below)
+- Group 6 Style voicings with fixed shapes need same chord-tone constraint applied
 
 Replaces and greatly expands the current Point 23 voicing chips (Full / Real / Shell / Guide + Random).
 Applies to **Chords mode only** — not progressions or other modes.
@@ -457,8 +469,8 @@ No other HTML changes needed.
 | `js/engine/helpers.js` | Delete voicing section, replace with comment pointing to `voicings.js` | Cleanup |
 | `js/engine/state.js` | `activeVoicingMode` default `'full'` → `'close'`; add `selectedVoicings` Set | Symbol rename + new quiz pool state |
 | `js/modes/chords-mode.js` | Call site: `applyVoicingMode(baseIntervals, mode)` → `applyVoicing(rootMidi, baseIntervals, mode)`; resolve from `selectedVoicings` in quiz | New signature + pool selection |
-| `js/breakdown/breakdown.js` | Voicing label row — update symbol map to all 21 symbols + descriptions; suppress row for `close` | Display label |
-| `js/ui/pool.js` | `renderChordPoolPanel()` and `_renderChordQualitySection()` restructured into two collapsible sub-groups; `_renderChordQualitySection()` reads `appMode` to switch between multi-select (quiz) and single-select (dict); `_renderVoicingSection()` already mode-aware via `isQuiz` check | UI |
+| `js/breakdown/breakdown.js` | Voicing label row — reads from `VOICING_MODES.find()` ✓ | Display label |
+| `js/ui/pool.js` | `VOICING_GROUPS` corrected to 6 groups / 63 symbols; chord pool panel in two collapsible sub-groups; all chip render functions correct ✓ | UI |
 | `js/app.js` | Remove `voicingModeSection` show/hide from `switchMode()`; remove `renderVoicingChips()` from boot; collapse `renderDictPoolPanel()` chords branch to call shared `_renderChordQualitySection()` + `_renderVoicingSection()` — eliminating the duplicated chord section | Cleanup + dedup |
 | `index.html` | Remove `voicingModeSection` div from Settings panel; add `voicings.js` script tag | Cleanup + new file |
 | `js/engine/notation.js` | **No changes needed** | Confirmed in audit |
@@ -537,16 +549,21 @@ from all 63 concrete modes.
 ---
 
 **Group 5 — Intervallic** (structures built from a single repeated interval)
-| # | Voicing | Symbol | Algorithm | Fallback |
+
+⚠️ **Algorithm redesign required** — see Intervallic algorithm redesign section below.
+Current implementation stacks intervals freely and generates non-chord pitch classes.
+All 8 voicings must be rewritten to constrain output to chord tones only.
+
+| # | Voicing | Symbol | Target interval | Fallback |
 |---|---|---|---|---|
-| 39 | Quartal | `quartal` | Stack perfect fourths (5 semitones) from root, note count matches chord | — |
-| 40 | Quintal | `quintal` | Stack perfect fifths (7 semitones) from root, note count matches chord | — |
-| 41 | Secundal | `secundal` | Stack major seconds (2 semitones) from root, note count matches chord | — |
-| 42 | Cluster Chromatic | `cluster_chrom` | Stack semitones (1 semitone) from root, note count matches chord | — |
-| 43 | Cluster Diatonic | `cluster_diaton` | Stack diatonic seconds from root within the chord's scale context | Falls back to Secundal |
-| 44 | Cluster Pentatonic | `cluster_pent` | Stack pentatonic intervals from root, note count matches chord | Falls back to Quartal |
-| 45 | Cluster Whole-tone | `cluster_wt` | Stack whole tones (2 semitones) from root — same interval as Secundal but whole-tone collection context | Falls back to Secundal |
-| 46 | Cluster Modal | `cluster_modal` | Stack modal scale steps from root within current modal context | Falls back to Quartal |
+| 39 | Quartal | `quartal` | Perfect fourth (5 semitones) | Close |
+| 40 | Quintal | `quintal` | Perfect fifth (7 semitones) | Close |
+| 41 | Secundal | `secundal` | Major second (2 semitones) | Close |
+| 42 | Cluster Chromatic | `cluster_chrom` | Semitone (1 semitone) | Close |
+| 43 | Cluster Diatonic | `cluster_diaton` | Diatonic second | Close |
+| 44 | Cluster Pentatonic | `cluster_pent` | Pentatonic step | Close |
+| 45 | Cluster Whole-tone | `cluster_wt` | Whole tone (2 semitones) | Close |
+| 46 | Cluster Modal | `cluster_modal` | Modal scale step | Close |
 
 ---
 
@@ -573,6 +590,74 @@ from all 63 concrete modes.
 
 ---
 
+#### Intervallic algorithm redesign (Option A — chord-tone constrained)
+
+**The problem**
+The current implementation stacks intervals freely from the root regardless of whether the
+generated pitches exist in the chord. This changes the chord's identity rather than voicing it.
+A quartal stack on C major triad {C, E, G} produces {C, F, B♭} — two non-chord tones.
+
+**The decision: Option A — constrain to chord tones only**
+All intervallic voicings must only use pitch classes present in `baseIntervals`.
+The algorithm arranges those existing chord tones into the register layout that best
+approximates the target interval stack. The chord label stays correct; only the spacing changes.
+
+**The algorithm (same pattern for all 8 voicings)**
+
+```
+function _intervallicVoicing(rootMidi, baseIntervals, targetSemitones) {
+  // 1. Get the chord's pitch classes (0–11)
+  const pcs = baseIntervals.map(i => ((rootMidi + i) % 12 + 12) % 12);
+
+  // 2. Start from a sensible bass register
+  let current = rootMidi;
+  while (current > 59) current -= 12;
+  while (current < 36) current += 12;
+
+  // 3. For each subsequent note, find the chord tone whose pitch class
+  //    lands closest to (current + targetSemitones), searching up
+  const result = [current];
+  for (let i = 1; i < baseIntervals.length; i++) {
+    const target = current + targetSemitones;
+    // Find the pc in pcs that minimises distance to target
+    let best = null, bestDist = Infinity;
+    pcs.forEach(pc => {
+      // Find nearest octave of this pc above current
+      let candidate = current + ((pc - current % 12 + 12) % 12);
+      if (candidate <= current) candidate += 12;
+      const dist = Math.abs(candidate - target);
+      if (dist < bestDist) { bestDist = dist; best = candidate; }
+    });
+    result.push(best);
+    current = best;
+  }
+  return result.sort((a, b) => a - b);
+}
+```
+
+**Key properties of this approach**
+- Only chord pitch classes appear in the output — identity preserved
+- The arrangement *approximates* the target interval, getting as close as the chord allows
+- A C major triad quartal voicing produces G3–C4–E4 (P4 + M3) — the closest approximation
+- A dom7 chord quartal voicing may produce exact P4s where they coincide with chord tones
+- Richer chords (7th, 9th, 13th) will naturally produce cleaner interval stacks
+- Falls back to `close` only if `baseIntervals` is empty (shouldn't happen)
+
+**Cluster variants**
+`cluster_diaton`, `cluster_pent`, `cluster_wt`, `cluster_modal` use the same algorithm
+with different `targetSemitones` values (or a small set of candidate values to try in order).
+For diatonic/modal clusters the target is 2 semitones (diatonic step); for pentatonic it's
+2 or 3 (pentatonic steps). The algorithm picks the chord tone that lands closest regardless.
+
+**Style voicings with fixed shapes** (`so_what`, `mccoy_tyner`)
+Same constraint applies: the fixed interval shapes must be approximated using only chord tones.
+`so_what` (P4+P4+P4+M3) on a triad will naturally compress to fit 3 notes in that shape.
+
+**File to change:** `js/engine/voicings.js` only — rewrite the 8 intervallic cases in
+`applyVoicing()` and update the fixed-shape style cases. No other files change.
+
+---
+
 #### Breakdown voicing row
 
 All voicings show a "Voicing" row in the breakdown with:
@@ -586,42 +671,37 @@ The `close` voicing does **not** show a voicing row — it is the default, unrem
 
 #### Implementation phases
 
-**Phase 1 — Group 1 + 2: Position + Doubling (7 voicings)**
-Files: `voicings.js` (new), `helpers.js`, `state.js`, `chords-mode.js`, `breakdown.js`,
-`pool.js`, `app.js`, `index.html`. All infrastructure built in this phase.
-Groups 3–6 chips present and wired; `applyVoicing()` falls back to `close` for
-unimplemented symbols until later phases fill them in.
+**Phase 1 — Groups 1 + 2: Position + Doubling (7 voicings) ✓ COMPLETE**
+All infrastructure built. Files changed: `voicings.js`, `helpers.js`, `state.js`,
+`chords-mode.js`, `breakdown.js`, `pool.js`, `app.js`, `index.html`.
 
-**Phase 2 — Group 3: Shell / Rootless (27 voicings)**
-Only `voicings.js` changes — add cases to `applyVoicing()` dispatcher.
-Largest group; implement in sub-batches: Shell (3), Three-note (8), Rootless four-note (9),
-Sus/Phrygian/6th (7).
+**Phase 2 — Group 3: Shell / Rootless (27 voicings) ✓ COMPLETE**
+All cases implemented in `voicings.js`. Sub-batches: Shell (3), Three-note (8),
+Rootless four-note (9), Sus/Phrygian/6th (7).
 
-**Phase 3 — Group 4: Drop Voicings (4 voicings)**
+**Phase 3 — Group 4: Drop Voicings (4 voicings) ✓ COMPLETE**
+All cases implemented in `voicings.js`.
+
+**Phase 4 — Group 5: Intervallic (8 voicings) 🔴 NEEDS REDESIGN**
+Current implementation generates non-chord pitch classes — see Intervallic algorithm
+redesign section above. Must rewrite all 8 cases in `applyVoicing()` using the
+chord-tone-constrained algorithm before these voicings can be tested.
 Only `voicings.js` changes.
 
-**Phase 4 — Group 5: Intervallic (8 voicings)**
-Only `voicings.js` changes. Cluster variants share a common algorithm parameterised by
-interval type and scale context.
-
-**Phase 5 — Group 6: Style (17 voicings)**
-Only `voicings.js` changes. Musically the most complex — two-hand splits, melody
-harmonisation, fixed shapes, register-specific recipes. Deserves its own focused session.
+**Phase 5 — Group 6: Style (17 voicings) — PARTIALLY COMPLETE**
+Two-hand voicings that select from chord tones are correct (Pop Piano, Gospel,
+Octave Bass + Triad, Octave Bass + 7th, Open Fifth + Triad, Block Chord Close,
+Locked Hands, Four-way Close, Block Drop-2, Octave Melody + Inner, Pedal Point,
+Two-handed Spread, Bill Evans A, Bill Evans B, Kenny Barron).
+Fixed-shape voicings that ignore chord tones need the same constraint as Group 5:
+`so_what`, `mccoy_tyner`. Only `voicings.js` changes.
 
 ---
 
-#### Implementation steps (Phase 1)
-1. Create `js/engine/voicings.js` — `VOICING_MODES` (all 63), `applyVoicing()` (Groups 1–2
-   algorithms + fallback-to-close stubs for Groups 3–6), `resolveVoicingMode()`
-2. Update `index.html` — add `voicings.js` script tag; remove `voicingModeSection` div
-3. Update `helpers.js` — delete voicing section, add pointer comment
-4. Update `state.js` — `'full'` → `'close'`; add `selectedVoicings` Set with sensible default
-5. Update `chords-mode.js` — new call site signature; resolve voicing from `selectedVoicings` in quiz
-6. Update `breakdown.js` — full 63-symbol voicing label map
-7. Update `pool.js` — voicing section renders all 6 groups with per-group All/None
-8. Update `app.js` — remove old voicing wiring; collapse dict branch to shared renderers
-9. Fix `recomputeCurrentNotes()` bug (see bug section above)
-10. Test Groups 1–2 voicings; mark each ✓ below
+#### Next implementation steps
+1. Rewrite Group 5 intervallic cases in `voicings.js` using chord-tone-constrained algorithm
+2. Rewrite `so_what` and `mccoy_tyner` in `voicings.js` using same constraint
+3. Test all 63 voicings against a variety of chord types; mark checklist below
 
 ---
 
@@ -712,36 +792,15 @@ harmonisation, fixed shapes, register-specific recipes. Deserves its own focused
 
 3. ~~**Point 40 — Clickable chord scales**~~ ✓ Complete (Aug 2026)
 
-4. **Points 41 + 46 — Complete voicing system** — Infrastructure complete; one bug blocking voicing tests.
+4. **Points 41 + 46 — Complete voicing system** — UI and infrastructure complete. One algorithmic bug remaining in Group 5.
 
-   **Immediate next step — fix `recomputeCurrentNotes()` in `progressions-mode.js`:**
-   In the normal chord branch (around line 843), replace:
-   ```js
-   const voicedIntervals = applyVoicingMode(baseIntervals, currentVoicingMode);
-   if (currentChord.invIndex !== undefined) {
-     currentMidiNotes = applyInversion(voicedIntervals, rootMidi, ...);
-   } else {
-     currentMidiNotes = voicedIntervals.map(i => rootMidi + i);
-   }
-   ```
-   With:
-   ```js
-   const voicedMidi = applyVoicing(rootMidi, baseIntervals, currentVoicingMode);
-   if (currentChord.invIndex !== undefined) {
-     const sorted = [...voicedMidi].sort((a, b) => a - b);
-     const invIdx = Math.min(currentChord.invIndex, sorted.length - 1);
-     for (let i = 0; i < invIdx; i++) { const lo = sorted.shift(); sorted.push(lo + 12); }
-     currentMidiNotes = sorted;
-   } else {
-     currentMidiNotes = voicedMidi;
-   }
-   ```
-   File: `js/modes/progressions-mode.js`. No other files need changing for this fix.
+   **Immediate next step — rewrite Group 5 (Intervallic) + fix `so_what` / `mccoy_tyner` in `voicings.js`:**
+   Use the chord-tone-constrained algorithm specified in the Intervallic algorithm redesign
+   section of Point 41. Only `voicings.js` changes. Then test the full confirmation checklist.
 
-   **After the fix — remaining Phase 1 work:**
-   - Update `breakdown.js` voicing label row with all 21 symbols + descriptions
-   - Test and confirm all 9 Group 1 (Structural) voicings working
-   - Then Phase 2 (Intervallic), Phase 3 (Style), Phase 4 (Texture) — all `voicings.js` only
+   **Files delivered this session (ready to deploy):**
+   - `pool.js` — 6 groups / 63 symbols corrected
+   - `breakdown.js` — voicing label from `VOICING_MODES.find()`
 
 5. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
 
