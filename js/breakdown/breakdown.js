@@ -590,8 +590,14 @@ function makeChordScalesRow(panel, rootPc, chordPcs) {
     row.className = 'cs-row';
 
     const nameEl = document.createElement('span');
-    nameEl.className = 'cs-name';
+    nameEl.className = 'cs-name cs-name-link';
     nameEl.textContent = sc.name;
+    nameEl.title = 'Open in Dictionary';
+    nameEl.addEventListener('click', () => {
+      dictSymbol = sc.symbol;
+      if (currentMode !== 'scales') switchMode('scales');
+      setAppMode('dict');
+    });
     row.appendChild(nameEl);
 
     if (sc.tag) {
@@ -1222,7 +1228,7 @@ function playResolution() {
 
   setPlayingState(true);
   const now = audioCtx.currentTime;
-  const srcDuration = 1.8, pause = 0.7;
+  const srcDuration = 1.5, pause = 0.4;
 
   sourceMidi.forEach(m => piano.play(midiToSoundFontName(m), now, { duration: srcDuration, gain: 1.4 }));
   const tgtStart = now + srcDuration + pause;

@@ -56,7 +56,9 @@
 - **34** More polychord types: 16 new entries covering Aug upper/lower and Dom7 upper/lower (both P5 and TT positions). polyQualitySuffix() and polyQualityFull() helpers replace all hardcoded quality checks throughout label generation and breakdown. Contextual notes added: aug symmetry (3 enharmonic roots), dom7 tritone tension
 - **35** More UST types — Minor shell [♭3 + ♭7]: IIm, IV, ♭VII, ♭VI upper triads → m7 contexts. Maj7 shell [3 + 7]: II, IIm, V, VIm upper triads → Maj7 contexts. Pool panel split into three UST sections (Dom7 / m7 / Maj7 shell). Breakdown, labels, notation and root badge all adapt per shell quality
 - **36** Chord scales breakdown row (all chord families): algorithmic set-intersection against all 25 scales in SCALE_REF. Scale root = chord root (upper root for slash, lower root for poly, implied root for UST); all sounding pitch classes must be contained in the scale. Collapsible "N scales fit ▸" sub-section within breakdown; each row shows scale name + teal tag (neutral/bright/tense/dark/etc.) + faint descriptive note. Applies in quiz (post-answer) and dictionary mode across normal chords, inversions, slash, polychords, and UST
-- **37** Voice leading panel — Pass 1 complete ✓ (Aug 2026). Pass 2 not yet started. See Point 37 TODO section and `voice_leading_algorithm_plan.md`.
+- **37** Voice leading panel — Pass 1 complete ✓ (Aug 2026). Pass 2 complete ✓ (Aug 2026). See Point 37 TODO section and `voice_leading_algorithm_plan.md`.
+  - Pass 2: `makeVoiceLeadingRow()` renders one collapsible cs-section per harmonic context; each context expands to show per-resolution sub-sections with voice leading tables; tension dots, cadence name, strength %, harmonic function label all shown
+  - `spelledRootAuto()` added to `breakdown.js` — scale/context root names now use conventional flat/sharp spelling regardless of `pinnedRootSpelling` (which reflects chord root only)
 - **38** Chord progression mode — complete ✓ (all fixes confirmed in source Aug 2026)
 - **39** Extended / compound intervals: 7 new entries: m9, M9, A9/♯9, P11, A11/♯11, m13, M13. Pool panel split into "Simple intervals" and "Extended / Compound" sections (compound collapsed and unselected by default). Breakdown: "Simple equivalent" row replaces inversion row for compound intervals. INTERVAL_CONSONANCE and INTERVAL_CONTEXT extended to cover all new semitone values
 - **Tab order** Tabs reordered to Intervals | Chords | Scales (was Chords | Intervals | Scales); Intervals is now the default landing mode
@@ -82,6 +84,7 @@
   - Root panel now starts collapsed (removed `open` class from `rootPanelBody` in `index.html`)
   - Progression quiz default pool reduced from 8 to 4 most common progressions: I–V–vi–IV, I–IV–V–I, ii–V–I, I–vi–IV–V
   - Files changed: `index.html`, `js/ui/pool.js`, `js/data/progressions.js`, `js/modes/progressions-mode.js`
+- **40** Clickable chord scales: scale names in chord scales breakdown are clickable — opens that scale in Dictionary mode. `cs-name-link` class + click handler in `makeChordScalesRow()`. CSS: pointer cursor + teal underline on hover.
 - **47** Harmonic field in scale breakdown — implemented and improved (Session: Aug 2026)
   - `buildHarmonicField()` and `makeHarmonicFieldRow()` implemented in `breakdown.js`
   - Collapsible "N degrees ▸" sub-section within scale breakdown
@@ -231,7 +234,7 @@ All items confirmed done by reading `js/modes/progressions-mode.js`:
 
 ### Point 37 — Voice leading panel (redesign)
 
-#### Status: Pass 1 complete ✓ — Pass 2 not yet started
+#### Status: Complete ✓ — Pass 1 and Pass 2 both done (Aug 2026)
 
 > ⚠️ **See `voice_leading_algorithm_plan.md` for the full algorithm spec before implementing.**
 > That document covers: what exists and can be reused, what must be replaced, the 7-step
@@ -259,17 +262,21 @@ Files changed: `js/engine/state.js`, `js/modes/chords-mode.js`, `js/breakdown/br
 - ✅ `computeVoiceLeading()` calls `computeVoiceLeadingRules()` when engine + context available; proximity loop retained as fallback
 - ⚠️ `RESOLUTION_TARGETS` retained as live fallback — not deleted yet. Will be removed in a future cleanup pass once engine is confirmed stable.
 
-#### Pass 2 — Multi-resolution pills UI (not yet started)
+#### Pass 2 — Multi-resolution pills UI ✅ COMPLETE (Aug 2026)
 
-**Goal:** Surface the full richness of `analyseChord()` output in the breakdown panel.
+**What was implemented:**
+- `makeVoiceLeadingRow()` renders one collapsible `cs-section` per harmonic context
+- Context header: roman numeral (teal, bold) · scale root + scale name · harmonic function label · tension dots (●●●○○)
+- First context expanded by default; others collapsed
+- Each context body: one nested `cs-section` per resolution target
+- Resolution header: target chord name · cadence type label · strength % · expand arrow
+- Resolution body: voice leading table (from → to, direction, interval name, role)
+- Stable tonic contexts show "departure paths" note instead of resolution sub-sections
+- `spelledRootAuto()` added — context/target root names use conventional spelling independent of `pinnedRootSpelling`
+- Fallback (ambiguous families / cache null): single-resolution display unchanged
+- Safety-net comment added to dead-code on-demand fallback inside Pass 2
 
-- `makeVoiceLeadingRow()` renders one pill per resolution context
-- Each pill: roman numeral · scale name · cadence name · strength indicator
-- Expanding a pill shows the voice leading table for that resolution
-- Visual model: follow `makeRiemannRow()` pill pattern already in `breakdown.js`
-- `playResolution()` continues to play the single primary resolution — no change to audio
-
-**Files to change:** `js/breakdown/breakdown.js`, `css/components.css`
+**Files changed:** `js/breakdown/breakdown.js`
 
 #### What the algorithm replaces
 - `RESOLUTION_TARGETS` — hardcoded lookup table → superseded by `deriveResolutionTargets()` in `voiceLeading.js` (retained as fallback for now)
@@ -297,28 +304,23 @@ Tighten to **1.2s source + 0.3s pause** in `playResolution()`. Two constant chan
 
 ### Point 40 — Clickable chord scales → Dictionary mode
 
-#### Status: Not yet implemented
+#### Status: Complete ✓ (Aug 2026)
 
-When the breakdown panel shows the chord scales section (post-answer in quiz, or in dictionary
-mode), each scale name is **clickable** and opens that scale in Dictionary mode for immediate
-exploration.
+Each scale name in the chord scales breakdown is clickable and opens that scale in Dictionary mode.
 
-#### Behaviour
-- Clicking a scale name switches to **Dictionary mode, Scales tab**, loading that scale
-  instantly with notation and full breakdown
-- Scale opens at the **currently active root** — not the original quiz question root
-- **All current settings inherited** — key signature, notation style, direction, etc.
-- To return to quiz, user presses the **Quiz toggle** — no extra back button needed
-- Quiz session (score, streak, current question) **fully preserved** in memory while
-  exploring in Dictionary mode, restored immediately on switching back
+#### What was implemented
+- `nameEl` in `makeChordScalesRow()` gets class `cs-name-link`, a `title="Open in Dictionary"` tooltip, and a click handler:
+  - Sets `dictSymbol = sc.symbol`
+  - Calls `switchMode('scales')` if not already in scales tab
+  - Calls `setAppMode('dict')` to load the symbol and trigger `dictShow()`
+- Works from both quiz post-answer and dictionary mode
+- `cs-name-link` CSS added to `components.css`: `cursor: pointer` + teal underline on hover
 
-#### Implementation notes
-- `makeChordScalesRow()` in `js/breakdown/breakdown.js` renders the scale name elements —
-  click handlers go here
-- Mode switching lives in `js/app.js` (`switchMode()`, `setAppMode()`) — the click handler
-  calls these with the target scale symbol and root already set
-- No new state variables needed; the existing `currentScale`, `currentScaleRootMidi`, and
-  `appMode` are sufficient
+#### Files changed
+| Change | File |
+|---|---|
+| Click handler + `cs-name-link` class on scale name elements | `js/breakdown/breakdown.js` |
+| `.cs-name-link` hover styles | `css/components.css` |
 
 ---
 
@@ -399,16 +401,11 @@ Applies to **Chords mode only** — not progressions or other modes.
 
 ## Recommended implementation order
 
-1. **Point 37 Pass 2 — Multi-resolution pills UI** (Pass 1 is done; Pass 2 is the natural next step)
-   - `makeVoiceLeadingRow()` renders one pill per context
-   - Follow `makeRiemannRow()` pill pattern
-   - CSS additions to `components.css`
+1. ~~**Point 37 Pass 2 — Multi-resolution pills UI**~~ ✓ Complete (Aug 2026)
 
-2. **Point 40 — Clickable chord scales** (self-contained, moderate effort)
-   - Add click handlers to scale name elements in `makeChordScalesRow()` in `breakdown.js`
-   - Wire to mode/tab switching in `app.js`
+2. ~~**Point 48 — Collapsible breakdown sub-sections**~~ ✓ Complete (Aug 2026 — already done)
 
-3. **Point 48 — Collapsible breakdown sub-sections** (self-contained, affects chords + scales only)
+3. ~~**Point 40 — Clickable chord scales**~~ ✓ Complete (Aug 2026)
 
 4. **Point 41 — Expanded voicing system** (largest scope; superseded in scope by Point 46 — implement 41 first as foundation, then extend with 46)
 
@@ -550,35 +547,20 @@ Show the diatonic chords built on every degree of the scale in the breakdown pan
 
 ## Point 48 — Collapsible breakdown sub-sections
 
-### Status: Not yet started
+### Status: Complete ✓ (Aug 2026 — already implemented as part of earlier sessions)
 
-Make specific row groups within the breakdown panel individually collapsible.
+All targeted groups were already wrapped in `makeCSGroup()` and collapsed by default by the time this point was reviewed. No additional work was needed.
 
-### Scope
-**Chords breakdown — collapsible groups:**
-- Resolutions (resolve row + target chord info)
-- Neo-Riemannian relations (Riemannian pills row)
+**Chords breakdown — all collapsible via `makeCSGroup(label, false)`:**
+- Neo-tonal (Riemannian) — `makeCSGroup('Neo-tonal', false)`
+- Dominant — `makeCSGroup('Dominant', false)`
+- Diminished / Half-dim / Augmented / Suspended / Power — each in their own `makeCSGroup`
+- Voice leading — `makeCSGroup('Voice leading', false)`
 
-**Scales breakdown — collapsible groups:**
-- Modal character (character/mood description row)
-- Harmonic field (Point 47 — collapsible from birth)
+**Scales breakdown — all collapsible via `makeCSGroup(label, false)`:**
+- Triad map — `makeCSGroup('Triad map', false)`
+- Character — `makeCSGroup('Character', false)`
+- Parent — `makeCSGroup('Parent', false)`
+- Harmonic field — collapsible from birth (Point 47)
 
-### Behaviour
-- Collapsed by default
-- Toggle arrow (▸ / ▾) on the group header
-- Group header uses existing `.pool-section-title` style
-- State resets to collapsed on every new question or mode switch
-
-### Files to change
-| Change | File |
-|---|---|
-| Wrap target row groups in collapsible markup | `js/breakdown/breakdown.js` |
-| Collapsible toggle JS (same pattern as pool sections) | `js/breakdown/breakdown.js` |
-| Any new CSS for breakdown sub-section headers | `css/components.css` |
-
-### Implementation steps
-1. Identify exact DOM output for each target group in `breakdown.js`
-2. Wrap each group in a collapsible container with header row + arrow + body div
-3. Wire click handlers inline at render time (same pattern as `makeCollapsible()` in `app.js`)
-4. Verify collapse/expand in both quiz post-answer and dictionary mode
-5. Verify state resets on new question and mode switch
+State resets on every new question via `hideBreakdown()` clearing `panel.innerHTML`.
