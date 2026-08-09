@@ -198,63 +198,112 @@ function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = tr
 function renderChordPoolPanel(panel) {
   const totalSelected = () => getActivePool().length + ' items';
   const { body } = makePoolPanelShell(panel, 'Training pool — Chords', totalSelected);
+  _renderChordSubGroups(body);
+}
 
-  // ── Section 1: Chord quality ───────────────────────────────────────────────
-  _renderChordQualitySection(body);
+// Shared by renderChordPoolPanel (quiz) and renderDictPoolPanel (dict).
+// Builds the two collapsible sub-groups — Chord quality and Voicing — and
+// delegates to the mode-aware section renderers.
+function _renderChordSubGroups(body) {
+  // ── Sub-group 1: Chord quality ─────────────────────────────────────────────
+  const qualityGroup = _makeSubGroup(body, 'Chord quality');
+  _renderChordQualitySection(qualityGroup);
 
-  // ── Section 2: Voicing ────────────────────────────────────────────────────
-  _renderVoicingSection(body);
+  // ── Sub-group 2: Voicing ───────────────────────────────────────────────────
+  const voicingGroup = _makeSubGroup(body, 'Voicing');
+  _renderVoicingSection(voicingGroup);
+}
+
+// Build a collapsible sub-group container inside `body`.
+// Returns the inner body div that section renderers should append into.
+// Starts collapsed by default.
+function _makeSubGroup(body, title) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pool-subgroup';
+  wrap.style.cssText = 'margin-top:0.5rem;border:1px solid var(--border);border-radius:10px;overflow:hidden;';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'pool-subgroup-header';
+  hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0.75rem;cursor:pointer;background:var(--panel-bg);user-select:none;';
+
+  const titleEl = document.createElement('span');
+  titleEl.style.cssText = 'font-weight:600;font-size:0.82rem;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-secondary);';
+  titleEl.textContent = title;
+
+  const arrow = document.createElement('span');
+  arrow.className = 'pool-panel-arrow';
+  arrow.textContent = '▸';
+
+  hdr.appendChild(titleEl);
+  hdr.appendChild(arrow);
+
+  const innerBody = document.createElement('div');
+  innerBody.className = 'pool-subgroup-body';
+  innerBody.style.cssText = 'display:none;padding:0.5rem 0.5rem 0.25rem;';
+
+  hdr.addEventListener('click', () => {
+    const open = innerBody.style.display === 'none';
+    innerBody.style.display = open ? '' : 'none';
+    arrow.textContent = open ? '▾' : '▸';
+  });
+
+  wrap.appendChild(hdr);
+  wrap.appendChild(innerBody);
+  body.appendChild(wrap);
+  return innerBody;
 }
 
 function _renderChordQualitySection(body) {
-  const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateChordQuestion();
+  const isQuiz = appMode === 'quiz';
 
-  // Top-level label
-  const groupHdr = document.createElement('div');
-  groupHdr.className = 'pool-group-header';
-  groupHdr.textContent = 'Chord quality';
-  body.appendChild(groupHdr);
-
-  // Global All / None for chord quality only
-  const allChordItems = [
-    ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
-    ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
-    ...CHORD_TYPES.slash, ...CHORD_TYPES.poly, ...CHORD_TYPES.ust,
+  const FAMILIES = [
+    { title: 'Major',                  items: CHORD_TYPES.major },
+    { title: 'Minor',                  items: CHORD_TYPES.minor },
+    { title: 'Dominant',               items: CHORD_TYPES.dominant },
+    { title: 'Diminished',             items: CHORD_TYPES.diminished },
+    { title: 'Augmented',              items: CHORD_TYPES.augmented },
+    { title: 'Suspended / Other',      items: CHORD_TYPES.suspended },
+    { title: 'Slash chords',           items: CHORD_TYPES.slash },
+    { title: 'Polychords',             items: CHORD_TYPES.poly },
+    { title: 'UST — Dom7 shell (3 + ♭7)', items: CHORD_TYPES.ust.filter(u => !u.shellQuality) },
+    { title: 'UST — m7 shell (♭3 + ♭7)',  items: CHORD_TYPES.ust.filter(u => u.shellQuality === 'min') },
+    { title: 'UST — Maj7 shell (3 + 7)',   items: CHORD_TYPES.ust.filter(u => u.shellQuality === 'maj7') },
   ];
-  makeGlobalAllNone(body, allChordItems, selectedChords,
-    () => body.querySelectorAll('.chord-quality-chip'), onChange);
 
-  // POINT 9b / 25 / 26 / 35: all family sections, all collapsed by default
-  const makeQSection = (title, items) =>
-    makeSection(body, title, items, selectedChords, onChange, true);
+  if (isQuiz) {
+    // ── Quiz: multi-select, All/None, inversions checkbox ─────────────────
+    const onChange = () => generateChordQuestion();
 
-  makeQSection('Major',                   CHORD_TYPES.major);
-  makeQSection('Minor',                   CHORD_TYPES.minor);
-  makeQSection('Dominant',               CHORD_TYPES.dominant);
-  makeQSection('Diminished',             CHORD_TYPES.diminished);
-  makeQSection('Augmented',              CHORD_TYPES.augmented);
-  makeQSection('Suspended / Other',      CHORD_TYPES.suspended);
-  makeQSection('Slash chords',           CHORD_TYPES.slash);
-  makeQSection('Polychords',             CHORD_TYPES.poly);
-  makeQSection('UST — Dom7 shell (3 + ♭7)',  CHORD_TYPES.ust.filter(u => !u.shellQuality));
-  makeQSection('UST — m7 shell (♭3 + ♭7)',   CHORD_TYPES.ust.filter(u => u.shellQuality === 'min'));
-  makeQSection('UST — Maj7 shell (3 + 7)',    CHORD_TYPES.ust.filter(u => u.shellQuality === 'maj7'));
+    const allChordItems = FAMILIES.flatMap(f => f.items);
+    makeGlobalAllNone(body, allChordItems, selectedChords,
+      () => body.querySelectorAll('.pool-chip'), onChange);
 
-  // Inversions toggle
-  const invRow = document.createElement('div');
-  invRow.className = 'pool-inv-row';
-  const invLabel = document.createElement('label');
-  const invChk = document.createElement('input');
-  invChk.type = 'checkbox';
-  invChk.checked = includeInversions;
-  invChk.addEventListener('change', () => {
-    includeInversions = invChk.checked;
-    appMode === 'dict' ? setAppMode('dict') : generateChordQuestion();
-  });
-  invLabel.appendChild(invChk);
-  invLabel.appendChild(document.createTextNode(' Include inversions'));
-  invRow.appendChild(invLabel);
-  body.appendChild(invRow);
+    FAMILIES.forEach(f => makeSection(body, f.title, f.items, selectedChords, onChange, true));
+
+    // Inversions toggle — quiz only
+    const invRow = document.createElement('div');
+    invRow.className = 'pool-inv-row';
+    const invLabel = document.createElement('label');
+    const invChk = document.createElement('input');
+    invChk.type = 'checkbox';
+    invChk.checked = includeInversions;
+    invChk.addEventListener('change', () => {
+      includeInversions = invChk.checked;
+      generateChordQuestion();
+    });
+    invLabel.appendChild(invChk);
+    invLabel.appendChild(document.createTextNode(' Include inversions'));
+    invRow.appendChild(invLabel);
+    body.appendChild(invRow);
+
+  } else {
+    // ── Dict: single-select, no All/None, clicking loads chord immediately ─
+    FAMILIES.forEach(f => {
+      // Expand the section if it contains the currently selected chord
+      const hasActive = f.items.some(item => item.symbol === dictSymbol);
+      makeDictSection(body, f.title, f.items, false, !hasActive);
+    });
+  }
 }
 
 // ─── POINT 41: Voicing section in the chord pool panel ───────────────────────
@@ -265,82 +314,125 @@ function _renderChordQualitySection(body) {
 // Random chip sits above the 4 groups, always visible.
 // Groups 2–4 chips are wired but their algorithms stub to 'close' until Phases 2–4.
 
+// ─── POINT 41: Voicing section ────────────────────────────────────────────────
+//
+// Quiz before answering — multi-select:
+//   Global All/None (covers all 21 voicings + Random)
+//   All/None per sub-section (Structural, Intervallic, Style, Texture)
+//   Random is a regular chip in the pool, toggled like any other
+//   No immediate re-render — selectedVoicings Set is updated; engine picks at next question
+//
+// Quiz post-answer + Dict — single-select:
+//   Clicking any chip (including Random) immediately re-voices and re-renders
+//   No All/None buttons
+//   Random picks from all 21 instantly via recomputeCurrentNotes()
+
+const VOICING_GROUPS = [
+  {
+    label: 'Structural',
+    symbols: ['close','open','spread','shell','rootless','drop2','drop3','drop24','piano'],
+  },
+  {
+    label: 'Intervallic',
+    symbols: ['quartal','quintal','secundal','cluster'],
+  },
+  {
+    label: 'Style',
+    symbols: ['so_what','bill_evans','kenny_barron','mccoy_tyner','pop_piano','gospel'],
+  },
+  {
+    label: 'Texture',
+    symbols: ['oct_double','dense_ext'],
+  },
+];
+
+// All voicing symbols including Random — used for global All/None
+const ALL_VOICING_SYMBOLS = ['random', ...VOICING_GROUPS.flatMap(g => g.symbols)];
+
 function _renderVoicingSection(body) {
-  // Top-level label
-  const groupHdr = document.createElement('div');
-  groupHdr.className = 'pool-group-header';
-  groupHdr.style.marginTop = '0.75rem';
-  groupHdr.textContent = 'Voicing';
-  body.appendChild(groupHdr);
+  const isMulti = appMode === 'quiz' && !answered; // true = multi-select; false = single-select
 
-  const isQuiz = appMode === 'quiz' && !answered;
-
-  // ── Random chip — above all groups ──────────────────────────────────────
-  const randomRow = document.createElement('div');
-  randomRow.style.padding = '0 0 0.4rem 0';
-  const randomChip = document.createElement('button');
-
-  if (isQuiz) {
-    // Quiz: Random means "pick from my selected pool each question"
-    randomChip.className = 'pool-chip' + (selectedVoicings.has('random') ? ' active' : '');
-    randomChip.textContent = 'Random';
-    randomChip.title = 'Pick randomly from your selected voicings each question';
-    randomChip.addEventListener('click', () => {
-      if (selectedVoicings.has('random')) selectedVoicings.delete('random');
-      else selectedVoicings.add('random');
-      randomChip.classList.toggle('active', selectedVoicings.has('random'));
-    });
+  if (isMulti) {
+    _renderVoicingMulti(body);
   } else {
-    // Dict/post-answer: Random means "pick from all 21 right now"
-    randomChip.className = 'pool-chip' + (activeVoicingMode === 'random' ? ' active' : '');
-    randomChip.textContent = 'Random';
-    randomChip.title = 'Pick a random voicing from all options';
-    randomChip.addEventListener('click', () => {
-      activeVoicingMode = 'random';
-      _syncVoicingChipActive(body);
-      recomputeCurrentNotes();
-    });
+    _renderVoicingSingle(body);
   }
+}
 
-  randomRow.appendChild(randomChip);
-  body.appendChild(randomRow);
+// ── Multi-select (quiz before answering) ──────────────────────────────────────
+
+function _renderVoicingMulti(body) {
+  // Global All / None — covers Random + all 21 concrete voicings
+  const globalRow = document.createElement('div');
+  globalRow.style.cssText = 'display:flex;gap:8px;padding:4px 0 8px 0;';
+
+  const globalAllBtn  = _makeAllNoneBtn('All');
+  const globalNoneBtn = _makeAllNoneBtn('None');
+
+  // Keep refs to all chip elements so global buttons can sync them
+  const allChipRefs = []; // { symbol, chipEl }
+
+  globalAllBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    ALL_VOICING_SYMBOLS.forEach(sym => selectedVoicings.add(sym));
+    allChipRefs.forEach(({ chipEl }) => chipEl.classList.add('active'));
+    _updateAllSectionCounts(body);
+  });
+  globalNoneBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    ALL_VOICING_SYMBOLS.forEach(sym => selectedVoicings.delete(sym));
+    allChipRefs.forEach(({ chipEl }) => chipEl.classList.remove('active'));
+    _updateAllSectionCounts(body);
+  });
+
+  globalRow.appendChild(globalAllBtn);
+  globalRow.appendChild(globalNoneBtn);
+  body.appendChild(globalRow);
+
+  // ── Random chip — treated as a regular pool member ───────────────────────
+  const randomSec = document.createElement('div');
+  randomSec.className = 'pool-section voicing-section';
+  randomSec.dataset.voicingSection = 'random';
+
+  const randomChipsEl = document.createElement('div');
+  randomChipsEl.className = 'pool-chips';
+  randomChipsEl.style.marginBottom = '0.4rem';
+
+  const randomChip = document.createElement('button');
+  randomChip.className = 'pool-chip voicing-multi-chip' + (selectedVoicings.has('random') ? ' active' : '');
+  randomChip.textContent = 'Random';
+  randomChip.title = 'Pick randomly from your selected voicings each question';
+  randomChip.dataset.voicingSymbol = 'random';
+  randomChip.addEventListener('click', () => {
+    if (selectedVoicings.has('random')) selectedVoicings.delete('random');
+    else selectedVoicings.add('random');
+    randomChip.classList.toggle('active', selectedVoicings.has('random'));
+    _updateSectionCount(randomSec, ['random']);
+  });
+  allChipRefs.push({ symbol: 'random', chipEl: randomChip });
+  randomChipsEl.appendChild(randomChip);
+  randomSec.appendChild(randomChipsEl);
+  body.appendChild(randomSec);
 
   // ── 4 collapsible groups ─────────────────────────────────────────────────
-  const groups = [
-    {
-      label: 'Structural',
-      symbols: ['close','open','spread','shell','rootless','drop2','drop3','drop24','piano'],
-    },
-    {
-      label: 'Intervallic',
-      symbols: ['quartal','quintal','secundal','cluster'],
-    },
-    {
-      label: 'Style',
-      symbols: ['so_what','bill_evans','kenny_barron','mccoy_tyner','pop_piano','gospel'],
-    },
-    {
-      label: 'Texture',
-      symbols: ['oct_double','dense_ext'],
-    },
-  ];
+  VOICING_GROUPS.forEach(group => {
+    const items = group.symbols
+      .map(sym => VOICING_MODES.find(v => v.symbol === sym))
+      .filter(Boolean);
 
-  groups.forEach(group => {
-    const items = group.symbols.map(sym => VOICING_MODES.find(v => v.symbol === sym)).filter(Boolean);
-    if (isQuiz) {
-      _makeVoicingGroupQuiz(body, group.label, items);
-    } else {
-      _makeVoicingGroupDict(body, group.label, items);
-    }
+    const groupChipRefs = _makeVoicingGroupMulti(body, group.label, items, allChipRefs);
+    // groupChipRefs already pushed into allChipRefs inside the function
+    void groupChipRefs;
   });
 }
 
-// Quiz mode group — multi-select into selectedVoicings Set
-function _makeVoicingGroupQuiz(body, title, items) {
+// Build one collapsible multi-select group; pushes chip refs into allChipRefs
+function _makeVoicingGroupMulti(body, title, items, allChipRefs) {
   const hasSelected = items.some(v => selectedVoicings.has(v.symbol));
 
   const sec = document.createElement('div');
-  sec.className = 'pool-section';
+  sec.className = 'pool-section voicing-section';
+  sec.dataset.voicingSection = title;
 
   const hdr = document.createElement('div');
   hdr.className = 'pool-section-header';
@@ -355,15 +447,13 @@ function _makeVoicingGroupQuiz(body, title, items) {
 
   const right = document.createElement('span');
   right.style.cssText = 'display:flex;align-items:center;gap:8px';
+
   const countEl = document.createElement('span');
   countEl.className = 'pool-section-count';
+  countEl.dataset.voicingCount = title;
 
-  const allBtn = document.createElement('button');
-  allBtn.className = 'pool-all-btn';
-  allBtn.textContent = 'All';
-  const noneBtn = document.createElement('button');
-  noneBtn.className = 'pool-all-btn';
-  noneBtn.textContent = 'None';
+  const allBtn  = _makeAllNoneBtn('All');
+  const noneBtn = _makeAllNoneBtn('None');
 
   right.appendChild(countEl);
   right.appendChild(allBtn);
@@ -380,8 +470,8 @@ function _makeVoicingGroupQuiz(body, title, items) {
 
   hdr.addEventListener('click', e => {
     if (e.target === allBtn || e.target === noneBtn) return;
-    const isCollapsed = sectionBody.classList.toggle('collapsed');
-    chevron.textContent = isCollapsed ? '▸' : '▾';
+    const collapsed = sectionBody.classList.toggle('collapsed');
+    chevron.textContent = collapsed ? '▸' : '▾';
   });
 
   const chips = [];
@@ -406,9 +496,10 @@ function _makeVoicingGroupQuiz(body, title, items) {
 
   items.forEach(v => {
     const chip = document.createElement('button');
-    chip.className = 'pool-chip' + (selectedVoicings.has(v.symbol) ? ' active' : '');
+    chip.className = 'pool-chip voicing-multi-chip' + (selectedVoicings.has(v.symbol) ? ' active' : '');
     chip.textContent = v.name;
     chip.title = v.desc;
+    chip.dataset.voicingSymbol = v.symbol;
     chip.addEventListener('click', () => {
       if (selectedVoicings.has(v.symbol)) selectedVoicings.delete(v.symbol);
       else selectedVoicings.add(v.symbol);
@@ -416,6 +507,7 @@ function _makeVoicingGroupQuiz(body, title, items) {
       updateCount();
     });
     chips.push(chip);
+    allChipRefs.push({ symbol: v.symbol, chipEl: chip });
     chipsEl.appendChild(chip);
   });
 
@@ -424,10 +516,39 @@ function _makeVoicingGroupQuiz(body, title, items) {
   sec.appendChild(hdr);
   sec.appendChild(sectionBody);
   body.appendChild(sec);
+  return chips;
 }
 
-// Dict/post-answer mode group — single-select, immediate re-render
-function _makeVoicingGroupDict(body, title, items) {
+// ── Single-select (dict + quiz post-answer) ───────────────────────────────────
+
+function _renderVoicingSingle(body) {
+  // Random chip — immediate re-voice
+  const randomRow = document.createElement('div');
+  randomRow.style.padding = '0 0 0.4rem 0';
+
+  const randomChip = document.createElement('button');
+  randomChip.className = 'pool-chip voicing-single-chip' + (activeVoicingMode === 'random' ? ' active' : '');
+  randomChip.textContent = 'Random';
+  randomChip.title = 'Pick a random voicing from all options';
+  randomChip.dataset.voicingSymbol = 'random';
+  randomChip.addEventListener('click', () => {
+    activeVoicingMode = 'random';
+    _syncVoicingChipActive(body);
+    recomputeCurrentNotes();
+  });
+  randomRow.appendChild(randomChip);
+  body.appendChild(randomRow);
+
+  // 4 collapsible groups — single-select
+  VOICING_GROUPS.forEach(group => {
+    const items = group.symbols
+      .map(sym => VOICING_MODES.find(v => v.symbol === sym))
+      .filter(Boolean);
+    _makeVoicingGroupSingle(body, group.label, items);
+  });
+}
+
+function _makeVoicingGroupSingle(body, title, items) {
   const hasActive = items.some(v => v.symbol === activeVoicingMode);
 
   const sec = document.createElement('div');
@@ -453,13 +574,13 @@ function _makeVoicingGroupDict(body, title, items) {
   chipsEl.style.marginBottom = '0.4rem';
 
   hdr.addEventListener('click', () => {
-    const isCollapsed = sectionBody.classList.toggle('collapsed');
-    chevron.textContent = isCollapsed ? '▸' : '▾';
+    const collapsed = sectionBody.classList.toggle('collapsed');
+    chevron.textContent = collapsed ? '▸' : '▾';
   });
 
   items.forEach(v => {
     const chip = document.createElement('button');
-    chip.className = 'pool-chip voicing-dict-chip' + (activeVoicingMode === v.symbol ? ' active' : '');
+    chip.className = 'pool-chip voicing-single-chip' + (activeVoicingMode === v.symbol ? ' active' : '');
     chip.textContent = v.name;
     chip.title = v.desc;
     chip.dataset.voicingSymbol = v.symbol;
@@ -477,14 +598,40 @@ function _makeVoicingGroupDict(body, title, items) {
   body.appendChild(sec);
 }
 
-// Sync active state across all voicing chips in the panel after a selection
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+function _makeAllNoneBtn(label) {
+  const btn = document.createElement('button');
+  btn.className = 'pool-all-btn';
+  btn.textContent = label;
+  return btn;
+}
+
+// Sync active class across all single-select voicing chips after a selection
 function _syncVoicingChipActive(body) {
-  body.querySelectorAll('.voicing-dict-chip').forEach(c => {
+  body.querySelectorAll('.voicing-single-chip').forEach(c => {
     c.classList.toggle('active', c.dataset.voicingSymbol === activeVoicingMode);
   });
-  // Also sync the Random chip
-  const randomChip = body.querySelector('.pool-chip:not(.voicing-dict-chip)');
-  if (randomChip) randomChip.classList.toggle('active', activeVoicingMode === 'random');
+}
+
+// Update count display for all voicing group sections in multi-select mode
+function _updateAllSectionCounts(body) {
+  VOICING_GROUPS.forEach(group => {
+    const sec = body.querySelector(`.voicing-section[data-voicing-section="${group.label}"]`);
+    if (!sec) return;
+    const countEl = sec.querySelector('.pool-section-count');
+    if (!countEl) return;
+    const active = group.symbols.filter(sym => selectedVoicings.has(sym)).length;
+    countEl.textContent = active + ' / ' + group.symbols.length;
+  });
+}
+
+// Update count for a single section given its symbol list
+function _updateSectionCount(sec, symbols) {
+  const countEl = sec.querySelector('.pool-section-count');
+  if (!countEl) return;
+  const active = symbols.filter(sym => selectedVoicings.has(sym)).length;
+  countEl.textContent = active + ' / ' + symbols.length;
 }
 
 function renderIntervalPoolPanel(panel) {

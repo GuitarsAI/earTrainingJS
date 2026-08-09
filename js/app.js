@@ -229,21 +229,9 @@ function renderDictPoolPanel() {
   // Dict pool panel starts collapsed like everything else (Point 33b)
 
   if (currentMode === 'chords') {
-    // Open by default: Major, Minor, Diminished, Augmented — matches quiz mode
-    makeDictSection(body, 'Major',                  CHORD_TYPES.major,      false, false);
-    makeDictSection(body, 'Minor',                  CHORD_TYPES.minor,      false, false);
-    makeDictSection(body, 'Dominant',               CHORD_TYPES.dominant,   false, true);
-    makeDictSection(body, 'Diminished',             CHORD_TYPES.diminished, false, false);
-    makeDictSection(body, 'Augmented',              CHORD_TYPES.augmented,  false, false);
-    makeDictSection(body, 'Suspended / Other',      CHORD_TYPES.suspended,  false, true);
-    makeDictSection(body, 'Slash chords',           CHORD_TYPES.slash,      false, true);
-    makeDictSection(body, 'Polychords',             CHORD_TYPES.poly,       false, true);
-    // POINT 35: UST split by shell family
-    makeDictSection(body, 'UST — Dom7 shell (3 + ♭7)',  CHORD_TYPES.ust.filter(u => !u.shellQuality),        false, true);
-    makeDictSection(body, 'UST — m7 shell (♭3 + ♭7)',   CHORD_TYPES.ust.filter(u => u.shellQuality === 'min'),  false, true);
-    makeDictSection(body, 'UST — Maj7 shell (3 + 7)',    CHORD_TYPES.ust.filter(u => u.shellQuality === 'maj7'), false, true);
-    // POINT 41: Voicing section — same as quiz pool panel, single-select in dict mode
-    _renderVoicingSection(body);
+    // POINT 41: Shared two-subgroup structure — Chord quality + Voicing.
+    // _renderChordQualitySection and _renderVoicingSection both read appMode internally.
+    _renderChordSubGroups(body);
   } else if (currentMode === 'intervals') {
     // POINT 39: split into simple and compound
     makeDictSection(body, 'Simple intervals',    INTERVALS.filter(i => !i.compound), false, false);

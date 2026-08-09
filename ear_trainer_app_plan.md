@@ -327,7 +327,22 @@ Each scale name in the chord scales breakdown is clickable and opens that scale 
 
 ### Point 41 — Expanded voicing system (Chords mode)
 
-#### Status: Not yet implemented — architecture fully designed (Aug 2026)
+#### Status: Infrastructure partially complete — UI wired, one critical bug remaining (Aug 2026)
+
+**What is done ✓**
+- `voicings.js` created — `VOICING_MODES`, `applyVoicing()` (Group 1 algorithms + stubs for Groups 2–4), `resolveVoicingMode()`
+- `helpers.js` updated — voicing section removed, pointer comment added; `currentVoicingMode` / `currentChordPlayStyle` retained as per-question state
+- `index.html` updated — `voicingModeSection` div removed from Settings; `voicings.js` script tag added
+- `pool.js` updated — chord pool panel restructured into two collapsible sub-groups ("Chord quality" and "Voicing"); `_renderChordQualitySection()` is mode-aware (quiz = multi-select + All/None + inversions checkbox; dict = single-select); `_renderVoicingSection()` split into `_renderVoicingMulti()` (quiz before answering: global All/None, per-group All/None, Random as pool chip) and `_renderVoicingSingle()` (dict + post-answer: single-select, immediate re-render, no All/None); `renderDictPoolPanel()` chords branch collapsed to call shared `_renderChordSubGroups()`
+- `app.js` updated — `voicingModeSection` show/hide removed from `switchMode()`; `renderVoicingChips()` removed from boot; `renderDictPoolPanel()` chords branch simplified
+
+**What is broken 🔴 — must fix before testing voicings**
+- `recomputeCurrentNotes()` chords branch (in `progressions-mode.js`) still calls the old `applyVoicingMode(baseIntervals, mode)` signature (line 843) instead of the new `applyVoicing(rootMidi, baseIntervals, mode)`. This means changing a voicing chip in dict or post-answer chord mode does not update the notation, breakdown, or playback.
+- Fix: update the normal chord branch of `recomputeCurrentNotes()` to call `applyVoicing(rootMidi, baseIntervals, currentVoicingMode)` and assign the result directly to `currentMidiNotes` (not intervals). The inversion path also needs updating to work with the MIDI-array return value of `applyVoicing()`.
+
+**What is not yet done**
+- `breakdown.js` — voicing label row not yet updated with all 21 symbols
+- Voicing confirmation checklist — none confirmed working yet (blocked by bug above)
 
 Replaces and greatly expands the current Point 23 voicing chips (Full / Real / Shell / Guide + Random).
 Applies to **Chords mode only** — not progressions or other modes.
@@ -582,11 +597,36 @@ Only `voicings.js` changes.
 
 3. ~~**Point 40 — Clickable chord scales**~~ ✓ Complete (Aug 2026)
 
-4. **Points 41 + 46 — Complete voicing system** (merged into one implementation — see Point 41
-   for full spec. Eight files across 4 phases: new `voicings.js`, `helpers.js`, `state.js`,
-   `chords-mode.js`, `breakdown.js`, `pool.js`, `app.js`, `index.html`.
-   Implement in order: Phase 1 Structural → Phase 2 Intervallic → Phase 3 Style → Phase 4 Texture.
-   All infrastructure built in Phase 1; later phases only touch `voicings.js`.)
+4. **Points 41 + 46 — Complete voicing system** — Infrastructure complete; one bug blocking voicing tests.
+
+   **Immediate next step — fix `recomputeCurrentNotes()` in `progressions-mode.js`:**
+   In the normal chord branch (around line 843), replace:
+   ```js
+   const voicedIntervals = applyVoicingMode(baseIntervals, currentVoicingMode);
+   if (currentChord.invIndex !== undefined) {
+     currentMidiNotes = applyInversion(voicedIntervals, rootMidi, ...);
+   } else {
+     currentMidiNotes = voicedIntervals.map(i => rootMidi + i);
+   }
+   ```
+   With:
+   ```js
+   const voicedMidi = applyVoicing(rootMidi, baseIntervals, currentVoicingMode);
+   if (currentChord.invIndex !== undefined) {
+     const sorted = [...voicedMidi].sort((a, b) => a - b);
+     const invIdx = Math.min(currentChord.invIndex, sorted.length - 1);
+     for (let i = 0; i < invIdx; i++) { const lo = sorted.shift(); sorted.push(lo + 12); }
+     currentMidiNotes = sorted;
+   } else {
+     currentMidiNotes = voicedMidi;
+   }
+   ```
+   File: `js/modes/progressions-mode.js`. No other files need changing for this fix.
+
+   **After the fix — remaining Phase 1 work:**
+   - Update `breakdown.js` voicing label row with all 21 symbols + descriptions
+   - Test and confirm all 9 Group 1 (Structural) voicings working
+   - Then Phase 2 (Intervallic), Phase 3 (Style), Phase 4 (Texture) — all `voicings.js` only
 
 5. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
 
