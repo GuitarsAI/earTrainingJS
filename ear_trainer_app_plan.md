@@ -194,6 +194,7 @@ table to find the right file.
 | Audio playback | `js/engine/audio.js` |
 | Notation rendering (VexFlow, `showNotation`) | `js/engine/notation.js` |
 | Voice leading engine | `js/engine/voiceLeading.js` |
+| Voicing data, algorithms (`VOICING_MODES`, `applyVoicing`, `resolveVoicingMode`) | `js/engine/voicings.js` |
 | Breakdown panel (`showBreakdown`) | `js/breakdown/breakdown.js` |
 | Chord data (`CHORD_TYPES`, `INTERVALS`, `SCALES`) | `js/data/chords.js` |
 | Enharmonic spelling engine | `js/data/spelling.js` |
@@ -326,7 +327,7 @@ Each scale name in the chord scales breakdown is clickable and opens that scale 
 
 ### Point 41 — Expanded voicing system (Chords mode)
 
-#### Status: Not yet implemented — architecture fully audited (Aug 2026)
+#### Status: Not yet implemented — architecture fully designed (Aug 2026)
 
 Replaces and greatly expands the current Point 23 voicing chips (Full / Real / Shell / Guide + Random).
 Applies to **Chords mode only** — not progressions or other modes.
@@ -337,39 +338,112 @@ files, the same dispatcher, and the same chip panel structure.
 
 ---
 
-#### Architecture decision (Aug 2026 audit)
+#### Architecture decisions (Aug 2026 — full codebase audit + design session)
 
-**Previous design (broken):** `applyVoicingMode(baseIntervals, mode)` — takes intervals,
-returns filtered intervals. Wrong abstraction: Drop-2, Quartal, two-hand voicings etc.
-require register and octave awareness — they cannot work on interval arrays alone.
+**Algorithm: `applyVoicing(rootMidi, baseIntervals, mode)`**
 
-**New design:** `applyVoicing(rootMidi, baseIntervals, mode)` — takes MIDI root and
-intervals, returns MIDI note array directly. Each voicing is a self-contained algorithm.
-The function is a dispatcher; each mode is a named case inside it.
+Previous design `applyVoicingMode(baseIntervals, mode)` was wrong — takes intervals, returns
+filtered intervals. Drop-2, Quartal, two-hand voicings etc. require register and octave
+awareness and cannot work on interval arrays alone.
 
-**Key insight from full codebase audit:** `notation.js` does NOT reference voicing symbols
-at all — it renders whatever MIDI notes it receives, and grand staff is automatic based on
-pitch range. So two-hand voicings (bass + treble split) work automatically as long as
-`currentMidiNotes` contains the right notes across the right registers. No changes needed
-to `notation.js`.
+New design takes MIDI root and intervals, returns a MIDI note array directly. Each voicing
+is a self-contained algorithm. The function is a dispatcher; each mode is a named case inside it.
+
+`notation.js` requires NO changes — renders whatever MIDI notes it receives; grand staff is
+automatic based on pitch range. Two-hand voicings work automatically as long as
+`currentMidiNotes` spans the right registers. `audio.js` requires NO changes.
 
 ---
 
-#### Complete touch-point map (audit Aug 2026)
+**New file: `js/engine/voicings.js`**
+
+All voicing logic lives in one dedicated file rather than being split across `helpers.js`.
+This keeps `helpers.js` focused on note picking, pool building, stats, and root badge.
+
+`voicings.js` owns:
+- `VOICING_MODES` — data table for all 21 voicings
+- `applyVoicing(rootMidi, baseIntervals, mode)` — main dispatcher
+- `resolveVoicingMode()` — moved from `helpers.js`
+
+Rendering of voicing chips moves to `pool.js` (see UI section below).
+
+Load order in `index.html` (one line added):
+```
+js/engine/helpers.js
+js/engine/voicings.js   ← new
+js/engine/audio.js
+```
+
+`helpers.js` loses its entire voicing section; replaced by a comment pointing to `voicings.js`.
+`currentVoicingMode` and `currentChordPlayStyle` stay in `helpers.js` — they are
+per-question resolved state, not voicing logic.
+
+---
+
+**UI: Voicing chips move into the chord pool panel**
+
+The old `voicingModeSection` in the Settings panel is removed. Voicing chips now live
+inside `renderChordPoolPanel()` in `pool.js`, as a second top-level section alongside
+chord quality — because the pool panel already has the right infrastructure
+(collapsible sections, correct density) and these are both chord-mode configuration axes.
+
+**Chord quality and voicing are kept completely separate** — they are different axes
+(what you train vs. how it sounds) and must never be mixed in the same section.
+
+`renderChordPoolPanel()` becomes two clearly labelled top-level sections:
+
+1. **"Chord quality"** — all existing family sections (Major, Minor, Dominant, Diminished,
+   Augmented, Suspended, Slash, Polychords, UST ×3) plus inversions toggle. Unchanged content,
+   just wrapped in a named group.
+
+2. **"Voicing"** — Random chip at the top (always visible, above all groups), then 4
+   collapsible sub-sections: Structural, Intervallic, Style, Texture.
+
+**Chip behaviour differs by app state:**
+
+- **Quiz mode (before answering):** Voicing section is **multi-select**. User builds a voicing
+  pool — e.g. "train me on Close, Drop-2, and Shell." Engine picks one from the selected set
+  each question. This is new behaviour — does not exist in current code.
+  State: `selectedVoicings` Set (new, declared in `state.js` or `defaults.js`).
+
+- **Quiz post-answer + Dictionary mode:** Voicing section is **single-select**. Selecting a
+  chip immediately re-voices the current chord and re-renders notation + breakdown.
+  State: writes directly to `activeVoicingMode`.
+
+`makeSection()` as written does multi-select into a Set. A new `makeVoicingSection()` variant
+(or a `singleSelect` flag) handles the mode-aware behaviour — multi-select in quiz,
+single-select with immediate re-render in dict/post-answer.
+
+**Changes to `app.js`:** Remove the `voicingModeSection` show/hide line from `switchMode()`.
+Remove `renderVoicingChips()` call from boot sequence. No other changes.
+
+**Changes to `index.html`:** Remove `voicingModeSection` div from Settings panel.
+No other HTML changes needed.
+
+---
+
+#### Complete touch-point map (final — Aug 2026)
 
 | File | What changes | Why |
 |---|---|---|
-| `js/engine/helpers.js` | Full rewrite of voicing section — new `VOICING_MODES`, new `applyVoicing()`, new `resolveVoicingMode()` | Core logic |
-| `js/engine/state.js` | `activeVoicingMode` default `'full'` → `'close'` | Symbol rename |
-| `js/modes/chords-mode.js` | Call site: `applyVoicingMode(baseIntervals, mode)` → `applyVoicing(rootMidi, baseIntervals, mode)` | New signature |
-| `js/breakdown/breakdown.js` | Line 2437: voicing label row — update symbol map from `{real, shell, guide}` to new symbols + descriptions for all voicings | Display label |
-| `js/ui/pool.js` | Voicing chip panel: reorganise into 4 collapsible groups, add all new chips | UI |
-| `js/engine/notation.js` | **No changes needed** — renders whatever MIDI notes it receives; grand staff is automatic | Confirmed in audit |
-| `js/engine/audio.js` | **No changes needed** — plays whatever is in `currentMidiNotes` | Confirmed in audit |
+| `js/engine/voicings.js` | **New file** — `VOICING_MODES`, `applyVoicing()`, `resolveVoicingMode()` | All voicing logic in one place |
+| `js/engine/helpers.js` | Delete voicing section, replace with comment pointing to `voicings.js` | Cleanup |
+| `js/engine/state.js` | `activeVoicingMode` default `'full'` → `'close'`; add `selectedVoicings` Set | Symbol rename + new quiz pool state |
+| `js/modes/chords-mode.js` | Call site: `applyVoicingMode(baseIntervals, mode)` → `applyVoicing(rootMidi, baseIntervals, mode)`; resolve from `selectedVoicings` in quiz | New signature + pool selection |
+| `js/breakdown/breakdown.js` | Voicing label row — update symbol map to all 21 symbols + descriptions; suppress row for `close` | Display label |
+| `js/ui/pool.js` | `renderChordPoolPanel()` restructured into "Chord quality" + "Voicing" sections; new `makeVoicingSection()` with mode-aware single/multi-select | UI |
+| `js/app.js` | Remove `voicingModeSection` show/hide from `switchMode()`; remove `renderVoicingChips()` from boot | Cleanup |
+| `index.html` | Remove `voicingModeSection` div from Settings panel; add `voicings.js` script tag | Cleanup + new file |
+| `js/engine/notation.js` | **No changes needed** | Confirmed in audit |
+| `js/engine/audio.js` | **No changes needed** | Confirmed in audit |
 
 ---
 
 #### Voicing chip panel — 4 collapsible groups
+
+**Random** chip (`random`) — sits above all groups, always visible. In quiz mode: picks
+uniformly from `selectedVoicings` each question (not from all 21). In dict/post-answer:
+picks uniformly from all 21 concrete modes.
 
 **Group 1 — Structural** (how notes are distributed across the keyboard)
 | Voicing | Symbol | Algorithm | Fallback |
@@ -377,12 +451,12 @@ to `notation.js`.
 | Close | `close` | All notes stacked from root within one octave | — |
 | Open | `open` | Alternate notes raised one octave to spread the voicing | — |
 | Spread | `spread` | Root in bass (oct 2–3), remaining notes voiced in oct 4–5 with wide spacing | — |
-| Shell | `shell` | Root + 3rd + 7th only | Full for triads (no 7th) |
-| Rootless | `rootless` | 3rd + 7th only, no root | Full for triads (no 7th) |
+| Shell | `shell` | Root + 3rd + 7th only | Close for triads (no 7th) |
+| Rootless | `rootless` | 3rd + 7th only, no root | Close for triads (no 7th) |
 | Drop-2 | `drop2` | Close voicing → second-highest note dropped one octave | — |
 | Drop-3 | `drop3` | Close voicing → third-highest note dropped one octave | — |
-| Drop-2&4 | `drop24` | Close voicing → second and fourth voices dropped one octave | 4+ note chords only; falls back to Drop-2 for triads |
-| Piano | `piano` | LH: root (oct 2–3). RH: remaining notes voiced close in oct 4–5. Natural two-hand piano layout | — |
+| Drop-2&4 | `drop24` | Close voicing → second and fourth voices dropped one octave | Falls back to Drop-2 for triads |
+| Piano | `piano` | LH: root (oct 2–3). RH: remaining notes voiced close in oct 4–5 | — |
 
 **Group 2 — Intervallic** (built from a specific interval rather than thirds)
 | Voicing | Symbol | Algorithm | Fallback |
@@ -392,7 +466,7 @@ to `notation.js`.
 | Secundal | `secundal` | Stack major seconds (2 semitones) from root, note count matches chord | — |
 | Cluster | `cluster` | Stack semitones (1 semitone) from root, note count matches chord | — |
 
-**Group 3 — Style-specific** (named voicing recipes from jazz piano tradition)
+**Group 3 — Style** (named voicing recipes from jazz piano tradition)
 | Voicing | Symbol | Algorithm | Source |
 |---|---|---|---|
 | So What | `so_what` | Fixed shape: P4 + P4 + P4 + M3 from root, regardless of chord | Miles Davis / Bill Evans |
@@ -402,13 +476,11 @@ to `notation.js`.
 | Pop Piano | `pop_piano` | LH: root octave (oct 2–3). RH: 3rd + 5th + 9th (oct 4–5) | Contemporary practice |
 | Gospel | `gospel` | Close voicing + added 9th; extensions stacked tightly | Gospel/R&B tradition |
 
-**Group 4 — Texture-based**
+**Group 4 — Texture**
 | Voicing | Symbol | Algorithm | Notes |
 |---|---|---|---|
 | Octave Doubling | `oct_double` | Root position + root doubled one octave above | — |
-| Dense Extended | `dense_ext` | All available chord tones including 7th, 9th, 11th, 13th voiced across two octaves | Only for extended chords; falls back to Close for triads/seventh chords |
-
-> **Random** chip (`random`) — picks uniformly from all concrete modes each question.
+| Dense Extended | `dense_ext` | All chord tones including 7th, 9th, 11th, 13th voiced across two octaves | Falls back to Close for triads/seventh chords |
 
 ---
 
@@ -419,27 +491,64 @@ All voicings show a "Voicing" row in the breakdown with:
 - One-line description of what it is
 - Source/tradition where relevant (e.g. "arranging literature", "Mark Levine")
 
-The `close` voicing does not show a voicing row (it is the default, unremarkable baseline).
+The `close` voicing does **not** show a voicing row — it is the default, unremarkable baseline.
 
 ---
 
-#### Files to change
-| Change | File |
-|---|---|
-| Full rewrite of voicing section — `VOICING_MODES`, `applyVoicing()`, `resolveVoicingMode()`, `renderVoicingChips()` | `js/engine/helpers.js` |
-| `activeVoicingMode` default value | `js/engine/state.js` |
-| Call site update — `applyVoicing(rootMidi, baseIntervals, mode)` | `js/modes/chords-mode.js` |
-| Voicing label row — symbol map updated to all new symbols + descriptions | `js/breakdown/breakdown.js` |
-| Voicing chip panel — 4 collapsible groups, all chips, Random | `js/ui/pool.js` |
+#### Implementation phases
 
-#### Implementation steps
-1. Rewrite voicing section in `helpers.js` — new symbols, `applyVoicing()` dispatcher with all modes
-2. Update `state.js` default
-3. Update `chords-mode.js` call site
-4. Update `breakdown.js` voicing label row
-5. Update `pool.js` chip panel with 4 groups
-6. Test each voicing group in order: Structural → Intervallic → Style-specific → Texture-based
-7. Mark each voicing ✓ in this plan as confirmed working
+**Phase 1 — Group 1: Structural (9 voicings)**
+Files: `voicings.js` (new), `helpers.js`, `state.js`, `chords-mode.js`, `breakdown.js`,
+`pool.js`, `app.js`, `index.html`. All infrastructure built in this phase.
+Groups 2–4 chips present and wired; `applyVoicing()` falls back to `close` for
+unimplemented symbols until later phases fill them in.
+
+**Phase 2 — Group 2: Intervallic (4 voicings)**
+Only `voicings.js` changes — add cases to `applyVoicing()` dispatcher.
+
+**Phase 3 — Group 3: Style (6 voicings)**
+Only `voicings.js` changes. Musically the most complex — two-hand splits, rootless
+recipes, fixed shapes. Deserves its own focused session.
+
+**Phase 4 — Group 4: Texture (2 voicings)**
+Only `voicings.js` changes.
+
+---
+
+#### Implementation steps (Phase 1)
+1. Create `js/engine/voicings.js` — `VOICING_MODES` (all 21), `applyVoicing()` (Group 1
+   algorithms + fallback-to-close stubs for Groups 2–4), `resolveVoicingMode()`
+2. Update `index.html` — add `voicings.js` script tag; remove `voicingModeSection` div
+3. Update `helpers.js` — delete voicing section, add pointer comment
+4. Update `state.js` — `'full'` → `'close'`; add `selectedVoicings` Set with sensible default
+5. Update `chords-mode.js` — new call site signature; resolve voicing from `selectedVoicings` in quiz
+6. Update `breakdown.js` — full 21-symbol voicing label map
+7. Update `pool.js` — restructure `renderChordPoolPanel()` into Chord quality + Voicing sections
+8. Update `app.js` — remove `voicingModeSection` show/hide; remove `renderVoicingChips()` boot call
+9. Test Group 1 voicings in order; mark each ✓ below as confirmed working
+
+#### Voicing confirmation checklist
+- [ ] Close
+- [ ] Open
+- [ ] Spread
+- [ ] Shell
+- [ ] Rootless
+- [ ] Drop-2
+- [ ] Drop-3
+- [ ] Drop-2&4
+- [ ] Piano
+- [ ] Quartal (Phase 2)
+- [ ] Quintal (Phase 2)
+- [ ] Secundal (Phase 2)
+- [ ] Cluster (Phase 2)
+- [ ] So What (Phase 3)
+- [ ] Bill Evans (Phase 3)
+- [ ] Kenny Barron (Phase 3)
+- [ ] McCoy Tyner (Phase 3)
+- [ ] Pop Piano (Phase 3)
+- [ ] Gospel (Phase 3)
+- [ ] Octave Doubling (Phase 4)
+- [ ] Dense Extended (Phase 4)
 
 ---
 
@@ -452,8 +561,10 @@ The `close` voicing does not show a voicing row (it is the default, unremarkable
 3. ~~**Point 40 — Clickable chord scales**~~ ✓ Complete (Aug 2026)
 
 4. **Points 41 + 46 — Complete voicing system** (merged into one implementation — see Point 41
-   for full spec. Five files: `helpers.js`, `state.js`, `chords-mode.js`, `breakdown.js`, `pool.js`.
-   Implement in order: Group 1 Structural → Group 2 Intervallic → Group 3 Style-specific → Group 4 Texture-based.)
+   for full spec. Eight files across 4 phases: new `voicings.js`, `helpers.js`, `state.js`,
+   `chords-mode.js`, `breakdown.js`, `pool.js`, `app.js`, `index.html`.
+   Implement in order: Phase 1 Structural → Phase 2 Intervallic → Phase 3 Style → Phase 4 Texture.
+   All infrastructure built in Phase 1; later phases only touch `voicings.js`.)
 
 5. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
 
