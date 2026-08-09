@@ -326,76 +326,120 @@ Each scale name in the chord scales breakdown is clickable and opens that scale 
 
 ### Point 41 — Expanded voicing system (Chords mode)
 
-#### Status: Not yet implemented
+#### Status: Not yet implemented — architecture fully audited (Aug 2026)
 
 Replaces and greatly expands the current Point 23 voicing chips (Full / Real / Shell / Guide + Random).
 Applies to **Chords mode only** — not progressions or other modes.
 
-#### Terminology (resolved by Point 46 reference — Aug 2026)
-- **Full** → rename to **Close** (all notes within one octave, classical default)
-- **Real** → rename to **Open** (notes spread over more than one octave)
-- **Guide** → rename to **Rootless** (root omitted; bass player supplies it)
-- All other chip names confirmed by reference and kept as-is
+Points 41 and 46 are implemented together as one system. Point 41 is the architectural
+foundation; Point 46 completes the voicing library on top of it. They share the same
+files, the same dispatcher, and the same chip panel structure.
+
+---
+
+#### Architecture decision (Aug 2026 audit)
+
+**Previous design (broken):** `applyVoicingMode(baseIntervals, mode)` — takes intervals,
+returns filtered intervals. Wrong abstraction: Drop-2, Quartal, two-hand voicings etc.
+require register and octave awareness — they cannot work on interval arrays alone.
+
+**New design:** `applyVoicing(rootMidi, baseIntervals, mode)` — takes MIDI root and
+intervals, returns MIDI note array directly. Each voicing is a self-contained algorithm.
+The function is a dispatcher; each mode is a named case inside it.
+
+**Key insight from full codebase audit:** `notation.js` does NOT reference voicing symbols
+at all — it renders whatever MIDI notes it receives, and grand staff is automatic based on
+pitch range. So two-hand voicings (bass + treble split) work automatically as long as
+`currentMidiNotes` contains the right notes across the right registers. No changes needed
+to `notation.js`.
+
+---
+
+#### Complete touch-point map (audit Aug 2026)
+
+| File | What changes | Why |
+|---|---|---|
+| `js/engine/helpers.js` | Full rewrite of voicing section — new `VOICING_MODES`, new `applyVoicing()`, new `resolveVoicingMode()` | Core logic |
+| `js/engine/state.js` | `activeVoicingMode` default `'full'` → `'close'` | Symbol rename |
+| `js/modes/chords-mode.js` | Call site: `applyVoicingMode(baseIntervals, mode)` → `applyVoicing(rootMidi, baseIntervals, mode)` | New signature |
+| `js/breakdown/breakdown.js` | Line 2437: voicing label row — update symbol map from `{real, shell, guide}` to new symbols + descriptions for all voicings | Display label |
+| `js/ui/pool.js` | Voicing chip panel: reorganise into 4 collapsible groups, add all new chips | UI |
+| `js/engine/notation.js` | **No changes needed** — renders whatever MIDI notes it receives; grand staff is automatic | Confirmed in audit |
+| `js/engine/audio.js` | **No changes needed** — plays whatever is in `currentMidiNotes` | Confirmed in audit |
+
+---
 
 #### Voicing chip panel — 4 collapsible groups
 
-**Group 1 — Structural**
-| Voicing | Description | Status |
-|---|---|---|
-| Close | All notes within one octave | ✓ rename from "Full" |
-| Open | Notes spread over more than one octave | ✓ rename from "Real" |
-| Shell | Root + 3rd + 7th only | ✓ existing chip |
-| Rootless | Root omitted; bass player supplies it | ✓ rename from "Guide" |
-| Drop-2 | Second-highest note dropped an octave | New |
-| Drop-3 | Third-highest note dropped an octave | New |
-| Drop-2&4 | Second and fourth voices dropped | New |
-| Spread | Large intervals throughout | New |
+**Group 1 — Structural** (how notes are distributed across the keyboard)
+| Voicing | Symbol | Algorithm | Fallback |
+|---|---|---|---|
+| Close | `close` | All notes stacked from root within one octave | — |
+| Open | `open` | Alternate notes raised one octave to spread the voicing | — |
+| Spread | `spread` | Root in bass (oct 2–3), remaining notes voiced in oct 4–5 with wide spacing | — |
+| Shell | `shell` | Root + 3rd + 7th only | Full for triads (no 7th) |
+| Rootless | `rootless` | 3rd + 7th only, no root | Full for triads (no 7th) |
+| Drop-2 | `drop2` | Close voicing → second-highest note dropped one octave | — |
+| Drop-3 | `drop3` | Close voicing → third-highest note dropped one octave | — |
+| Drop-2&4 | `drop24` | Close voicing → second and fourth voices dropped one octave | 4+ note chords only; falls back to Drop-2 for triads |
+| Piano | `piano` | LH: root (oct 2–3). RH: remaining notes voiced close in oct 4–5. Natural two-hand piano layout | — |
 
-**Group 2 — Intervallic**
-| Voicing | Description |
-|---|---|
-| Quartal | Built from stacked fourths |
-| Quintal | Built from stacked fifths |
-| Secundal | Built from stacked seconds |
-| Cluster | Adjacent semitones |
-| Tenths | LH plays root + 10th |
+**Group 2 — Intervallic** (built from a specific interval rather than thirds)
+| Voicing | Symbol | Algorithm | Fallback |
+|---|---|---|---|
+| Quartal | `quartal` | Stack perfect fourths (5 semitones) from root, note count matches chord | — |
+| Quintal | `quintal` | Stack perfect fifths (7 semitones) from root, note count matches chord | — |
+| Secundal | `secundal` | Stack major seconds (2 semitones) from root, note count matches chord | — |
+| Cluster | `cluster` | Stack semitones (1 semitone) from root, note count matches chord | — |
 
-**Group 3 — Style-specific**
-| Voicing | Description |
-|---|---|
-| So What | P4 + P4 + P4 + M3 + P4 stack |
-| Bill Evans | 3rd, 7th, 9th, 13th — no root |
-| Kenny Barron | LH: root + 7. RH: 3–5–9 |
-| Herbie Hancock | Quartal plus clusters |
-| McCoy Tyner | Powerful quartal stacks in LH |
-| Gospel | Added 2nds, added 6ths, quartal movement, passing diminished |
-| Pop Piano | LH octave, RH: 3–5–9 |
+**Group 3 — Style-specific** (named voicing recipes from jazz piano tradition)
+| Voicing | Symbol | Algorithm | Source |
+|---|---|---|---|
+| So What | `so_what` | Fixed shape: P4 + P4 + P4 + M3 from root, regardless of chord | Miles Davis / Bill Evans |
+| Bill Evans | `bill_evans` | 3rd + 7th + 9th + 13th, no root, voiced in register | The Jazz Piano Book |
+| Kenny Barron | `kenny_barron` | LH: root + 7th. RH: 3rd + 5th + 9th | — |
+| McCoy Tyner | `mccoy_tyner` | LH: stacked quartal. RH: upper quartal cluster | — |
+| Pop Piano | `pop_piano` | LH: root octave (oct 2–3). RH: 3rd + 5th + 9th (oct 4–5) | Contemporary practice |
+| Gospel | `gospel` | Close voicing + added 9th; extensions stacked tightly | Gospel/R&B tradition |
 
 **Group 4 — Texture-based**
-| Voicing | Description | Notes |
-|---|---|---|
-| Triad over Bass | Simple triad in RH over a different bass note | Overlaps with Slash chords family |
-| Upper Structure Triads | Major/minor triad over dominant chord shell | Already a chord family (UST) |
-| Octave Doubling | Chord tones doubled in octaves | New |
-| Dense Extended | Five to seven chord tones including 7th, 9th, 11th, 13th | New |
+| Voicing | Symbol | Algorithm | Notes |
+|---|---|---|---|
+| Octave Doubling | `oct_double` | Root position + root doubled one octave above | — |
+| Dense Extended | `dense_ext` | All available chord tones including 7th, 9th, 11th, 13th voiced across two octaves | Only for extended chords; falls back to Close for triads/seventh chords |
+
+> **Random** chip (`random`) — picks uniformly from all concrete modes each question.
+
+---
+
+#### Breakdown voicing row
+
+All voicings show a "Voicing" row in the breakdown with:
+- Name (e.g. "Drop-2")
+- One-line description of what it is
+- Source/tradition where relevant (e.g. "arranging literature", "Mark Levine")
+
+The `close` voicing does not show a voicing row (it is the default, unremarkable baseline).
+
+---
 
 #### Files to change
 | Change | File |
 |---|---|
-| Voicing formulas, note generation per voicing type | `js/engine/audio.js` |
-| Notation rendering for non-standard voicings | `js/engine/notation.js` |
-| Voicing chip panel groups (collapsible, All/None, Random) | `js/ui/pool.js` |
-| Voicing explanation row in breakdown | `js/breakdown/breakdown.js` |
-| Voicing state variable | `js/engine/state.js` |
+| Full rewrite of voicing section — `VOICING_MODES`, `applyVoicing()`, `resolveVoicingMode()`, `renderVoicingChips()` | `js/engine/helpers.js` |
+| `activeVoicingMode` default value | `js/engine/state.js` |
+| Call site update — `applyVoicing(rootMidi, baseIntervals, mode)` | `js/modes/chords-mode.js` |
+| Voicing label row — symbol map updated to all new symbols + descriptions | `js/breakdown/breakdown.js` |
+| Voicing chip panel — 4 collapsible groups, all chips, Random | `js/ui/pool.js` |
 
 #### Implementation steps
-1. Rename Full/Real/Guide chips (update chip labels in `pool.js`, update state variable in `state.js`)
-2. Implement Tier 1 voicings one group at a time — start with Structural (Drop-2, Drop-3, Drop-2&4, Spread, Three-note)
-3. Add Intervallic voicings (Quartal, Quintal, Secundal, Cluster)
-4. Add Style-specific voicings (So What, Bill Evans, Kenny Barron, etc.)
-5. Add voicing explanation row to breakdown for all Tier 1 voicings
-6. Add Tier 2 breakdown descriptions for Block, Classical, Impressionist, Pop/Gospel
-7. Update `chords_reference.md` and this plan as each voicing is confirmed working
+1. Rewrite voicing section in `helpers.js` — new symbols, `applyVoicing()` dispatcher with all modes
+2. Update `state.js` default
+3. Update `chords-mode.js` call site
+4. Update `breakdown.js` voicing label row
+5. Update `pool.js` chip panel with 4 groups
+6. Test each voicing group in order: Structural → Intervallic → Style-specific → Texture-based
+7. Mark each voicing ✓ in this plan as confirmed working
 
 ---
 
@@ -407,13 +451,13 @@ Applies to **Chords mode only** — not progressions or other modes.
 
 3. ~~**Point 40 — Clickable chord scales**~~ ✓ Complete (Aug 2026)
 
-4. **Point 41 — Expanded voicing system** (largest scope; superseded in scope by Point 46 — implement 41 first as foundation, then extend with 46)
+4. **Points 41 + 46 — Complete voicing system** (merged into one implementation — see Point 41
+   for full spec. Five files: `helpers.js`, `state.js`, `chords-mode.js`, `breakdown.js`, `pool.js`.
+   Implement in order: Group 1 Structural → Group 2 Intervallic → Group 3 Style-specific → Group 4 Texture-based.)
 
 5. **Point 44 — Complete chord library** (work through `chords_reference.md` row by row; split `chords.js` if needed)
 
 6. **Point 45 — Complete scale library** (work through `complete_12_TET_piano_scales.md` named-index rows)
-
-7. **Point 46 — Complete voicing system** (supersedes and extends Point 41; work through `complete_literature_based_piano_chord_voicings.md`)
 
 8. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
 
@@ -498,29 +542,37 @@ Unnamed mathematical collections are explicitly out of scope.
 
 ## Point 46 — Complete voicing system
 
-### Status: Reference complete — implementation not yet started
+### Status: Merged into Point 41 (Aug 2026)
 
-Supersedes and greatly extends Point 41. Point 41 should be implemented first as the
-architectural foundation; Point 46 then completes the system.
+Points 41 and 46 are now a single implementation effort. The full voicing library —
+including all chips, algorithms, breakdown rows, and chip panel structure — is specified
+in Point 41 above. Point 46 is retained here for reference only.
 
 ### Reference file
 `complete_literature_based_piano_chord_voicings.md` — 33 sections, literature-grounded
 (Levine, Felts/Berklee, Ted Greene, Bill Dobbins, Persichetti, Hindemith).
 
-### Scope tiers
-**Tier 1 — Voicing chips:** Close, Open, Spread, Shell, Rootless, Drop-2, Drop-3, Drop-2&4, Quartal, Quintal, Secundal/Cluster, So What, Pentatonic, Three-note
+### Original scope tiers (now folded into Point 41 groups)
 
-**Tier 2 — Breakdown description only:** Left-hand voicings, Right-hand/melody voicings, Block chords, Classical/SATB, Impressionist/planed, Symmetrical structures, Pop/Gospel
+**Tier 1 — Voicing chips (implemented as Point 41 Groups 1–4):**
+Close, Open, Spread, Shell, Rootless, Drop-2, Drop-3, Drop-2&4, Piano, Quartal, Quintal,
+Secundal, Cluster, So What, Bill Evans, Kenny Barron, McCoy Tyner, Pop Piano, Gospel,
+Octave Doubling, Dense Extended
 
-**Tier 3 — Out of scope:** Stride, Bud Powell, Locked-hands, Pedal point (rhythmic/performance styles)
+**Tier 2 — Breakdown description only** (shown in voicing row, no chip):
+Left-hand voicings, Right-hand/melody voicings, Block chords, Classical/SATB,
+Impressionist/planed, Symmetrical structures
 
-### Files to change
-| Change | File |
-|---|---|
-| Voicing formulas and note generation | `js/engine/audio.js` |
-| Notation rendering for non-standard voicings | `js/engine/notation.js` |
-| Voicing chip panel groups | `js/ui/pool.js` |
-| Voicing explanation row in breakdown | `js/breakdown/breakdown.js` |
+**Tier 3 — Out of scope:**
+Stride, Bud Powell, Locked-hands, Pedal point (rhythmic/performance styles)
+
+### Key decisions recorded (Aug 2026)
+- `notation.js` requires NO changes — grand staff is automatic from MIDI pitch range
+- `audio.js` requires NO changes — plays whatever is in `currentMidiNotes`
+- Two-hand voicings (Piano, Kenny Barron, McCoy Tyner, Pop Piano) work automatically
+  because notes spanning both registers trigger grand staff in `notation.js`
+- "Triad over Bass" and "Upper Structure Triads" removed from voicing chips — these
+  already exist as dedicated chord families (Slash and UST respectively)
 
 ---
 
