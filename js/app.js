@@ -418,6 +418,167 @@ function dictShow() {
   }
 }
 
+// ─── Reapply settings to current item (no new item picked, same pitch class) ──
+// Called when any setting changes (voicing, root, octave, style, direction).
+// Recomputes MIDI notes from the current item + current pinned root/octave,
+// then refreshes notation + breakdown if currently visible.
+// Moved here from progressions-mode.js — this is app-level coordination, not
+// progression-specific logic.
+function recomputeCurrentNotes() {
+
+  // Resolve pitch class to use: pinned root wins, otherwise keep existing.
+  function resolvePc(existingPc) {
+    return pinnedRoot !== null ? pinnedRoot : existingPc;
+  }
+
+  // Build root MIDI from a pitch class, respecting current octave band.
+  // Prefers to keep the existing octave if it still falls within the band.
+  function rootMidiForPc(pc, existingRootMidi, lo, hi) {
+    const existingOct = Math.floor(existingRootMidi / 12) - 1;
+    const oct = (existingOct >= lo && existingOct <= hi)
+      ? existingOct
+      : Math.floor((lo + hi) / 2);
+    return 12 + pc + oct * 12;
+  }
+
+  // ── Progressions ─────────────────────────────────────────────────────────────
+  if (currentMode === 'progressions') {
+    if (!currentProgression) return;
+    const pc = pinnedRoot !== null ? pinnedRoot : currentProgRootPc ?? 0;
+    currentProgRootPc   = pc;
+    currentProgRootMidi = 12 + pc + 4 * 12;
+    updateRootBadge(spelledRoot(pc));
+    if (appMode === 'dict' || progAnswered) {
+      showProgressionNotation();
+      showBreakdown();
+    }
+    return;
+  }
+
+  // ── Chords ───────────────────────────────────────────────────────────────────
+  if (currentMode === 'chords') {
+    if (!currentChord) return;
+
+    if (currentChord.family === 'slash') {
+      const existingPc = currentUpperRootMidi !== null ? currentUpperRootMidi % 12 : 0;
+      const pc = resolvePc(existingPc);
+      const rootMidi = 12 + pc + 4 * 12;
+      currentUpperRootMidi = rootMidi;
+      currentChordRootMidi = rootMidi;
+      const belowSemitones = 12 - currentChord.bassInterval;
+      currentSlashBassMidi = rootMidi - belowSemitones;
+      while (currentSlashBassMidi > 48) currentSlashBassMidi -= 12;
+      while (currentSlashBassMidi < 28) currentSlashBassMidi += 12;
+      currentMidiNotes = currentChord.upperIntervals.map(i => rootMidi + i);
+
+    } else if (currentChord.family === 'poly') {
+      const existingPc = currentPolyLowerRootMidi !== null
+        ? ((currentPolyLowerRootMidi % 12) + 12) % 12 : 0;
+      const pc = resolvePc(existingPc);
+      let lowerRootMidi = 12 + pc + 3 * 12;
+      while (lowerRootMidi > 48) lowerRootMidi -= 12;
+      while (lowerRootMidi < 36) lowerRootMidi += 12;
+      currentPolyLowerRootMidi = lowerRootMidi;
+      currentPolyUpperRootMidi = lowerRootMidi + currentChord.lowerOffset;
+      currentPolyLowerMidi = currentChord.lowerIntervals.map(i => currentPolyLowerRootMidi + i);
+      currentPolyUpperMidi = currentChord.upperIntervals.map(i => currentPolyUpperRootMidi + i);
+      currentMidiNotes = [...currentPolyLowerMidi, ...currentPolyUpperMidi];
+      currentChordRootMidi = currentPolyLowerRootMidi;
+
+    } else if (currentChord.family === 'ust') {
+      const existingPc = currentUSTRootMidi !== null ? currentUSTRootMidi % 12 : 0;
+      const pc = resolvePc(existingPc);
+      const rootMidi = 12 + pc + 4 * 12;
+      currentUSTRootMidi = rootMidi;
+      currentChordRootMidi = rootMidi;
+      currentUSTShellMidi = currentChord.shellIntervals.map(i => rootMidi + i);
+      const upperTriadRootMidi = rootMidi + currentChord.upperTriadRoot;
+      currentUSTUpperMidi = currentChord.upperTriadIntervals.map(i => upperTriadRootMidi + i);
+      currentUSTShellMidi = currentUSTShellMidi.map(m => m < 48 ? m + 12 : m);
+      currentMidiNotes = [...currentUSTShellMidi, ...currentUSTUpperMidi];
+
+    } else {
+      // Normal chord (root position or inversion) — POINT 41 BUG FIX:
+      // was applyVoicingMode(baseIntervals, mode) → now applyVoicing(rootMidi, baseIntervals, mode)
+      const baseIntervals = currentChord.invIndex !== undefined
+        ? currentChord.baseChord.intervals : currentChord.intervals;
+      const span = baseIntervals[baseIntervals.length - 1];
+      const absMin = Math.ceil((28 - 12) / 12);
+      const absMax = Math.floor((96 - 12 - span) / 12);
+      const defaultLo = span > 14 ? Math.max(3, absMin) : Math.max(2, absMin);
+      const defaultHi = Math.min(5, absMax);
+      const [lo, hi] = resolveOctaveBand(pinnedOctave, defaultLo, defaultHi);
+      const safeLo = Math.max(Math.min(lo, absMax), absMin);
+      const safeHi = Math.max(Math.min(hi, absMax), safeLo);
+
+      // For inverted chords, back-compute the root from the bass note
+      const existingRootMidi = (() => {
+        if (!currentMidiNotes.length) return 12 + (pinnedRoot ?? 0) + safeLo * 12;
+        if (currentChord.invIndex !== undefined) {
+          const bassInterval = currentChord.baseChord.intervals[currentChord.invIndex];
+          return currentMidiNotes[0] - bassInterval;
+        }
+        return currentMidiNotes[0];
+      })();
+
+      const existingPc = ((existingRootMidi % 12) + 12) % 12;
+      const pc = resolvePc(existingPc);
+      const rootMidi = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
+      currentChordRootMidi = rootMidi;
+
+      currentVoicingMode = resolveVoicingMode();
+      const voicedMidi = applyVoicing(rootMidi, baseIntervals, currentVoicingMode);
+      if (currentChord.invIndex !== undefined) {
+        const sorted = [...voicedMidi].sort((a, b) => a - b);
+        const invIdx = Math.min(currentChord.invIndex, sorted.length - 1);
+        for (let i = 0; i < invIdx; i++) { const lo = sorted.shift(); sorted.push(lo + 12); }
+        currentMidiNotes = sorted;
+      } else {
+        currentMidiNotes = voicedMidi;
+      }
+    }
+
+  // ── Intervals ────────────────────────────────────────────────────────────────
+  } else if (currentMode === 'intervals') {
+    if (!currentInterval) return;
+    const existingPc = currentIntervalMidi.length ? currentIntervalMidi[0] % 12 : 0;
+    const pc = resolvePc(existingPc);
+    const [lo, hi] = resolveOctaveBand(pinnedOctave, 3, 5);
+    const safeHi = Math.min(hi, Math.floor((96 - currentInterval.semitones) / 12) - 1);
+    const safeLo = Math.min(lo, safeHi);
+    const existingRootMidi = currentIntervalMidi.length ? currentIntervalMidi[0] : 12 + pc + safeLo * 12;
+    const rootMidi = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
+    currentIntervalMidi = [rootMidi, rootMidi + currentInterval.semitones];
+
+  // ── Scales ───────────────────────────────────────────────────────────────────
+  } else {
+    if (!currentScale) return;
+    const existingPc = currentScaleRootMidi !== undefined ? currentScaleRootMidi % 12 : 0;
+    const pc = resolvePc(existingPc);
+    const span = currentScale.intervals[currentScale.intervals.length - 1];
+    const [lo, hi] = resolveOctaveBand(pinnedOctave, 3, 5);
+    const safeHi = Math.min(hi, Math.floor((96 - span) / 12) - 1);
+    const safeLo = Math.min(lo, safeHi);
+    const existingRootMidi = currentScaleRootMidi ?? (12 + pc + safeLo * 12);
+    currentScaleRootMidi = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
+  }
+
+  // ── Always refresh UI ────────────────────────────────────────────────────────
+  // In dict mode: always. In quiz mode: only after answering.
+  // showCurrentView() dispatches to chord or resolution view as appropriate.
+  if (appMode === 'dict' || answered) { showCurrentView(); showBreakdown(); }
+  // Always update the root badge to reflect the new pitch
+  if (currentMode === 'chords' && currentChord) {
+    updateRootBadge(appMode === 'dict' || answered ? getChordRootName() : (showRoot ? getChordRootName() : null));
+  } else if (currentMode === 'intervals' && currentInterval) {
+    const label = spelledNote(0, currentIntervalMidi[0] % 12, currentInterval.symbol);
+    updateRootBadge(appMode === 'dict' || answered ? label : (showRoot ? label : null));
+  } else if (currentMode === 'scales' && currentScale) {
+    const label = spelledNote(0, currentScaleRootMidi % 12, currentScale.symbol);
+    updateRootBadge(appMode === 'dict' || answered ? label : (showRoot ? label : null));
+  }
+}
+
 // Switch between quiz and dictionary app modes
 function setAppMode(mode) {
   if (typeof teardownProgressionUI === 'function') teardownProgressionUI(); // POINT 38: always clean up progression DOM before switching

@@ -341,7 +341,7 @@ Each scale name in the chord scales breakdown is clickable and opens that scale 
 - Fix: update the normal chord branch of `recomputeCurrentNotes()` to call `applyVoicing(rootMidi, baseIntervals, currentVoicingMode)` and assign the result directly to `currentMidiNotes` (not intervals). The inversion path also needs updating to work with the MIDI-array return value of `applyVoicing()`.
 
 **What is not yet done**
-- `breakdown.js` — voicing label row not yet updated with all 21 symbols
+- `breakdown.js` — voicing label row not yet updated with all 63 symbols
 - Voicing confirmation checklist — none confirmed working yet (blocked by bug above)
 
 Replaces and greatly expands the current Point 23 voicing chips (Full / Real / Shell / Guide + Random).
@@ -376,7 +376,7 @@ All voicing logic lives in one dedicated file rather than being split across `he
 This keeps `helpers.js` focused on note picking, pool building, stats, and root badge.
 
 `voicings.js` owns:
-- `VOICING_MODES` — data table for all 21 voicings
+- `VOICING_MODES` — data table for all 63 voicings
 - `applyVoicing(rootMidi, baseIntervals, mode)` — main dispatcher
 - `resolveVoicingMode()` — moved from `helpers.js`
 
@@ -409,7 +409,7 @@ Training pool — Chords  [▸]
   │     [ ] Include inversions  (quiz mode only)
   └── Voicing  [▸]         collapsed by default — All/None at group level (quiz only)
         Random chip
-        Structural, Intervallic, Style, Texture
+        Position (3), Doubling (4), Shell/Rootless (27), Drop (4), Intervallic (8), Style (17)
 ```
 
 **Chord quality and voicing are kept completely separate** — they are different axes
@@ -466,48 +466,110 @@ No other HTML changes needed.
 
 ---
 
-#### Voicing chip panel — 4 collapsible groups
+#### Voicing chip panel — 6 collapsible groups (63 voicings total)
 
 **Random** chip (`random`) — sits above all groups, always visible. In quiz mode: picks
-uniformly from `selectedVoicings` each question (not from all 21). In dict/post-answer:
-picks uniformly from all 21 concrete modes.
+uniformly from `selectedVoicings` each question. In dict/post-answer: picks uniformly
+from all 63 concrete modes.
 
-**Group 1 — Structural** (how notes are distributed across the keyboard)
-| Voicing | Symbol | Algorithm | Fallback |
-|---|---|---|---|
-| Close | `close` | All notes stacked from root within one octave | — |
-| Open | `open` | Alternate notes raised one octave to spread the voicing | — |
-| Spread | `spread` | Root in bass (oct 2–3), remaining notes voiced in oct 4–5 with wide spacing | — |
-| Shell | `shell` | Root + 3rd + 7th only | Close for triads (no 7th) |
-| Rootless | `rootless` | 3rd + 7th only, no root | Close for triads (no 7th) |
-| Drop-2 | `drop2` | Close voicing → second-highest note dropped one octave | — |
-| Drop-3 | `drop3` | Close voicing → third-highest note dropped one octave | — |
-| Drop-2&4 | `drop24` | Close voicing → second and fourth voices dropped one octave | Falls back to Drop-2 for triads |
-| Piano | `piano` | LH: root (oct 2–3). RH: remaining notes voiced close in oct 4–5 | — |
+---
 
-**Group 2 — Intervallic** (built from a specific interval rather than thirds)
-| Voicing | Symbol | Algorithm | Fallback |
-|---|---|---|---|
-| Quartal | `quartal` | Stack perfect fourths (5 semitones) from root, note count matches chord | — |
-| Quintal | `quintal` | Stack perfect fifths (7 semitones) from root, note count matches chord | — |
-| Secundal | `secundal` | Stack major seconds (2 semitones) from root, note count matches chord | — |
-| Cluster | `cluster` | Stack semitones (1 semitone) from root, note count matches chord | — |
+**Group 1 — Position / Spacing** (how notes are distributed in register)
+| # | Voicing | Symbol | Algorithm | Fallback |
+|---|---|---|---|---|
+| 1 | Close | `close` | All notes stacked from root within one octave | — |
+| 2 | Open | `open` | Alternate notes raised one octave to spread the voicing | — |
+| 3 | Spread | `spread` | Root in bass (oct 2–3), remaining notes voiced in oct 4–5 with wide spacing | — |
 
-**Group 3 — Style** (named voicing recipes from jazz piano tradition)
-| Voicing | Symbol | Algorithm | Source |
-|---|---|---|---|
-| So What | `so_what` | Fixed shape: P4 + P4 + P4 + M3 from root, regardless of chord | Miles Davis / Bill Evans |
-| Bill Evans | `bill_evans` | 3rd + 7th + 9th + 13th, no root, voiced in register | The Jazz Piano Book |
-| Kenny Barron | `kenny_barron` | LH: root + 7th. RH: 3rd + 5th + 9th | — |
-| McCoy Tyner | `mccoy_tyner` | LH: stacked quartal. RH: upper quartal cluster | — |
-| Pop Piano | `pop_piano` | LH: root octave (oct 2–3). RH: 3rd + 5th + 9th (oct 4–5) | Contemporary practice |
-| Gospel | `gospel` | Close voicing + added 9th; extensions stacked tightly | Gospel/R&B tradition |
+---
 
-**Group 4 — Texture**
-| Voicing | Symbol | Algorithm | Notes |
-|---|---|---|---|
-| Octave Doubling | `oct_double` | Root position + root doubled one octave above | — |
-| Dense Extended | `dense_ext` | All chord tones including 7th, 9th, 11th, 13th voiced across two octaves | Falls back to Close for triads/seventh chords |
+**Group 2 — Doubling** (reinforcing a chord tone at another octave)
+| # | Voicing | Symbol | Algorithm | Source |
+|---|---|---|---|---|
+| 4 | Root Octave Double | `dbl_root_oct` | Root + root one octave lower in bass: `1–1–3–5` | Classical/arranging |
+| 5 | Root Above Fifth | `dbl_root_above5` | Root doubled above fifth: `1–5–1–3` | Classical/arranging |
+| 6 | Fifth Double | `dbl_fifth` | Fifth doubled: `1–5–3–5` | Classical/arranging |
+| 7 | Root Top and Bottom | `dbl_root_wrap` | Root doubled at top and bottom: `1–3–5–1` | Classical/arranging |
+
+---
+
+**Group 3 — Shell / Rootless** (selective chord tone subsets)
+| # | Voicing | Symbol | Algorithm | Fallback |
+|---|---|---|---|---|
+| 8 | Shell | `shell` | `1–3–7` | Close for triads |
+| 9 | Shell Alt | `shell_alt` | `1–7–3` | Close for triads |
+| 10 | Rootless Shell | `shell_rootless` | `3–7` only | Close for triads |
+| 11 | Three-note Maj 1–3–5 | `tn_maj_135` | `1–3–5` | — |
+| 12 | Three-note Maj 3–5–7 | `tn_maj_357` | `3–5–7` | Close if no 7th |
+| 13 | Three-note Maj 1–3–7 | `tn_maj_137` | `1–3–7` | Close if no 7th |
+| 14 | Three-note Dom 1–3–b7 | `tn_dom_13b7` | `1–3–b7` | Close if no b7 |
+| 15 | Three-note Dom 3–5–b7 | `tn_dom_35b7` | `3–5–b7` | Close if no b7 |
+| 16 | Three-note Dom 3–b7–9 | `tn_dom_3b79` | `3–b7–9` | Close if no 9 |
+| 17 | Three-note Min 1–b3–b7 | `tn_min_1b3b7` | `1–b3–b7` | Close if no b7 |
+| 18 | Three-note Min b3–5–b7 | `tn_min_b35b7` | `b3–5–b7` | Close if no b7 |
+| 19 | Three-note Min b3–b7–9 | `tn_min_b3b79` | `b3–b7–9` | Close if no 9 |
+| 20 | Rootless Maj7 | `rl_maj7` | `3–5–7–9` | Close if no 9 |
+| 21 | Rootless Maj7 Extended | `rl_maj7_ext` | `3–5–7–9–13` | Falls back to `rl_maj7` if no 13 |
+| 22 | Rootless Min7 | `rl_min7` | `b3–5–b7–9` | Close if no 9 |
+| 23 | Rootless Dom7 | `rl_dom7` | `3–b7–9–13` | Close if no 9/13 |
+| 24 | Rootless Altered A | `rl_alt_a` | `3–b7–b9–#9` | Close if no alterations |
+| 25 | Rootless Altered B | `rl_alt_b` | `3–b7–#9–b13` | Close if no alterations |
+| 26 | Rootless Altered C | `rl_alt_c` | `3–b7–b5–b9` | Close if no alterations |
+| 27 | Rootless Altered D | `rl_alt_d` | `3–b7–b9–Ab` (concrete spelling) | Close if no alterations |
+| 28 | Rootless #9 | `rl_sharp9` | `3–b7–#9` | Close if no #9 |
+| 29 | Sus Voicing | `sus_voicing` | `1–4–b7–9` | Close for non-sus chords |
+| 30 | Phrygian Voicing | `phrygian` | `1–b2–5–b7` | Close for non-Phrygian chords |
+| 31 | Major 6 | `sixth_maj` | `1–3–5–6` | Close if no 6 |
+| 32 | Minor 6 | `sixth_min` | `1–b3–5–6` | Close if no 6 |
+| 33 | 6/9 | `sixth_nine` | `1–3–5–6–9` | Close if no 6/9 |
+| 34 | Rootless 6/9 | `rl_sixth_nine` | `3–5–6–9` | Close if no 6/9 |
+
+---
+
+**Group 4 — Drop Voicings** (octave displacement of specific voices from close position)
+| # | Voicing | Symbol | Algorithm | Fallback |
+|---|---|---|---|---|
+| 35 | Drop-2 | `drop2` | Second-highest voice dropped one octave | — |
+| 36 | Drop-3 | `drop3` | Third-highest voice dropped one octave | — |
+| 37 | Drop-2&4 | `drop24` | Second and fourth voices dropped one octave | Drop-2 for triads |
+| 38 | Drop-2&3 | `drop23` | Second and third voices dropped one octave | — |
+
+---
+
+**Group 5 — Intervallic** (structures built from a single repeated interval)
+| # | Voicing | Symbol | Algorithm | Fallback |
+|---|---|---|---|---|
+| 39 | Quartal | `quartal` | Stack perfect fourths (5 semitones) from root, note count matches chord | — |
+| 40 | Quintal | `quintal` | Stack perfect fifths (7 semitones) from root, note count matches chord | — |
+| 41 | Secundal | `secundal` | Stack major seconds (2 semitones) from root, note count matches chord | — |
+| 42 | Cluster Chromatic | `cluster_chrom` | Stack semitones (1 semitone) from root, note count matches chord | — |
+| 43 | Cluster Diatonic | `cluster_diaton` | Stack diatonic seconds from root within the chord's scale context | Falls back to Secundal |
+| 44 | Cluster Pentatonic | `cluster_pent` | Stack pentatonic intervals from root, note count matches chord | Falls back to Quartal |
+| 45 | Cluster Whole-tone | `cluster_wt` | Stack whole tones (2 semitones) from root — same interval as Secundal but whole-tone collection context | Falls back to Secundal |
+| 46 | Cluster Modal | `cluster_modal` | Stack modal scale steps from root within current modal context | Falls back to Quartal |
+
+---
+
+**Group 6 — Style** (named voicing recipes from specific traditions)
+| # | Voicing | Symbol | Algorithm | Source |
+|---|---|---|---|---|
+| 47 | So What | `so_what` | Fixed shape: P4+P4+P4+M3 from root, regardless of chord | Miles Davis / Levine |
+| 48 | Bill Evans A | `evans_a` | `3–5–7–9`, no root, specific register (LH) | The Jazz Piano Book |
+| 49 | Bill Evans B | `evans_b` | `7–9–3–5`, inverted register ordering | The Jazz Piano Book |
+| 50 | Kenny Barron | `kenny_barron` | LH: `1–b7`. RH: `3–5–9` | Jazz tradition |
+| 51 | McCoy Tyner | `mccoy_tyner` | LH: stacked quartal. RH: upper quartal cluster | Jazz tradition |
+| 52 | Pop Piano | `pop_piano` | LH: root octave (oct 2–3). RH: `3–5–9` close (oct 4–5) | Contemporary |
+| 53 | Gospel | `gospel` | Close voicing + 9th; extensions stacked tightly in upper register | Gospel/R&B |
+| 54 | Octave Bass + Triad | `oct_bass_triad` | LH: root octave (oct 2–3). RH: triad close (oct 4–5) | Pop/R&B |
+| 55 | Octave Bass + 7th | `oct_bass_7th` | LH: root octave (oct 2–3). RH: seventh chord close (oct 4–5) | Pop/R&B |
+| 56 | Open Fifth + Triad | `open5_triad` | LH: root + fifth (oct 2–3). RH: triad (oct 4–5) | Pop/Contemporary |
+| 57 | Block Chord Close | `block_close` | Melody harmonised with close-position chord tones below | Jazz arranging |
+| 58 | Block Chord Locked Hands | `block_locked` | Melody doubled one octave lower, inner chord tones between hands | Jazz arranging / Milt Buckner |
+| 59 | Four-way Close | `four_way_close` | Four-voice close position with melody on top; inner voices fill in | Jazz arranging |
+| 60 | Block Drop-2 | `block_drop2` | Drop-2 applied to harmonised melody — second voice dropped one octave | Jazz arranging |
+| 61 | Octave Melody + Inner | `oct_melody_inner` | Melody doubled at octave; inner chord tones fill between the two melody octaves | Jazz tradition |
+| 62 | Pedal Point | `pedal_point` | Root held/repeated in bass across changing upper voices | All traditions |
+| 63 | Two-handed Spread | `spread_2h` | LH: root + fifth (wide). RH: upper extensions voiced close — broader than Spread | Contemporary |
 
 ---
 
@@ -524,68 +586,121 @@ The `close` voicing does **not** show a voicing row — it is the default, unrem
 
 #### Implementation phases
 
-**Phase 1 — Group 1: Structural (9 voicings)**
+**Phase 1 — Group 1 + 2: Position + Doubling (7 voicings)**
 Files: `voicings.js` (new), `helpers.js`, `state.js`, `chords-mode.js`, `breakdown.js`,
 `pool.js`, `app.js`, `index.html`. All infrastructure built in this phase.
-Groups 2–4 chips present and wired; `applyVoicing()` falls back to `close` for
+Groups 3–6 chips present and wired; `applyVoicing()` falls back to `close` for
 unimplemented symbols until later phases fill them in.
 
-**Phase 2 — Group 2: Intervallic (4 voicings)**
+**Phase 2 — Group 3: Shell / Rootless (27 voicings)**
 Only `voicings.js` changes — add cases to `applyVoicing()` dispatcher.
+Largest group; implement in sub-batches: Shell (3), Three-note (8), Rootless four-note (9),
+Sus/Phrygian/6th (7).
 
-**Phase 3 — Group 3: Style (6 voicings)**
-Only `voicings.js` changes. Musically the most complex — two-hand splits, rootless
-recipes, fixed shapes. Deserves its own focused session.
-
-**Phase 4 — Group 4: Texture (2 voicings)**
+**Phase 3 — Group 4: Drop Voicings (4 voicings)**
 Only `voicings.js` changes.
+
+**Phase 4 — Group 5: Intervallic (8 voicings)**
+Only `voicings.js` changes. Cluster variants share a common algorithm parameterised by
+interval type and scale context.
+
+**Phase 5 — Group 6: Style (17 voicings)**
+Only `voicings.js` changes. Musically the most complex — two-hand splits, melody
+harmonisation, fixed shapes, register-specific recipes. Deserves its own focused session.
 
 ---
 
 #### Implementation steps (Phase 1)
-1. Create `js/engine/voicings.js` — `VOICING_MODES` (all 21), `applyVoicing()` (Group 1
-   algorithms + fallback-to-close stubs for Groups 2–4), `resolveVoicingMode()`
+1. Create `js/engine/voicings.js` — `VOICING_MODES` (all 63), `applyVoicing()` (Groups 1–2
+   algorithms + fallback-to-close stubs for Groups 3–6), `resolveVoicingMode()`
 2. Update `index.html` — add `voicings.js` script tag; remove `voicingModeSection` div
 3. Update `helpers.js` — delete voicing section, add pointer comment
 4. Update `state.js` — `'full'` → `'close'`; add `selectedVoicings` Set with sensible default
 5. Update `chords-mode.js` — new call site signature; resolve voicing from `selectedVoicings` in quiz
-6. Update `breakdown.js` — full 21-symbol voicing label map
-7. Update `pool.js`:
-   - Wrap `_renderChordQualitySection()` and `_renderVoicingSection()` calls in their own
-     collapsible sub-group containers inside the main panel body (both collapsed by default)
-   - `_renderChordQualitySection()` reads `appMode`: quiz → multi-select + All/None + inversions
-     checkbox; dict → single-select via `dictLoadSymbol()` + `dictShow()`, no All/None, no checkbox
-   - `_renderVoicingSection()` already mode-aware — no change needed
-8. Update `app.js`:
-   - Remove `voicingModeSection` show/hide from `switchMode()`
-   - Remove `renderVoicingChips()` from boot
-   - Collapse `renderDictPoolPanel()` chords branch: replace the duplicated `makeDictSection()`
-     calls with the same two sub-group containers + `_renderChordQualitySection()` +
-     `_renderVoicingSection()` calls already used by `renderChordPoolPanel()`
-9. Test Group 1 voicings in order; mark each ✓ below as confirmed working
+6. Update `breakdown.js` — full 63-symbol voicing label map
+7. Update `pool.js` — voicing section renders all 6 groups with per-group All/None
+8. Update `app.js` — remove old voicing wiring; collapse dict branch to shared renderers
+9. Fix `recomputeCurrentNotes()` bug (see bug section above)
+10. Test Groups 1–2 voicings; mark each ✓ below
+
+---
 
 #### Voicing confirmation checklist
+
+**Group 1 — Position**
 - [ ] Close
 - [ ] Open
 - [ ] Spread
+
+**Group 2 — Doubling**
+- [ ] Root Octave Double
+- [ ] Root Above Fifth
+- [ ] Fifth Double
+- [ ] Root Top and Bottom
+
+**Group 3 — Shell / Rootless**
 - [ ] Shell
-- [ ] Rootless
+- [ ] Shell Alt
+- [ ] Rootless Shell
+- [ ] Three-note Maj 1–3–5
+- [ ] Three-note Maj 3–5–7
+- [ ] Three-note Maj 1–3–7
+- [ ] Three-note Dom 1–3–b7
+- [ ] Three-note Dom 3–5–b7
+- [ ] Three-note Dom 3–b7–9
+- [ ] Three-note Min 1–b3–b7
+- [ ] Three-note Min b3–5–b7
+- [ ] Three-note Min b3–b7–9
+- [ ] Rootless Maj7
+- [ ] Rootless Maj7 Extended
+- [ ] Rootless Min7
+- [ ] Rootless Dom7
+- [ ] Rootless Altered A
+- [ ] Rootless Altered B
+- [ ] Rootless Altered C
+- [ ] Rootless Altered D
+- [ ] Rootless #9
+- [ ] Sus Voicing
+- [ ] Phrygian Voicing
+- [ ] Major 6
+- [ ] Minor 6
+- [ ] 6/9
+- [ ] Rootless 6/9
+
+**Group 4 — Drop Voicings**
 - [ ] Drop-2
 - [ ] Drop-3
 - [ ] Drop-2&4
-- [ ] Piano
-- [ ] Quartal (Phase 2)
-- [ ] Quintal (Phase 2)
-- [ ] Secundal (Phase 2)
-- [ ] Cluster (Phase 2)
-- [ ] So What (Phase 3)
-- [ ] Bill Evans (Phase 3)
-- [ ] Kenny Barron (Phase 3)
-- [ ] McCoy Tyner (Phase 3)
-- [ ] Pop Piano (Phase 3)
-- [ ] Gospel (Phase 3)
-- [ ] Octave Doubling (Phase 4)
-- [ ] Dense Extended (Phase 4)
+- [ ] Drop-2&3
+
+**Group 5 — Intervallic**
+- [ ] Quartal
+- [ ] Quintal
+- [ ] Secundal
+- [ ] Cluster Chromatic
+- [ ] Cluster Diatonic
+- [ ] Cluster Pentatonic
+- [ ] Cluster Whole-tone
+- [ ] Cluster Modal
+
+**Group 6 — Style**
+- [ ] So What
+- [ ] Bill Evans A
+- [ ] Bill Evans B
+- [ ] Kenny Barron
+- [ ] McCoy Tyner
+- [ ] Pop Piano
+- [ ] Gospel
+- [ ] Octave Bass + Triad
+- [ ] Octave Bass + 7th
+- [ ] Open Fifth + Triad
+- [ ] Block Chord Close
+- [ ] Block Chord Locked Hands
+- [ ] Four-way Close
+- [ ] Block Drop-2
+- [ ] Octave Melody + Inner
+- [ ] Pedal Point
+- [ ] Two-handed Spread
 
 ---
 
