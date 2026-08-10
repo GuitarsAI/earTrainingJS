@@ -587,17 +587,20 @@ function makeChordScalesRow(panel, rootPc, chordPcs) {
 
   matches.forEach(sc => {
     const row = document.createElement('div');
-    row.className = 'cs-row';
+    row.className = 'cs-row cs-row-link';
+    row.title = 'Open in Dictionary';
+    row.addEventListener('click', () => {
+      if (currentMode !== 'scales') {
+        switchMode('scales', sc.symbol);
+      } else {
+        dictSymbol = sc.symbol;
+        setAppMode('dict');
+      }
+    });
 
     const nameEl = document.createElement('span');
-    nameEl.className = 'cs-name cs-name-link';
+    nameEl.className = 'cs-name';
     nameEl.textContent = sc.name;
-    nameEl.title = 'Open in Dictionary';
-    nameEl.addEventListener('click', () => {
-      dictSymbol = sc.symbol;
-      if (currentMode !== 'scales') switchMode('scales');
-      setAppMode('dict');
-    });
     row.appendChild(nameEl);
 
     if (sc.tag) {

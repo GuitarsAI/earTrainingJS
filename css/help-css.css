@@ -1,0 +1,114 @@
+/* ── Point 49: Help panel ────────────────────────────────────────────────────
+   Paste this block anywhere in components.css — after the About section is
+   the natural place.
+   All values reuse existing CSS vars from the app's design system.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Help view wrapper ──────────────────────────────────────────────────── */
+#helpView {
+  padding-bottom: 2rem;
+}
+
+.help-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Search box ─────────────────────────────────────────────────────────── */
+.help-search-wrap {
+  padding: 0 0.25rem;
+}
+
+.help-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.help-search:focus {
+  border-color: var(--accent);
+}
+
+.help-search::placeholder {
+  color: var(--text-muted, #888);
+}
+
+/* ── Card (one per section) ─────────────────────────────────────────────── */
+.help-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.help-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0.85rem 1rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Entries (collapsible) ──────────────────────────────────────────────── */
+.help-entries {
+  display: flex;
+  flex-direction: column;
+}
+
+.help-entry {
+  border-bottom: 1px solid var(--border);
+}
+
+.help-entry:last-child {
+  border-bottom: none;
+}
+
+.help-entry-term {
+  list-style: none;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.1s;
+}
+
+.help-entry-term::-webkit-details-marker { display: none; }
+
+.help-entry-term::before {
+  content: '▸';
+  font-size: 0.7rem;
+  color: var(--accent);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+details[open] > .help-entry-term::before {
+  transform: rotate(90deg);
+}
+
+.help-entry-term:hover {
+  background: var(--hover-bg, rgba(0,0,0,0.04));
+}
+
+.help-entry-body {
+  padding: 0 1rem 0.85rem 1.85rem;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--text-secondary, var(--text));
+  white-space: pre-line;
+}

@@ -963,3 +963,213 @@ All targeted groups were already wrapped in `makeCSGroup()` and collapsed by def
 - Harmonic field — collapsible from birth (Point 47)
 
 State resets on every new question via `hideBreakdown()` clearing `panel.innerHTML`.
+
+---
+
+## Point 49 — In-app Help system
+
+### Status: Not started
+
+### Intent
+
+A comprehensive in-app reference for musicians who know the basics but may not know the terminology or how to use the app's more advanced features. Not a tutorial — a permanent reference that explains every concept, label, control, and piece of information the app can display. Pitched at players who know major/minor, maybe some chords, but may not know what "Lydian Dominant", "tritone substitution", or "voice leading" means.
+
+### Architecture
+
+**New files:**
+
+| File | Purpose |
+|---|---|
+| `js/modes/help-content.js` | All Help text — sections, entries, explanations. No DOM, no rendering logic. Structured as a JS array/object of sections, each with a title, optional intro, and entries (term + explanation). Single source of truth for all Help text; maintained independently of rendering. |
+| `js/modes/help-mode.js` | Rendering only. Reads from `help-content.js`, builds the Help panel DOM, handles open/close. Mirrors the pattern of `about-mode.js`. |
+
+**Existing files changed:**
+
+| File | Change |
+|---|---|
+| `index.html` | Add Help `?` button to sticky header (next to dark/light toggle, mirroring the ⓘ About button); add `<script>` tags for both new files in correct load order |
+| `css/components.css` | Help panel styles — reuse existing card/panel patterns |
+
+### Help icon & behaviour
+
+- A `?` inside a circle — visual equivalent of the ⓘ About button; same size and position style
+- Placed in the sticky header next to the dark/light toggle
+- Clicking opens the Help panel; clicking again or pressing Escape closes it
+- Help and About cannot be open simultaneously — opening one closes the other
+- Panel replaces main content area when open; mode tabs remain visible and clickable to dismiss
+
+### Panel UX
+
+- Collapsible sections (same `<details>`/`<summary>` pattern used elsewhere or equivalent)
+- Live search/filter box at the top: typing narrows visible entries across all sections by term name and content
+- No other interactive elements
+
+### Content structure (`help-content.js`)
+
+#### Section 1 — Getting Started
+- What this app is for
+- Quiz mode vs Dictionary mode — what each does, when to use which
+- How a session works: pick items in the pool → press Play → hear it → answer → see the breakdown
+- The Play button, Hear Slowly, New Session — what each does
+- The score bar — what the counters mean
+
+#### Section 2 — Modes
+- **Intervals** — what an interval is; how the quiz works; simple vs compound; the pool split (Simple / Extended & Compound)
+- **Chords** — what a chord is; the six families (triads, 7ths, extended, slash, polychords, USTs); how inversions work; what Dictionary mode shows
+- **Scales** — what a scale is; the four cardinality categories (Pentatonic / Hexatonic / Diatonic / Octatonic); ascending/descending/both
+- **Progressions** — what a chord progression is; Roman numeral notation explained; how the quiz works (hear the whole progression, identify it); what the breakdown shows per chord
+
+#### Section 3 — Controls & Settings
+
+**The Pool panel**
+- What it is and what selecting/deselecting items does
+- All / None buttons
+- How auto-expand on load works (sections with selected items open automatically)
+
+**Root & Register chips**
+- Root note chips: Rnd vs pinned root — what "Rnd" means and when to use it
+- Octave register chips: Low / Mid / High — what register range each covers
+
+**Notation chips**
+- Key / C chip — what Key mode does (adds key signature to notation), what C mode does (no key sig, all accidentals shown)
+
+**Playback style chips (Chords & Intervals)**
+- Block — all notes sounded simultaneously
+- Ascending — notes played low to high in sequence
+- Descending — notes played high to low in sequence
+- Broken — root, then top note, then middle notes, then top again
+- Random — randomly selects one of the above per play
+
+**Scale direction chips**
+- Ascending / Descending / Both — controls which direction(s) the scale is played and notated
+
+**Voicing chips (Chords)**
+Every group explained — what the voicing type is, what it sounds like, and which chord families it applies to:
+- *Group 1 — Spacing:* Close, Open, Spread
+- *Group 2 — Shell:* Shell (3+7), Shell (3+♭7), Rootless A, Rootless B
+- *Group 3 — Drop:* Drop-2, Drop-3, Drop-2&4
+- *Group 4 — Structured:* Piano (2-hand), Quartal, Quintal, Secundal, Cluster
+- *Group 5 — Intervallic:* So What, Quartal Stack, Quintal Stack (etc. — each named chip explained)
+- *Group 6 — Style:* Bill Evans, Kenny Barron, McCoy Tyner, Pop Piano, Gospel, Octave Doubling, Dense Extended
+
+**Inversions toggle**
+- What a chord inversion is
+- What the toggle does (adds inversions to the quiz pool)
+
+#### Section 4 — The Breakdown Panel
+
+Every row label defined precisely. Organised by mode:
+
+**Intervals breakdown**
+- Semitones — the raw number of half-steps
+- Name — the interval's standard name
+- Degree — the Roman numeral qualifier (e.g. M3, m7, P5)
+- Inversion — the complement interval (adds to 12); shown only for simple intervals
+- Simple equivalent — the within-one-octave version; shown instead of Inversion for compound intervals
+- Consonance — the consonance/dissonance classification (perfect consonance / imperfect consonance / mild dissonance / sharp dissonance) and what those categories mean
+- Common context — where this interval typically appears in music
+
+**Scales breakdown**
+- Notes — the note names of the scale from the root
+- Degrees — Roman numeral degree labels (I, ♭III, ♯IV, etc.)
+- Character — the modal character tag (bright / neutral / dark / exotic / symmetric / ambiguous) and what each means
+- Parent — which parent scale this scale is a mode of, and what modal degree it occupies
+- Triad map — a table of triads built on each scale degree: columns are degree (Roman numeral), root name, and chord quality. Explained: how to read it, what it tells you about harmonising the scale
+- Harmonic field — the diatonic seventh chords built on each scale degree, shown as pills. Each pill: Roman numeral + quality suffix (top), root + chord shorthand (middle), full quality name (bottom). Explained: what the harmonic field is and how to use it for chord selection
+- Chord scales — scales that contain all the notes of the current chord. Explained as part of scale breakdown context
+
+**Chords breakdown**
+- Notes — the sounding note names
+- From root — interval name of each note measured from the root
+- Numerals — qualified Roman numeral for each note (♭3, 5, ♭7, etc.)
+- Between notes — intervals between each adjacent pair of notes (bottom-up)
+- Slash notation — the slash chord label; explains what a slash chord is (upper chord / bass note)
+- Neo-tonal (Riemannian) section — what Riemannian theory is and what each relation label means (Parallel, Relative, Leading-tone exchange, etc.); how to use this information
+- Dominant section:
+  - Tritone sub — what a tritone substitution is, which chord it points to, why it works
+  - Related ii — the ii chord that pairs with this dominant
+  - Resolves to — the chord this dominant wants to resolve to, and why
+- Diminished section:
+  - Enharmonic roots — why a diminished seventh chord has 4 equivalent roots
+  - Dom7♭9 subs — which dominant 7♭9 chords this diminished chord can substitute for
+- Half-diminished section — what m7♭5 is, how it differs from full diminished, typical use
+- Augmented section — what the augmented triad is, its symmetry, enharmonic equivalents
+- Suspended section — what sus2 and sus4 are and how they differ from tertian chords
+- Power chord section — what a power chord is (root + 5th), why it has no third
+- Chord scales — scales whose notes contain all the chord tones. How to use this for improvisation and reharmonisation. The teal character tags (neutral/bright/tense/dark/etc.) explained
+- Voice leading section:
+  - What voice leading is and why it matters
+  - Harmonic contexts — what each context label means (e.g. "diatonic dominant in major")
+  - Resolution targets — the chord this one resolves to in this context
+  - Cadence type — the cadence name (perfect authentic, imperfect authentic, deceptive, plagal, half) and what each means
+  - Strength % — how strong the pull toward resolution is, and how it's calculated
+  - Tension dots — what the dot indicators represent
+  - The voice leading table columns: From → To (the specific note movements), Direction (up/down/static), Interval (how far each voice moves), Role (what function that voice movement serves)
+
+**Progressions breakdown**
+- Per-chord rows — degree label, chord name, notes, intervals from root
+- Harmonic function label — what Tonic / Subdominant / Dominant / etc. means for each chord in the progression
+- Chord scales per chord — same as chord breakdown, applied to each chord in the progression
+
+#### Section 5 — Music Theory Glossary
+
+All terms that appear anywhere in the app, defined clearly. Target reader knows what a note is and can read basic notation, but may not know theory terminology.
+
+Terms to define (alphabetical or grouped):
+
+- Accidental (sharp, flat, natural, double-sharp, double-flat)
+- Augmented interval / chord
+- Cadence types (perfect authentic, imperfect authentic, deceptive, plagal, half cadence)
+- Cadence strength %
+- Chord inversion / figured bass notation (6, 6/4, 6/5, 4/3, 2)
+- Chord quality (major, minor, diminished, augmented, dominant, half-diminished)
+- Chord scales
+- Cluster voicing
+- Compound interval / simple equivalent
+- Consonance and dissonance (perfect consonance, imperfect consonance, mild dissonance, sharp dissonance)
+- Degree / scale degree
+- Diatonic
+- Drop-2, Drop-3, Drop-2&4 voicings
+- Enharmonic equivalence
+- Extended chord (9th, 11th, 13th)
+- Harmonic field
+- Harmonic function (Tonic, Subdominant, Dominant, Predominant)
+- Interval
+- Inversion of an interval
+- Modal character (bright, dark, exotic, symmetric, ambiguous)
+- Mode / modal degree
+- Parent scale
+- Polychord
+- Power chord
+- Qualifed Roman numeral (♭III, ♯IV, ♭VII, etc.)
+- Quartal / quintal voicing
+- Riemannian / Neo-tonal relations (Parallel, Relative, Leading-tone exchange, Subdominant parallel, etc.)
+- Roman numeral notation
+- Rootless voicing
+- Secondary dominant
+- Semitone / whole tone
+- Shell voicing (3+7, 3+♭7)
+- Slash chord
+- Spread voicing
+- Tension (in voice leading context)
+- Tension dots
+- Triad (major, minor, diminished, augmented)
+- Triad map
+- Tritone
+- Tritone substitution
+- Upper Structure Triad (UST)
+- Voice leading
+
+### What Help does NOT do
+- It does not replace the breakdown — it explains it
+- It does not teach music theory from scratch (assumes the reader knows what a note is and can read basic notation)
+- It has no interactive elements beyond collapsible sections and search
+
+### Implementation steps
+1. Read `about-mode.js` and the About section in `index.html` and `components.css` to understand the exact pattern (button, panel, open/close behaviour, CSS classes)
+2. Write `js/modes/help-content.js` — content only, no DOM. One pass per mode, cross-checking every visible label in the app source
+3. Write `js/modes/help-mode.js` — rendering logic only, mirroring `about-mode.js` structure
+4. Add `?` button to `index.html` header; add script tags for both new files
+5. Add Help panel styles to `css/components.css` — reuse existing panel/card CSS variables; add search input style
+6. Wire mutual exclusion: opening Help closes About and vice versa
+7. Test: open/close, Escape key, Help + About mutual exclusion, search/filter, all collapsible sections, mobile layout

@@ -1,4 +1,4 @@
-function switchMode(mode) {
+function switchMode(mode, targetSymbol = null) {
   if (typeof teardownProgressionUI === 'function') teardownProgressionUI(); // POINT 38: always clean up progression DOM before switching
   currentMode = mode;
 
@@ -27,7 +27,9 @@ function switchMode(mode) {
 
   updateRootBadge(null);  // clear badge until new question sets it
   if (appMode === 'dict') {
-    dictSymbol = null; // reset so default for new mode is picked
+    // If a specific symbol was requested (e.g. navigating from chord scales breakdown),
+    // use it directly. Otherwise reset so the default for the new mode is picked.
+    dictSymbol = targetSymbol ?? null;
     setAppMode('dict');
   } else {
     generateQuestion();
