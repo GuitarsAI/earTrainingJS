@@ -4,30 +4,34 @@
   /* ── 1. Fix body top padding to match slimmer header ── */
   body { padding-top: 96px; }
 
-  /* ── 2. Header: single compact row — logo + full title (toggle moved to score bar) ── */
+  /* ── 2. Header: logo + title + ℹ + ? + ☀️ all on one row ── */
   #stickyInner { padding: 0 0.625rem; }
   .header { padding: 0.35rem 0; gap: 0.5rem; flex-wrap: nowrap; }
   .site-logo { height: 1.625rem; width: 1.625rem; flex-shrink: 0; }
-  .title { font-size: 0.875rem; white-space: nowrap; overflow: visible; }
-  /* Keep both about btn and theme toggle visible on mobile — sized down to fit */
+  .title { font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Hide ℹ and ? from header on mobile — they move to score bar row 2 */
+  #aboutBtn, #helpBtn { display: none; }
   #themeToggle {
     display: inline-flex;
     width: 2rem; height: 2rem; font-size: 0.875rem;
     flex-shrink: 0;
   }
-  .about-btn {
-    width: 2rem; height: 2rem; font-size: 0.875rem;
-    flex-shrink: 0;
-  }
-  #themeToggleMobile { display: none; } /* no longer needed on mobile — header toggle stays */
+  #themeToggleMobile { display: none; }
 
-  /* ── 3. Score bar: Streak + Score + New Session on one line; Quiz/Dict below ── */
+  /* ── 3. Score bar ── */
+  /* Row 1: Streak · Score · New Session (flex-wrap handles overflow) */
   .score-bar { flex-wrap: wrap; gap: 0.375rem; padding: 0.15rem 0 0.25rem; }
   .score-pill { font-size: 0.7rem; padding: 0.15rem 0.4rem; min-height: 2rem; }
   .new-session-btn { font-size: 0.7rem; padding: 0.15rem 0.4rem; min-height: 2rem; }
-  /* Quiz/Dict toggle: push to its own row by taking full width */
-  .qd-toggle { margin-left: 0; width: 100%; border-radius: 10px; }
-  .qd-btn { flex: 1; font-size: 0.75rem; padding: 0.2rem 0.5rem; min-height: 2rem; text-align: center; }
+  /* Mobile ℹ and ? — show in score bar, sized to match score pills */
+  #aboutBtnMobile, #helpBtnMobile {
+    display: inline-flex;
+    width: 2rem; height: 2rem; font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+  /* Row 2: ℹ · ? · Quiz/Dict — pushed to own row, compact not full-width */
+  .qd-toggle { margin-left: auto; width: auto; border-radius: 10px; }
+  .qd-btn { font-size: 0.75rem; padding: 0.2rem 0.75rem; min-height: 2rem; text-align: center; }
 
   /* ── 4. Mode tabs: tighter ── */
   .mode-tab { font-size: 0.8125rem; padding: 0.45rem 0.25rem; min-height: 2.5rem; }
