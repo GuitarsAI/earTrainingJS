@@ -7,6 +7,7 @@ const CHORD_TYPES = {
   major: [
     { name: 'maj',              symbol: 'maj',           intervals: [0,4,7],             family: 'major' },
     { name: 'maj(add9)',        symbol: 'maj_add9',      intervals: [0,4,7,14],          family: 'major' },
+    { name: 'add9(add11)',      symbol: 'add9_add11',    intervals: [0,4,7,14,17],       family: 'major' },
     { name: 'maj(add2)',        symbol: 'maj_add2',      intervals: [0,2,4,7],           family: 'major' },
     { name: 'maj(add4)',        symbol: 'maj_add4',      intervals: [0,4,5,7],           family: 'major' },
     { name: 'maj6',             symbol: 'maj6',          intervals: [0,4,7,9],           family: 'major' },

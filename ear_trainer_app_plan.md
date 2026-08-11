@@ -55,7 +55,7 @@
 - **41/46** Voicing system — UI and infrastructure complete ✓ (Aug 2026). Group 5 algorithmic bug pending.
 - **42** Pool panel UX overhaul — all sections collapsed by default, global All/None buttons ✓ (Aug 2026)
 - **43** Breakdown default state + full chip sync ✓ (Aug 2026)
-- **44** Complete chord library — reference file created; implementation not yet started
+- **44** Complete chord library ✓ (Aug 2026) — all families complete; `chords_reference.md` fully updated
 - **45** Complete scale library — reference file exists; implementation not yet started
 - **47** Harmonic field in scale breakdown ✓ (Aug 2026)
 - **48** Collapsible breakdown sub-sections ✓ (Aug 2026)
@@ -116,6 +116,25 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 |---|---|
 | `index.html` | Header restructured; mobile duplicate buttons added to score bar; forwarding script at bottom |
 | `css/mobile.css` | Header ℹ/? hidden; score-bar ℹ/? shown; Quiz/Dict shrunk from `width:100%` to `width:auto`; title gets `text-overflow:ellipsis` |
+
+---
+
+### Point 44 — Complete chord library ✓ COMPLETE
+
+**Previous session delivered:** classical (N6, It⁺⁶, Fr⁺⁶, Ger⁺⁶), quartal (qrt3/4/5/TT, qnt3/4), cluster (4 types), aug7, aug9 — plus full breakdown paths, pool panel wiring, and helpers/app guards.
+
+**This session delivered:**
+- Cross-checked all "missing" chords from `chords_reference.md` against `chords.js` — found 13 of 14 were already present (reference status was stale)
+- Added the one genuinely missing chord: `add9(add11)` [0,4,7,14,17] to the major family in `chords.js`
+- Updated `chords_reference.md` throughout: all ✗ entries flipped to ✓, stale summary section replaced with "Complete ✓"
+- Confirmed `Maj7(9)(11)` and `Maj7(9)(11)(13)` are the correct Berklee symbols for "Major 11" / "Major 13" (verified against Berklee sources)
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/data/chords.js` | `add9(add11)` added to major family |
+| `chords_reference.md` | All status columns updated to ✓; summary rewritten as complete |
 
 ---
 
@@ -188,16 +207,13 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 ### Next steps (priority order)
 
 1. **Point 41 — Fix Group 5 Intervallic voicings** 🔴
-   Rewrite all 8 intervallic cases in `voicings.js` using the chord-tone-constrained algorithm below.
-   Also fix `so_what` and `mccoy_tyner` in Group 6 with the same constraint.
-   Then run the full voicing confirmation checklist.
-   **Only `voicings.js` changes.**
+   Fix range clamping, cap note count at 5, and resolve the duplicate implementations (`cluster_diaton` = `cluster_modal`, `secundal` = `cluster_wt`). `so_what` and `mccoy_tyner` are correct as-is — do not change them. **Only `voicings.js` changes.**
 
-2. **Point 44 — Complete chord library**
-   Work through `chords_reference.md` row by row. Split `chords.js` into family files if it grows too large.
-
-3. **Point 45 — Complete scale library**
+2. **Point 45 — Complete scale library**
    Work through `complete_12_TET_piano_scales.md` named-index rows (~50 entries).
+
+3. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
+   Split into `chords-tertian.js`, `chords-special.js`, `chords-classical.js`, `chords-quartal.js`.
 
 4. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
 
@@ -218,47 +234,24 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 **What is broken 🔴 — Group 5 (Intervallic) algorithmic bug**
 Intervallic voicings (`quartal`, `quintal`, `secundal`, `cluster_*`) generate pitch classes not present in the chord. Example: quartal stacking on C major triad {C, E, G} produces {C, F, B♭} — non-chord tones. Same issue: `so_what`, `mccoy_tyner` in Group 6 ignore chord tones entirely.
 
-**Decision: Option A** — constrain all intervallic voicings to only use pitch classes present in `baseIntervals`.
+**Decision: revised after research** — chord-tone constraint (Option A) is wrong for intervallic voicings. Research confirms:
+- Quartal voicings are intentionally ambiguous — Berklee notes that a quartal triad "doesn't sound major, minor, augmented, or diminished." The non-chord tones are not a bug; the ambiguity is the point.
+- Clusters/secundal are timbral by definition — constraining them to chord tones destroys their character.
+- `so_what` and `mccoy_tyner` are fixed-shape style voicings — they are correct as-is and should not be changed.
+
+**Actual problems to fix in Group 5:**
+1. `quintal` — range clamping is insufficient; can produce notes far outside playable range
+2. `cluster_diaton` and `cluster_modal` — currently identical implementations; one should be removed or differentiated
+3. `secundal` and `cluster_wt` — currently identical (both stack 2 semitones); one should be removed or differentiated
+4. Note count — all 8 use `baseIntervals.length`, so a 7-note chord gets 7 stacked fourths; cap at 4–5 notes max
+
+**Fix approach:** range clamping and note count cap — not chord-tone constraint. Keep all notes within a 2-octave window from the bass note; cap output at 5 notes regardless of chord size.
 
 **What is not yet done**
-- Group 5 Intervallic algorithm redesign (see below)
-- `so_what` and `mccoy_tyner` in Group 6 need same constraint
+- Group 5 range/count fixes (see above)
+- `cluster_diaton` vs `cluster_modal` differentiation decision
+- `secundal` vs `cluster_wt` differentiation decision
 - Full voicing confirmation checklist not yet run
-
----
-
-#### Intervallic algorithm redesign (Option A — chord-tone constrained)
-
-```javascript
-function _intervallicVoicing(rootMidi, baseIntervals, targetSemitones) {
-  // 1. Get the chord's pitch classes (0–11)
-  const pcs = baseIntervals.map(i => ((rootMidi + i) % 12 + 12) % 12);
-
-  // 2. Start from a sensible bass register
-  let current = rootMidi;
-  while (current > 59) current -= 12;
-  while (current < 36) current += 12;
-
-  // 3. For each subsequent note, find the chord tone whose pitch class
-  //    lands closest to (current + targetSemitones), searching up
-  const result = [current];
-  for (let i = 1; i < baseIntervals.length; i++) {
-    const target = current + targetSemitones;
-    let best = null, bestDist = Infinity;
-    pcs.forEach(pc => {
-      let candidate = current + ((pc - current % 12 + 12) % 12);
-      if (candidate <= current) candidate += 12;
-      const dist = Math.abs(candidate - target);
-      if (dist < bestDist) { bestDist = dist; best = candidate; }
-    });
-    result.push(best);
-    current = best;
-  }
-  return result.sort((a, b) => a - b);
-}
-```
-
-Key properties: only chord pitch classes in output; approximates target interval as closely as the chord allows; richer chords produce cleaner stacks. Falls back to `close` only if `baseIntervals` is empty.
 
 **File to change:** `js/engine/voicings.js` only.
 
@@ -372,25 +365,19 @@ Key properties: only chord pitch classes in output; approximates target interval
 
 ### Point 44 — Complete chord library
 
-#### Status: Reference complete — implementation not yet started
+#### Status: Complete ✓ (Aug 2026)
 
-`chords_reference.md` is the master checklist. Every chord type in practical music theory, including added-tone, sixth, altered dominant, suspended extensions, classical (Neapolitan, augmented sixths), and quartal/quintal/cluster chords.
+All chord families are implemented. `chords_reference.md` is fully up to date with ✓ status throughout.
 
-#### File splitting (if `chords.js` grows too large)
-- `js/data/chords-basic.js` — triads, seventh chords, sixth chords, added-tone
-- `js/data/chords-dominant.js` — dominant, altered dominant, suspended dominant
-- `js/data/chords-extended.js` — major extended, minor extended
-- `js/data/chords-special.js` — slash, poly, UST
-- `js/data/chords-classical.js` — Neapolitan, augmented sixths, quartal/quintal/cluster
+#### File split plan (optional future task)
+Split `chords.js` into focused files when it becomes unwieldy. All expose entries into the shared `CHORD_TYPES` object. Load order in `index.html`: tertian → special → classical → quartal, all before `state.js`.
 
-All files expose their entries into the shared `CHORD_TYPES` object.
-
-#### Implementation steps
-1. Work through `chords_reference.md` row by row
-2. Verify breakdown logic handles any new interval patterns
-3. Add new families to the pool panel in `pool.js`
-4. Confirm chord scales logic still works for new entries
-5. Update `chords_reference.md` status column as each chord is added
+| File | Contents |
+|---|---|
+| `js/data/chords-tertian.js` | major, minor, dominant, diminished, augmented, suspended |
+| `js/data/chords-special.js` | slash, poly, UST |
+| `js/data/chords-classical.js` | classical (Neapolitan, aug sixths) |
+| `js/data/chords-quartal.js` | quartal, quintal, cluster |
 
 ---
 
