@@ -1,7 +1,7 @@
 // ─── POINT 41/46: Voicing system ─────────────────────────────────────────────
 //
 // This file owns all voicing logic for Chords mode:
-//   VOICING_MODES        — data table for all 63 voicings across 6 groups
+//   VOICING_MODES        — data table for all 62 voicings across 6 groups
 //   applyVoicing()       — main dispatcher, returns MIDI note array
 //   resolveVoicingMode() — picks one concrete mode from selectedVoicings or activeVoicingMode
 //
@@ -62,14 +62,17 @@ const VOICING_MODES = [
   { group: 'drop',       name: 'Drop-2&3',             symbol: 'drop23',          desc: 'Second and third voices from top dropped one octave' },
 
   // ── Group 5 — Intervallic ────────────────────────────────────────────────────
-  { group: 'intervallic',name: 'Quartal',              symbol: 'quartal',         desc: 'Stacked perfect fourths (5 semitones) from root — modal jazz staple (Levine)' },
-  { group: 'intervallic',name: 'Quintal',              symbol: 'quintal',         desc: 'Stacked perfect fifths (7 semitones) from root' },
-  { group: 'intervallic',name: 'Secundal',             symbol: 'secundal',        desc: 'Stacked major seconds (2 semitones) — whole-tone cluster character (Persichetti)' },
+  // Note counts: triads → 4 notes; all other chords → 5 notes (standard practice, Levine).
+  // All voicings start in bass register (MIDI 36–59) and clamp within 2 octaves.
+  // cluster_modal removed (not a distinct category from cluster_diaton per Persichetti/literature).
+  // secundal redefined as diatonic-step stacking (m2/M2 mix) — distinct from cluster_wt (pure M2).
+  { group: 'intervallic',name: 'Quartal',              symbol: 'quartal',         desc: 'Stacked perfect fourths from bass — 5 notes (4 for triads); modal jazz staple (Levine)' },
+  { group: 'intervallic',name: 'Quintal',              symbol: 'quintal',         desc: 'Stacked perfect fifths from bass — 5 notes (4 for triads); clamped to 2-octave range' },
+  { group: 'intervallic',name: 'Secundal',             symbol: 'secundal',        desc: 'Diatonic-step stacking (m2/M2 mix) — softer secundal cluster (Persichetti)' },
   { group: 'intervallic',name: 'Cluster Chromatic',    symbol: 'cluster_chrom',   desc: 'Stacked semitones — maximum chromatic density (Persichetti/Hindemith)' },
-  { group: 'intervallic',name: 'Cluster Diatonic',     symbol: 'cluster_diaton',  desc: 'Stacked diatonic seconds within the chord\'s scale — softer cluster sound' },
+  { group: 'intervallic',name: 'Cluster Diatonic',     symbol: 'cluster_diaton',  desc: 'Adjacent diatonic scale steps — less abrasive cluster texture' },
   { group: 'intervallic',name: 'Cluster Pentatonic',   symbol: 'cluster_pent',    desc: 'Stacked pentatonic steps — open, percussive cluster (McCoy Tyner influence)' },
-  { group: 'intervallic',name: 'Cluster Whole-tone',   symbol: 'cluster_wt',      desc: 'Stacked whole tones — whole-tone collection; Debussy/impressionist flavour' },
-  { group: 'intervallic',name: 'Cluster Modal',        symbol: 'cluster_modal',   desc: 'Stacked modal scale steps from root in current tonal context' },
+  { group: 'intervallic',name: 'Cluster Whole-tone',   symbol: 'cluster_wt',      desc: 'Stacked whole tones (pure M2) — whole-tone collection; Debussy/impressionist flavour' },
 
   // ── Group 6 — Style ──────────────────────────────────────────────────────────
   { group: 'style',      name: 'So What',              symbol: 'so_what',         desc: 'Fixed shape P4+P4+P4+M3 — Miles Davis / Kind of Blue (Levine)' },
@@ -578,74 +581,109 @@ function applyVoicing(rootMidi, baseIntervals, mode) {
       }
 
       // ── Group 5: Intervallic ──────────────────────────────────────────────
+      //
+      // Design principles (per Levine / Persichetti / jazz practice):
+      // - Intervallic voicings are free-stacking — non-chord tones are intentional.
+      //   The ambiguity IS the sound. Do not constrain to chord tones.
+      // - Note count: triads (3 notes) → 4 stacked notes; all other chords → 5 notes.
+      //   (Standard quartal voicing is 5 notes; 4 is common; matching chord size is wrong.)
+      // - Register: start in bass register (MIDI 36–59); clamp within 2 octaves (bass + 24).
+      // - cluster_modal removed — not a distinct category from cluster_diaton (Persichetti).
+      // - secundal redefined as diatonic-step stacking (m2/M2 mix); cluster_wt is pure M2.
 
       case 'quartal': {
-        // Stack perfect fourths (5 semitones), note count = chord note count
-        return _stackFourths(rootMidi, baseIntervals.length).sort((a, b) => a - b);
+        // Stack perfect fourths (5 st). 4 notes for triads, 5 for everything else.
+        let bass = rootMidi;
+        while (bass > 59) bass -= 12;
+        while (bass < 36) bass += 12;
+        const n = baseIntervals.length <= 3 ? 4 : 5;
+        const notes = [];
+        for (let i = 0; i < n; i++) notes.push(bass + i * 5);
+        return notes.filter(n => n <= bass + 24).sort((a, b) => a - b);
       }
 
       case 'quintal': {
-        // Stack perfect fifths (7 semitones), note count = chord note count
-        // Clamp to reasonable range
-        const notes = _stackFifths(rootMidi, baseIntervals.length);
-        return notes.map(n => _clampToRange(n, rootMidi - 12, rootMidi + 36))
-          .sort((a, b) => a - b);
-      }
-
-      case 'secundal': {
-        // Stack major seconds (2 semitones)
+        // Stack perfect fifths (7 st). 4 notes for triads, 5 for everything else.
+        // Fifths spread fast — clamp tightly to 2 octaves.
+        let bass = rootMidi;
+        while (bass > 59) bass -= 12;
+        while (bass < 36) bass += 12;
+        const n = baseIntervals.length <= 3 ? 4 : 5;
         const notes = [];
-        for (let i = 0; i < baseIntervals.length; i++) notes.push(rootMidi + i * 2);
+        for (let i = 0; i < n; i++) {
+          const note = bass + i * 7;
+          if (note > bass + 24) break;
+          notes.push(note);
+        }
+        // If we got fewer notes due to clamping, wrap upper notes down an octave
+        while (notes.length < Math.min(n, 3)) notes.push(notes[notes.length - 1] - 12);
         return notes.sort((a, b) => a - b);
       }
 
-      case 'cluster_chrom': {
-        // Stack semitones (1 semitone) — maximum density
+      case 'secundal': {
+        // Diatonic-step stacking (m2/M2 mix from major scale) — softer cluster.
+        // Distinct from cluster_wt which uses pure whole tones (always M2).
+        let bass = rootMidi;
+        while (bass > 59) bass -= 12;
+        while (bass < 36) bass += 12;
+        const n = baseIntervals.length <= 3 ? 4 : 5;
         const notes = [];
-        for (let i = 0; i < baseIntervals.length; i++) notes.push(rootMidi + i);
+        for (let i = 0; i < n; i++) {
+          notes.push(bass + DIATONIC_STEPS[i % DIATONIC_STEPS.length]
+            + Math.floor(i / DIATONIC_STEPS.length) * 12);
+        }
+        return notes.filter(note => note <= bass + 24).sort((a, b) => a - b);
+      }
+
+      case 'cluster_chrom': {
+        // Stacked semitones (1 st) — maximum chromatic density.
+        let bass = rootMidi;
+        while (bass > 59) bass -= 12;
+        while (bass < 36) bass += 12;
+        const n = baseIntervals.length <= 3 ? 4 : 5;
+        const notes = [];
+        for (let i = 0; i < n; i++) notes.push(bass + i);
         return notes.sort((a, b) => a - b);
       }
 
       case 'cluster_diaton': {
-        // Stack diatonic scale steps — use major scale steps as default
+        // Adjacent diatonic major scale steps — less abrasive than chromatic cluster.
+        let bass = rootMidi;
+        while (bass > 59) bass -= 12;
+        while (bass < 36) bass += 12;
+        const n = baseIntervals.length <= 3 ? 4 : 5;
         const notes = [];
-        const n = baseIntervals.length;
         for (let i = 0; i < n; i++) {
-          notes.push(rootMidi + DIATONIC_STEPS[i % DIATONIC_STEPS.length]
+          notes.push(bass + DIATONIC_STEPS[i % DIATONIC_STEPS.length]
             + Math.floor(i / DIATONIC_STEPS.length) * 12);
         }
-        return notes.sort((a, b) => a - b);
+        return notes.filter(note => note <= bass + 24).sort((a, b) => a - b);
       }
 
       case 'cluster_pent': {
-        // Stack pentatonic steps
+        // Stacked pentatonic steps — open, percussive cluster texture.
+        let bass = rootMidi;
+        while (bass > 59) bass -= 12;
+        while (bass < 36) bass += 12;
+        const n = baseIntervals.length <= 3 ? 4 : 5;
         const notes = [];
-        const n = baseIntervals.length;
         for (let i = 0; i < n; i++) {
-          notes.push(rootMidi + PENTATONIC_STEPS[i % PENTATONIC_STEPS.length]
+          notes.push(bass + PENTATONIC_STEPS[i % PENTATONIC_STEPS.length]
             + Math.floor(i / PENTATONIC_STEPS.length) * 12);
         }
-        return notes.sort((a, b) => a - b);
+        return notes.filter(note => note <= bass + 24).sort((a, b) => a - b);
       }
 
       case 'cluster_wt': {
-        // Stack whole tones (2 semitones) — identical interval to secundal but
-        // named separately for conceptual distinction (whole-tone scale context)
+        // Pure whole-tone stacking (always M2 = 2 st) — whole-tone scale character.
+        // Distinct from secundal which uses diatonic steps (m2/M2 mix).
+        let bass = rootMidi;
+        while (bass > 59) bass -= 12;
+        while (bass < 36) bass += 12;
+        const n = baseIntervals.length <= 3 ? 4 : 5;
         const notes = [];
-        for (let i = 0; i < baseIntervals.length; i++) notes.push(rootMidi + i * 2);
-        return notes.sort((a, b) => a - b);
-      }
-
-      case 'cluster_modal': {
-        // Stack modal steps — use diatonic steps starting from the chord's root
-        // (same as diatonic cluster; modal context comes from the chord family)
-        const notes = [];
-        const n = baseIntervals.length;
-        for (let i = 0; i < n; i++) {
-          notes.push(rootMidi + DIATONIC_STEPS[i % DIATONIC_STEPS.length]
-            + Math.floor(i / DIATONIC_STEPS.length) * 12);
-        }
-        return notes.sort((a, b) => a - b);
+        for (let i = 0; i < n; i++) notes.push(bass + i * 2);
+        return notes.filter(note => note <= bass + 24).sort((a, b) => a - b);
       }
 
       // ── Group 6: Style ────────────────────────────────────────────────────
@@ -905,7 +943,7 @@ function applyVoicing(rootMidi, baseIntervals, mode) {
 //
 // In quiz mode:  picks randomly from selectedVoicings pool; falls back to 'close'
 // In dict mode:  uses activeVoicingMode directly (single-select, already concrete)
-// 'random':      picks from selectedVoicings in quiz, from all 63 in dict
+// 'random':      picks from selectedVoicings in quiz, from all 62 in dict
 
 function resolveVoicingMode() {
   if (appMode === 'quiz') {
