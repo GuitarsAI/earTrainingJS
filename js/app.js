@@ -768,4 +768,35 @@ initAudio();
   }
 })();
 
+// ── Mobile: move ℹ and ? buttons into score bar, restore on desktop ──
+(function() {
+  const aboutBtn  = document.getElementById('aboutBtn');
+  const helpBtn   = document.getElementById('helpBtn');
+  const headerBtnGroup = aboutBtn.parentElement;  // the flex div they live in on desktop
+  const scoreBar  = document.querySelector('.score-bar');
+  const qdToggle  = document.getElementById('qdToggle');
+  const mq        = window.matchMedia('(max-width: 600px)');
+
+  function applyLayout(isMobile) {
+    if (isMobile) {
+      // Move into score bar, before the Quiz/Dict toggle
+      scoreBar.insertBefore(aboutBtn, qdToggle);
+      scoreBar.insertBefore(helpBtn,  qdToggle);
+    } else {
+      // Restore to header button group, before the theme toggle
+      const themeToggle = document.getElementById('themeToggle');
+      headerBtnGroup.insertBefore(aboutBtn, themeToggle);
+      headerBtnGroup.insertBefore(helpBtn,  themeToggle);
+    }
+  }
+
+  applyLayout(mq.matches);
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => applyLayout(mq.matches), 100);
+  });
+})();
+
 

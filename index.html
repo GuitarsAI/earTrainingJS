@@ -33,8 +33,6 @@
     <div class="score-pill" id="scorePill"><span id="correct">0</span> / <span id="total">0</span></div>
     <button class="new-session-btn" id="newSessionBtn" aria-label="Start a new session">New Session</button>
     <button class="theme-toggle" id="themeToggleMobile" aria-label="Toggle dark/light mode">🌙</button>
-    <button class="about-btn" id="aboutBtnMobile" aria-label="About The Sound Travels">ℹ</button>
-    <button class="about-btn" id="helpBtnMobile" aria-label="Help">?</button>
     <div class="qd-toggle" id="qdToggle">
       <button class="qd-btn" id="qdQuiz">Quiz</button>
       <button class="qd-btn active" id="qdDict">Dictionary</button>
@@ -279,13 +277,6 @@
 <!-- App boot — last, depends on everything above -->
 <script src="js/app.js"></script>
 
-<!-- Mobile score-bar duplicates for ℹ and ? — forward clicks to the real buttons -->
-<script>
-  document.getElementById('aboutBtnMobile').addEventListener('click', () =>
-    document.getElementById('aboutBtn').click());
-  document.getElementById('helpBtnMobile').addEventListener('click', () =>
-    document.getElementById('helpBtn').click());
-</script>
 
 </body>
 </html>
