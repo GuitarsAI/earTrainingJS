@@ -253,22 +253,57 @@ function _makeSubGroup(body, title) {
   return innerBody;
 }
 
+// Display titles for known CHORD_TYPES family keys.
+// Any key not listed here gets a capitalised fallback (e.g. 'classical' -> 'Classical').
+const CHORD_FAMILY_TITLES = {
+  major:      'Major',
+  minor:      'Minor',
+  dominant:   'Dominant',
+  diminished: 'Diminished',
+  augmented:  'Augmented',
+  suspended:  'Suspended / Other',
+  slash:      'Slash chords',
+  poly:       'Polychords',
+};
+
+// Display titles for UST subFamily values.
+const UST_SUBFAMILY_TITLES = {
+  dom7: 'UST \u2014 Dom7 shell (3 + \u266d7)',
+  min:  'UST \u2014 m7 shell (\u266d3 + \u266d7)',
+  maj7: 'UST \u2014 Maj7 shell (3 + 7)',
+};
+
+function _familyTitle(key) {
+  return CHORD_FAMILY_TITLES[key] || (key.charAt(0).toUpperCase() + key.slice(1));
+}
+
+// Build the flat list of { title, items } sections from CHORD_TYPES.
+// Families whose entries carry a subFamily field are split into one section per subFamily
+// value, preserving the order in which subFamily values first appear in the array.
+function _buildChordFamilies() {
+  const sections = [];
+  for (const [key, entries] of Object.entries(CHORD_TYPES)) {
+    const hasSubFamilies = entries.some(e => e.subFamily);
+    if (hasSubFamilies) {
+      const seen = new Map();
+      entries.forEach(e => {
+        if (!e.subFamily) return;
+        if (!seen.has(e.subFamily)) seen.set(e.subFamily, []);
+        seen.get(e.subFamily).push(e);
+      });
+      seen.forEach((items, sf) => {
+        sections.push({ title: UST_SUBFAMILY_TITLES[sf] || sf, items });
+      });
+    } else {
+      sections.push({ title: _familyTitle(key), items: entries });
+    }
+  }
+  return sections;
+}
+
 function _renderChordQualitySection(body) {
   const isQuiz = appMode === 'quiz';
-
-  const FAMILIES = [
-    { title: 'Major',                  items: CHORD_TYPES.major },
-    { title: 'Minor',                  items: CHORD_TYPES.minor },
-    { title: 'Dominant',               items: CHORD_TYPES.dominant },
-    { title: 'Diminished',             items: CHORD_TYPES.diminished },
-    { title: 'Augmented',              items: CHORD_TYPES.augmented },
-    { title: 'Suspended / Other',      items: CHORD_TYPES.suspended },
-    { title: 'Slash chords',           items: CHORD_TYPES.slash },
-    { title: 'Polychords',             items: CHORD_TYPES.poly },
-    { title: 'UST — Dom7 shell (3 + ♭7)', items: CHORD_TYPES.ust.filter(u => !u.shellQuality) },
-    { title: 'UST — m7 shell (♭3 + ♭7)',  items: CHORD_TYPES.ust.filter(u => u.shellQuality === 'min') },
-    { title: 'UST — Maj7 shell (3 + 7)',   items: CHORD_TYPES.ust.filter(u => u.shellQuality === 'maj7') },
-  ];
+  const FAMILIES = _buildChordFamilies();
 
   if (isQuiz) {
     // ── Quiz: multi-select, All/None, inversions checkbox ─────────────────
@@ -669,23 +704,40 @@ function renderIntervalPoolPanel(panel) {
   makeSection(body, 'Extended / Compound', INTERVALS.filter(i =>  i.compound), selectedIntervals, onChange39, true);
 }
 
+// Display titles and section-renderer choice for scale group values.
+// sectionFn: 'withDisplayName' uses makeSectionWithDisplayName; anything else uses makeSection.
+const SCALE_GROUP_CONFIG = {
+  pentatonic: { title: 'Pentatonic (5 notes)',      sectionFn: 'withDisplayName' },
+  hexatonic:  { title: 'Hexatonic (6 notes)',        sectionFn: 'standard' },
+  diatonic:   { title: 'Diatonic / Modal (7 notes)', sectionFn: 'standard' },
+  octatonic:  { title: 'Octatonic (8 notes)',        sectionFn: 'standard' },
+};
+
 function renderScalePoolPanel(panel) {
-  // POINT 28: Four groups by note count — all collapsed by default
-  const pentatonic = SCALES.slice(0, 7);   // 5-note
-  const hexatonic  = SCALES.slice(7, 11);  // 6-note
-  const diatonic   = SCALES.slice(11, 23); // 7-note
-  const octatonic  = SCALES.slice(23);     // 8-note
+  // POINT 28: Group by the 'group' field on each SCALES entry — auto-discovers new groups.
   const { body } = makePoolPanelShell(panel, 'Training pool — Scales', null);
   const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateScaleQuestion();
 
-  const allScaleItems = [...SCALES];
-  makeGlobalAllNone(body, allScaleItems, selectedScales,
+  makeGlobalAllNone(body, [...SCALES], selectedScales,
     () => body.querySelectorAll('.pool-chip'), onChange);
 
-  makeSectionWithDisplayName(body, 'Pentatonic (5 notes)',     pentatonic, selectedScales, onChange, true);
-  makeSection(body, 'Hexatonic (6 notes)',                     hexatonic,  selectedScales, onChange, true);
-  makeSection(body, 'Diatonic / Modal (7 notes)',              diatonic,   selectedScales, onChange, true);
-  makeSection(body, 'Octatonic (8 notes)',                     octatonic,  selectedScales, onChange, true);
+  // Collect groups in insertion order, deduplicated
+  const groupMap = new Map();
+  SCALES.forEach(s => {
+    const key = s.group || 'other';
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key).push(s);
+  });
+
+  groupMap.forEach((items, key) => {
+    const cfg = SCALE_GROUP_CONFIG[key];
+    const title = cfg ? cfg.title : (key.charAt(0).toUpperCase() + key.slice(1));
+    if (cfg && cfg.sectionFn === 'withDisplayName') {
+      makeSectionWithDisplayName(body, title, items, selectedScales, onChange, true);
+    } else {
+      makeSection(body, title, items, selectedScales, onChange, true);
+    }
+  });
 }
 
 // Like makeSection but uses item.displayName for the chip label when present (POINT 27)

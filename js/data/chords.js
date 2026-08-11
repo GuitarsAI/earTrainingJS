@@ -6,7 +6,9 @@
 const CHORD_TYPES = {
   major: [
     { name: 'maj',              symbol: 'maj',           intervals: [0,4,7],             family: 'major' },
-    { name: 'maj(9)',           symbol: 'maj_add9',      intervals: [0,4,7,14],          family: 'major' },
+    { name: 'maj(add9)',        symbol: 'maj_add9',      intervals: [0,4,7,14],          family: 'major' },
+    { name: 'maj(add2)',        symbol: 'maj_add2',      intervals: [0,2,4,7],           family: 'major' },
+    { name: 'maj(add4)',        symbol: 'maj_add4',      intervals: [0,4,5,7],           family: 'major' },
     { name: 'maj6',             symbol: 'maj6',          intervals: [0,4,7,9],           family: 'major' },
     { name: 'maj6(9)',          symbol: 'maj69',         intervals: [0,4,7,9,14],        family: 'major' },
     { name: 'Maj7',             symbol: 'Maj7',          intervals: [0,4,7,11],          family: 'major' },
@@ -17,10 +19,14 @@ const CHORD_TYPES = {
     { name: 'Maj7(9)(13)',      symbol: 'Maj7_9_13',     intervals: [0,4,7,11,14,21],    family: 'major' },
     { name: 'Maj7(\u266f11)(13)',symbol:'Maj7_s11_13',   intervals: [0,4,7,11,18,21],    family: 'major' },
     { name: 'Maj7(9)(\u266f11)(13)',symbol:'Maj7_9_s11_13',intervals:[0,4,7,11,14,18,21],family: 'major' },
+    { name: 'Maj7(9)(11)',        symbol: 'Maj7_9_11',     intervals: [0,4,7,11,14,17],    family: 'major' },
+    { name: 'Maj7(9)(11)(13)',    symbol: 'Maj7_9_11_13',  intervals: [0,4,7,11,14,17,21], family: 'major' },
   ],
   minor: [
     { name: 'm',                symbol: 'm',             intervals: [0,3,7],             family: 'minor' },
-    { name: 'm(9)',             symbol: 'm_add9',        intervals: [0,3,7,14],          family: 'minor' },
+    { name: 'm(add9)',          symbol: 'm_add9',        intervals: [0,3,7,14],          family: 'minor' },
+    { name: 'm(add2)',          symbol: 'm_add2',        intervals: [0,2,3,7],           family: 'minor' },
+    { name: 'm(add4)',          symbol: 'm_add4',        intervals: [0,3,5,7],           family: 'minor' },
     { name: 'm6',               symbol: 'm6',            intervals: [0,3,7,9],           family: 'minor' },
     { name: 'm6(9)',            symbol: 'm69',           intervals: [0,3,7,9,14],        family: 'minor' },
     { name: 'm7',               symbol: 'm7',            intervals: [0,3,7,10],          family: 'minor' },
@@ -35,6 +41,7 @@ const CHORD_TYPES = {
     { name: 'm(Maj7)',          symbol: 'mMaj7',         intervals: [0,3,7,11],          family: 'minor' },
     { name: 'm(Maj7)(9)',       symbol: 'mMaj7_9',       intervals: [0,3,7,11,14],       family: 'minor' },
     { name: 'm(Maj7)(9)(11)',   symbol: 'mMaj7_9_11',    intervals: [0,3,7,11,14,17],    family: 'minor' },
+    { name: 'm(Maj7)(9)(11)(13)', symbol: 'mMaj7_9_11_13', intervals: [0,3,7,11,14,17,21], family: 'minor' },
   ],
   dominant: [
     { name: '7',                symbol: '7',             intervals: [0,4,7,10],          family: 'dominant' },
@@ -56,11 +63,16 @@ const CHORD_TYPES = {
     { name: '7(9)sus4',         symbol: '7_9sus4',       intervals: [0,5,7,10,14],       family: 'dominant' },
     { name: '7(\u266d5)',       symbol: '7_b5',          intervals: [0,4,6,10],          family: 'dominant' },
     { name: '7(\u266f5)',       symbol: '7_s5',          intervals: [0,4,8,10],          family: 'dominant' },
+    { name: '7(\u266f5)(9)',    symbol: '7_s5_9',        intervals: [0,4,8,10,14],       family: 'dominant' },
+    { name: '11',               symbol: '11',            intervals: [0,4,7,10,14,17],    family: 'dominant' },
+    { name: '7(\u266d9,\u266f9)', symbol: '7_b9_s9',    intervals: [0,4,7,10,13,15],    family: 'dominant' },
+    { name: '13sus4',           symbol: '13sus4',        intervals: [0,5,7,10,14,21],    family: 'dominant' },
   ],
   diminished: [
     { name: 'dim',              symbol: 'dim',           intervals: [0,3,6],             family: 'diminished' },
     { name: 'm7(\u266d5)',      symbol: 'm7b5',          intervals: [0,3,6,10],          family: 'diminished' },
     { name: 'o7',               symbol: 'o7',            intervals: [0,3,6,9],           family: 'diminished' },
+    { name: 'o7(Maj7)',         symbol: 'o7_Maj7',       intervals: [0,3,6,9,11],        family: 'diminished' },
   ],
   augmented: [
     { name: 'aug',              symbol: 'aug',           intervals: [0,4,8],             family: 'augmented' },
@@ -70,6 +82,8 @@ const CHORD_TYPES = {
     { name: 'sus2',             symbol: 'sus2',          intervals: [0,2,7],             family: 'suspended' },
     { name: 'sus4',             symbol: 'sus4',          intervals: [0,5,7],             family: 'suspended' },
     { name: '5',                symbol: 'power',         intervals: [0,7],               family: 'suspended' },
+    { name: 'sus2(Maj7)',       symbol: 'sus2_Maj7',     intervals: [0,2,7,11],          family: 'suspended' },
+    { name: 'sus4(add9)',       symbol: 'sus4_add9',     intervals: [0,5,7,14],          family: 'suspended' },
   ],
 
   // POINT 25 (redesigned): Slash chords — root-agnostic types, like every other family.
@@ -150,41 +164,41 @@ const CHORD_TYPES = {
   // ustNumber: scale-degree label (e.g. ♭II = major triad on ♭2 above root).
   ust: [
     // UST ♭II — major triad on ♭II above root → 7(♭9)(♯11)(♭13) — "the Bartók UST"
-    { name: 'UST ♭II (♭II maj over dom7)',  symbol: 'ust_I',   shellIntervals:[4,10], upperTriadRoot:1,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭II',   tensions:'♭9, ♯11, ♭13', resultingChord:'7(♭9)(♯11)(♭13)', family:'ust' },
+    { name: 'UST ♭II (♭II maj over dom7)',  symbol: 'ust_I',   shellIntervals:[4,10], upperTriadRoot:1,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭II',   tensions:'♭9, ♯11, ♭13', resultingChord:'7(♭9)(♯11)(♭13)', family:'ust', subFamily:'dom7' },
     // UST II — major triad on II above root → 7(9)(♯11)(13)
-    { name: 'UST II (II maj over dom7)',    symbol: 'ust_II',  shellIntervals:[4,10], upperTriadRoot:2,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'II',    tensions:'9, ♯11, 13',   resultingChord:'7(9)(♯11)(13)',  family:'ust' },
+    { name: 'UST II (II maj over dom7)',    symbol: 'ust_II',  shellIntervals:[4,10], upperTriadRoot:2,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'II',    tensions:'9, ♯11, 13',   resultingChord:'7(9)(♯11)(13)',  family:'ust', subFamily:'dom7' },
     // UST ♭III — major triad on ♭III → 7(♯9)(♯11)
-    { name: 'UST ♭III (♭III maj over dom7)', symbol: 'ust_III', shellIntervals:[4,10], upperTriadRoot:3, upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭III',  tensions:'♯9, ♯11',     resultingChord:'7(♯9)(♯11)',    family:'ust' },
+    { name: 'UST ♭III (♭III maj over dom7)', symbol: 'ust_III', shellIntervals:[4,10], upperTriadRoot:3, upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭III',  tensions:'♯9, ♯11',     resultingChord:'7(♯9)(♯11)',    family:'ust', subFamily:'dom7' },
     // UST ♭V — major triad on ♭V/♯IV → 7(♯9)(♭13) — tritone sub colour
-    { name: 'UST ♭V (♭V maj over dom7)',    symbol: 'ust_IV',  shellIntervals:[4,10], upperTriadRoot:6, upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭V',    tensions:'♯9, ♭13',     resultingChord:'7(♯9)(♭13)',    family:'ust' },
+    { name: 'UST ♭V (♭V maj over dom7)',    symbol: 'ust_IV',  shellIntervals:[4,10], upperTriadRoot:6, upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭V',    tensions:'♯9, ♭13',     resultingChord:'7(♯9)(♭13)',    family:'ust', subFamily:'dom7' },
     // UST V — major triad on V → 7(9)(13) — "bright" UST
-    { name: 'UST V (V maj over dom7)',      symbol: 'ust_V',   shellIntervals:[4,10], upperTriadRoot:7,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'V',     tensions:'9, 13',        resultingChord:'7(9)(13)',       family:'ust' },
+    { name: 'UST V (V maj over dom7)',      symbol: 'ust_V',   shellIntervals:[4,10], upperTriadRoot:7,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'V',     tensions:'9, 13',        resultingChord:'7(9)(13)',       family:'ust', subFamily:'dom7' },
     // UST VI — major triad on VI → 7(13) — common in jazz
-    { name: 'UST VI (VI maj over dom7)',    symbol: 'ust_VI',  shellIntervals:[4,10], upperTriadRoot:9,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'VI',    tensions:'13',           resultingChord:'7(13)',          family:'ust' },
+    { name: 'UST VI (VI maj over dom7)',    symbol: 'ust_VI',  shellIntervals:[4,10], upperTriadRoot:9,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'VI',    tensions:'13',           resultingChord:'7(13)',          family:'ust', subFamily:'dom7' },
     // UST IIm — minor triad on II → 7(9)(11) — "McCoy Tyner" sound
-    { name: 'UST IIm (II min over dom7)',   symbol: 'ust_VII', shellIntervals:[4,10], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',   tensions:'9, 11',        resultingChord:'7(9)(11)',       family:'ust' },
+    { name: 'UST IIm (II min over dom7)',   symbol: 'ust_VII', shellIntervals:[4,10], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',   tensions:'9, 11',        resultingChord:'7(9)(11)',       family:'ust', subFamily:'dom7' },
 
     // POINT 35: Minor shell UST — shell = [m3, m7] = [3, 10] — implies m7 chord context
     // Upper triads voiced over a minor 7th shell (root not played)
     // IIm over m7 → m7(9)(11) — Dorian flavour
-    { name: 'UST IIm (II min over m7)',    symbol: 'ust_m_IIm',  shellIntervals:[3,10], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',  tensions:'9, 11',    resultingChord:'m7(9)(11)',    family:'ust', shellQuality:'min' },
+    { name: 'UST IIm (II min over m7)',    symbol: 'ust_m_IIm',  shellIntervals:[3,10], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',  tensions:'9, 11',    resultingChord:'m7(9)(11)',    family:'ust', shellQuality:'min', subFamily:'min' },
     // IV over m7 → m7(11)(13) — Dorian brightness
-    { name: 'UST IV (IV maj over m7)',     symbol: 'ust_m_IV',   shellIntervals:[3,10], upperTriadRoot:5,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'IV',   tensions:'11, 13',   resultingChord:'m7(11)(13)',   family:'ust', shellQuality:'min' },
+    { name: 'UST IV (IV maj over m7)',     symbol: 'ust_m_IV',   shellIntervals:[3,10], upperTriadRoot:5,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'IV',   tensions:'11, 13',   resultingChord:'m7(11)(13)',   family:'ust', shellQuality:'min', subFamily:'min' },
     // ♭VII over m7 → m7(9) — warm, open Dorian voicing
-    { name: 'UST ♭VII (♭VII maj over m7)', symbol: 'ust_m_bVII', shellIntervals:[3,10], upperTriadRoot:10, upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭VII', tensions:'9',        resultingChord:'m7(9)',        family:'ust', shellQuality:'min' },
+    { name: 'UST ♭VII (♭VII maj over m7)', symbol: 'ust_m_bVII', shellIntervals:[3,10], upperTriadRoot:10, upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭VII', tensions:'9',        resultingChord:'m7(9)',        family:'ust', shellQuality:'min', subFamily:'min' },
     // ♭VI over m7 → m9(♭13) — Phrygian / Aeolian colour
-    { name: 'UST ♭VI (♭VI maj over m7)',   symbol: 'ust_m_bVI',  shellIntervals:[3,10], upperTriadRoot:8,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭VI',  tensions:'♭13',      resultingChord:'m7(♭13)',      family:'ust', shellQuality:'min' },
+    { name: 'UST ♭VI (♭VI maj over m7)',   symbol: 'ust_m_bVI',  shellIntervals:[3,10], upperTriadRoot:8,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭VI',  tensions:'♭13',      resultingChord:'m7(♭13)',      family:'ust', shellQuality:'min', subFamily:'min' },
 
     // POINT 35: Maj7 shell UST — shell = [M3, M7] = [4, 11] — implies Maj7 chord context
     // Upper triads voiced over a major 7th shell (root not played)
     // II over Maj7 → Maj7(9)(♯11) — Lydian sound
-    { name: 'UST II (II maj over Maj7)',   symbol: 'ust_M7_II',  shellIntervals:[4,11], upperTriadRoot:2,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'II',   tensions:'9, ♯11',   resultingChord:'Maj7(9)(♯11)',  family:'ust', shellQuality:'maj7' },
+    { name: 'UST II (II maj over Maj7)',   symbol: 'ust_M7_II',  shellIntervals:[4,11], upperTriadRoot:2,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'II',   tensions:'9, ♯11',   resultingChord:'Maj7(9)(♯11)',  family:'ust', shellQuality:'maj7', subFamily:'maj7' },
     // IIm over Maj7 → Maj7(9) — warm, lush
-    { name: 'UST IIm (II min over Maj7)',  symbol: 'ust_M7_IIm', shellIntervals:[4,11], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',  tensions:'9',        resultingChord:'Maj7(9)',       family:'ust', shellQuality:'maj7' },
+    { name: 'UST IIm (II min over Maj7)',  symbol: 'ust_M7_IIm', shellIntervals:[4,11], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',  tensions:'9',        resultingChord:'Maj7(9)',       family:'ust', shellQuality:'maj7', subFamily:'maj7' },
     // V over Maj7 → Maj7(9)(13) — bright, full Ionian
-    { name: 'UST V (V maj over Maj7)',     symbol: 'ust_M7_V',   shellIntervals:[4,11], upperTriadRoot:7,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'V',    tensions:'9, 13',    resultingChord:'Maj7(9)(13)',   family:'ust', shellQuality:'maj7' },
+    { name: 'UST V (V maj over Maj7)',     symbol: 'ust_M7_V',   shellIntervals:[4,11], upperTriadRoot:7,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'V',    tensions:'9, 13',    resultingChord:'Maj7(9)(13)',   family:'ust', shellQuality:'maj7', subFamily:'maj7' },
     // VIm over Maj7 → Maj7(13) — sophisticated, modal
-    { name: 'UST VIm (VI min over Maj7)',  symbol: 'ust_M7_VIm', shellIntervals:[4,11], upperTriadRoot:9,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'VIm',  tensions:'13',       resultingChord:'Maj7(13)',      family:'ust', shellQuality:'maj7' },
+    { name: 'UST VIm (VI min over Maj7)',  symbol: 'ust_M7_VIm', shellIntervals:[4,11], upperTriadRoot:9,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'VIm',  tensions:'13',       resultingChord:'Maj7(13)',      family:'ust', shellQuality:'maj7', subFamily:'maj7' },
   ],
 };
 
@@ -236,34 +250,34 @@ const CHORD_PLAYBACK_STYLES = [
 // quality: 'major' | 'minor' | null (null = no standard key sig, fall back to C)
 const SCALES = [
   // ── Pentatonic (5 notes) ──────────────────────────────────────────────────
-  { name: 'Major Pentatonic', displayName: 'Major Pentatonic (Ionian Pentatonic)', symbol: 'pent_maj',     intervals: [0,2,4,7,9,12],       parentKey: { offset: 0,  quality: 'major' } },
-  { name: 'Minor Pentatonic', displayName: 'Minor Pentatonic (Aeolian Pentatonic)', symbol: 'pent_min',    intervals: [0,3,5,7,10,12],      parentKey: { offset: 0,  quality: 'minor' } },
-  { name: 'Dorian Pentatonic',     symbol: 'pent_dorian',   intervals: [0,2,3,7,9,12],   parentKey: { offset: -2, quality: 'major' } },
-  { name: 'Phrygian Pentatonic',   symbol: 'pent_phrygian', intervals: [0,1,3,5,7,12],   parentKey: { offset: -4, quality: 'major' } },
-  { name: 'Lydian Pentatonic',     symbol: 'pent_lydian',   intervals: [0,2,4,6,9,12],   parentKey: { offset: 0,  quality: 'major' } },
-  { name: 'Mixolydian Pentatonic', symbol: 'pent_mixo',     intervals: [0,2,5,7,10,12],  parentKey: { offset: -7, quality: 'major' } },
-  { name: 'Locrian Pentatonic',    symbol: 'pent_locrian',  intervals: [0,1,3,6,8,12],   parentKey: { offset: -5, quality: 'major' } },
+  { name: 'Major Pentatonic', displayName: 'Major Pentatonic (Ionian Pentatonic)', symbol: 'pent_maj',     intervals: [0,2,4,7,9,12],       parentKey: { offset: 0,  quality: 'major' }, group: 'pentatonic' },
+  { name: 'Minor Pentatonic', displayName: 'Minor Pentatonic (Aeolian Pentatonic)', symbol: 'pent_min',    intervals: [0,3,5,7,10,12],      parentKey: { offset: 0,  quality: 'minor' }, group: 'pentatonic' },
+  { name: 'Dorian Pentatonic',     symbol: 'pent_dorian',   intervals: [0,2,3,7,9,12],   parentKey: { offset: -2, quality: 'major' }, group: 'pentatonic' },
+  { name: 'Phrygian Pentatonic',   symbol: 'pent_phrygian', intervals: [0,1,3,5,7,12],   parentKey: { offset: -4, quality: 'major' }, group: 'pentatonic' },
+  { name: 'Lydian Pentatonic',     symbol: 'pent_lydian',   intervals: [0,2,4,6,9,12],   parentKey: { offset: 0,  quality: 'major' }, group: 'pentatonic' },
+  { name: 'Mixolydian Pentatonic', symbol: 'pent_mixo',     intervals: [0,2,5,7,10,12],  parentKey: { offset: -7, quality: 'major' }, group: 'pentatonic' },
+  { name: 'Locrian Pentatonic',    symbol: 'pent_locrian',  intervals: [0,1,3,6,8,12],   parentKey: { offset: -5, quality: 'major' }, group: 'pentatonic' },
   // ── Hexatonic (6 notes) ──────────────────────────────────────────────────
-  { name: 'Blues',       symbol: 'blues',      intervals: [0,3,5,6,7,10,12],    parentKey: { offset: 0,  quality: 'minor' } },
-  { name: 'Whole Tone',  symbol: 'whole_tone', intervals: [0,2,4,6,8,10,12],    parentKey: { offset: 0,  quality: 'major' } },
-  { name: 'Augmented',   symbol: 'augmented_scale', intervals: [0,3,4,7,8,11,12], parentKey: { offset: 0, quality: 'major' } },
-  { name: 'Prometheus',  symbol: 'prometheus', intervals: [0,2,4,6,9,10,12],    parentKey: { offset: 0,  quality: 'major' } },
+  { name: 'Blues',       symbol: 'blues',      intervals: [0,3,5,6,7,10,12],    parentKey: { offset: 0,  quality: 'minor' }, group: 'hexatonic' },
+  { name: 'Whole Tone',  symbol: 'whole_tone', intervals: [0,2,4,6,8,10,12],    parentKey: { offset: 0,  quality: 'major' }, group: 'hexatonic' },
+  { name: 'Augmented',   symbol: 'augmented_scale', intervals: [0,3,4,7,8,11,12], parentKey: { offset: 0, quality: 'major' }, group: 'hexatonic' },
+  { name: 'Prometheus',  symbol: 'prometheus', intervals: [0,2,4,6,9,10,12],    parentKey: { offset: 0,  quality: 'major' }, group: 'hexatonic' },
   // ── Diatonic / Modal (7 notes) ───────────────────────────────────────────
-  { name: 'Major',              symbol: 'major',      intervals: [0,2,4,5,7,9,11,12],   parentKey: { offset: 0,  quality: 'major' } },
-  { name: 'Natural Minor',      symbol: 'nat_minor',  intervals: [0,2,3,5,7,8,10,12],   parentKey: { offset: 0,  quality: 'minor' } },
-  { name: 'Harmonic Minor',     symbol: 'harm_minor', intervals: [0,2,3,5,7,8,11,12],   parentKey: { offset: 0,  quality: 'minor' } },
-  { name: 'Melodic Minor',      symbol: 'mel_minor',  intervals: [0,2,3,5,7,9,11,12],   parentKey: { offset: 0,  quality: 'minor' } },
-  { name: 'Dorian',             symbol: 'dorian',     intervals: [0,2,3,5,7,9,10,12],   parentKey: { offset: -2, quality: 'major' } },
-  { name: 'Phrygian',           symbol: 'phrygian',   intervals: [0,1,3,5,7,8,10,12],   parentKey: { offset: -4, quality: 'major' } },
-  { name: 'Lydian',             symbol: 'lydian',     intervals: [0,2,4,6,7,9,11,12],   parentKey: { offset: 0,  quality: 'major' } },
-  { name: 'Mixolydian',         symbol: 'mixolydian', intervals: [0,2,4,5,7,9,10,12],   parentKey: { offset: -7, quality: 'major' } },
-  { name: 'Locrian',            symbol: 'locrian',    intervals: [0,1,3,5,6,8,10,12],   parentKey: { offset: -5, quality: 'major' } },
-  { name: 'Phrygian Dominant',  symbol: 'phryg_dom',  intervals: [0,1,4,5,7,8,10,12],   parentKey: { offset: -4, quality: 'major' } },
-  { name: 'Lydian Dominant',    symbol: 'lyd_dom',    intervals: [0,2,4,6,7,9,10,12],   parentKey: { offset: -7, quality: 'major' } },
-  { name: 'Altered',            symbol: 'altered',    intervals: [0,1,3,4,6,8,10,12],   parentKey: { offset: -5, quality: 'major' } },
+  { name: 'Major',              symbol: 'major',      intervals: [0,2,4,5,7,9,11,12],   parentKey: { offset: 0,  quality: 'major' }, group: 'diatonic' },
+  { name: 'Natural Minor',      symbol: 'nat_minor',  intervals: [0,2,3,5,7,8,10,12],   parentKey: { offset: 0,  quality: 'minor' }, group: 'diatonic' },
+  { name: 'Harmonic Minor',     symbol: 'harm_minor', intervals: [0,2,3,5,7,8,11,12],   parentKey: { offset: 0,  quality: 'minor' }, group: 'diatonic' },
+  { name: 'Melodic Minor',      symbol: 'mel_minor',  intervals: [0,2,3,5,7,9,11,12],   parentKey: { offset: 0,  quality: 'minor' }, group: 'diatonic' },
+  { name: 'Dorian',             symbol: 'dorian',     intervals: [0,2,3,5,7,9,10,12],   parentKey: { offset: -2, quality: 'major' }, group: 'diatonic' },
+  { name: 'Phrygian',           symbol: 'phrygian',   intervals: [0,1,3,5,7,8,10,12],   parentKey: { offset: -4, quality: 'major' }, group: 'diatonic' },
+  { name: 'Lydian',             symbol: 'lydian',     intervals: [0,2,4,6,7,9,11,12],   parentKey: { offset: 0,  quality: 'major' }, group: 'diatonic' },
+  { name: 'Mixolydian',         symbol: 'mixolydian', intervals: [0,2,4,5,7,9,10,12],   parentKey: { offset: -7, quality: 'major' }, group: 'diatonic' },
+  { name: 'Locrian',            symbol: 'locrian',    intervals: [0,1,3,5,6,8,10,12],   parentKey: { offset: -5, quality: 'major' }, group: 'diatonic' },
+  { name: 'Phrygian Dominant',  symbol: 'phryg_dom',  intervals: [0,1,4,5,7,8,10,12],   parentKey: { offset: -4, quality: 'major' }, group: 'diatonic' },
+  { name: 'Lydian Dominant',    symbol: 'lyd_dom',    intervals: [0,2,4,6,7,9,10,12],   parentKey: { offset: -7, quality: 'major' }, group: 'diatonic' },
+  { name: 'Altered',            symbol: 'altered',    intervals: [0,1,3,4,6,8,10,12],   parentKey: { offset: -5, quality: 'major' }, group: 'diatonic' },
   // ── Octatonic (8 notes) ──────────────────────────────────────────────────
-  { name: 'Diminished (W-H)',   symbol: 'dim_wh',     intervals: [0,2,3,5,6,8,9,11,12], parentKey: { offset: 0, quality: 'major' } },
-  { name: 'Diminished (H-W)',   symbol: 'dim_hw',     intervals: [0,1,3,4,6,7,9,10,12], parentKey: { offset: 0, quality: 'major' } },
+  { name: 'Diminished (W-H)',   symbol: 'dim_wh',     intervals: [0,2,3,5,6,8,9,11,12], parentKey: { offset: 0, quality: 'major' }, group: 'octatonic' },
+  { name: 'Diminished (H-W)',   symbol: 'dim_hw',     intervals: [0,1,3,4,6,7,9,10,12], parentKey: { offset: 0, quality: 'major' }, group: 'octatonic' },
 ];
 
 // POINT 7 / 20b: Scale playback direction options
