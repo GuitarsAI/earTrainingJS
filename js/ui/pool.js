@@ -262,8 +262,11 @@ const CHORD_FAMILY_TITLES = {
   diminished: 'Diminished',
   augmented:  'Augmented',
   suspended:  'Suspended / Other',
+  classical:  'Classical (Neapolitan + Aug 6ths)',
   slash:      'Slash chords',
   poly:       'Polychords',
+  quartal:    'Quartal / Quintal',
+  cluster:    'Cluster / Secundal',
 };
 
 // Display titles for UST subFamily values.

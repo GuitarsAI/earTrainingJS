@@ -300,7 +300,7 @@ function panel_deactivateAllDictChips() {
 
 // Apply a specific inversion index in dict or post-answer quiz mode and refresh the display
 function dictApplyInversion(invIdx) {
-  if (!currentChord || currentChord.family === 'slash' || currentChord.family === 'poly' || currentChord.family === 'ust') return;
+  if (!currentChord || currentChord.family === 'slash' || currentChord.family === 'poly' || currentChord.family === 'ust' || currentChord.family === 'classical' || currentChord.family === 'quartal' || currentChord.family === 'cluster') return;
   dictInversionIndex = invIdx;
   const baseChord      = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
   const baseIntervals  = baseChord.intervals;
@@ -343,7 +343,10 @@ function renderInversionChips() {
     || !currentChord
     || currentChord.family === 'slash'
     || currentChord.family === 'poly'
-    || currentChord.family === 'ust';
+    || currentChord.family === 'ust'
+    || currentChord.family === 'classical'
+    || currentChord.family === 'quartal'
+    || currentChord.family === 'cluster';
 
   if (hide) { row.style.display = 'none'; return; }
 

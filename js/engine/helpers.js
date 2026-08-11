@@ -69,9 +69,12 @@ function getAllChords() {
     ...CHORD_TYPES.diminished,
     ...CHORD_TYPES.augmented,
     ...CHORD_TYPES.suspended,
-    ...CHORD_TYPES.slash, // POINT 25
-    ...CHORD_TYPES.poly,  // POINT 26
-    ...CHORD_TYPES.ust,   // POINT 26
+    ...CHORD_TYPES.classical, // POINT 44
+    ...CHORD_TYPES.quartal,   // POINT 44
+    ...CHORD_TYPES.cluster,   // POINT 44
+    ...CHORD_TYPES.slash,     // POINT 25
+    ...CHORD_TYPES.poly,      // POINT 26
+    ...CHORD_TYPES.ust,       // POINT 26
   ];
 }
 
@@ -80,7 +83,7 @@ function getActivePool() {
   if (!basePool.length) basePool = CHORD_TYPES.major.slice(0,1).concat(CHORD_TYPES.minor.slice(0,1), CHORD_TYPES.diminished.slice(0,1), CHORD_TYPES.augmented.slice(0,1)); // safety fallback
   let pool = [...basePool];
   // POINT 25/26: slash, poly, UST don't support inversions
-  if (includeInversions) pool = pool.concat(buildInversionPool(basePool.filter(c => c.family !== 'slash' && c.family !== 'poly' && c.family !== 'ust')));
+  if (includeInversions) pool = pool.concat(buildInversionPool(basePool.filter(c => c.family !== 'slash' && c.family !== 'poly' && c.family !== 'ust' && c.family !== 'classical' && c.family !== 'quartal' && c.family !== 'cluster')));
   return pool;
 }
 

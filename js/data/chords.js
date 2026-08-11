@@ -77,6 +77,8 @@ const CHORD_TYPES = {
   augmented: [
     { name: 'aug',              symbol: 'aug',           intervals: [0,4,8],             family: 'augmented' },
     { name: 'Maj7(\u266f5)',    symbol: 'Maj7_s5',       intervals: [0,4,8,11],          family: 'augmented' },
+    { name: 'aug7',             symbol: 'aug7',          intervals: [0,4,8,10],          family: 'augmented' },
+    { name: 'aug9',             symbol: 'aug9',          intervals: [0,4,8,10,14],       family: 'augmented' },
   ],
   suspended: [
     { name: 'sus2',             symbol: 'sus2',          intervals: [0,2,7],             family: 'suspended' },
@@ -84,6 +86,74 @@ const CHORD_TYPES = {
     { name: '5',                symbol: 'power',         intervals: [0,7],               family: 'suspended' },
     { name: 'sus2(Maj7)',       symbol: 'sus2_Maj7',     intervals: [0,2,7,11],          family: 'suspended' },
     { name: 'sus4(add9)',       symbol: 'sus4_add9',     intervals: [0,5,7,14],          family: 'suspended' },
+  ],
+
+  // Classical chords — chromatic pre-dominant chords from common-practice harmony.
+  // All are built from the bass note (♭6 / le for aug sixths; ♭2 for Neapolitan).
+  // Root in the app = the bass reference note as described above.
+  // classicalNote: shown in the breakdown as a 'Classical function' sub-section.
+  classical: [
+    // Neapolitan — major triad on ♭II; typically appears in first inversion (N6)
+    { name: 'N6 (Neapolitan)',    symbol: 'N6',      intervals: [0,4,7],    family: 'classical',
+      classicalNote: '\u266dII major triad — pre-dominant chord in classical harmony. Typically appears in first inversion (N\u2076). Resolves to V or V\u2077.' },
+    // Italian augmented sixth — built from \u266d6: \u266d6\u20131\u2013\u266f4 (aug 6th between outer voices)
+    { name: 'It\u207a\u2076 (Italian +6)', symbol: 'It6',  intervals: [0,4,9],    family: 'classical',
+      classicalNote: 'Italian augmented sixth — \u266d6, 1, \u266f4 from the bass. The augmented sixth interval (\u266d6\u2013\u266f4) expands outward to the octave V. Resolves to V.' },
+    // French augmented sixth — \u266d6\u20131\u20132\u2013\u266f4
+    { name: 'Fr\u207a\u2076 (French +6)',  symbol: 'Fr6',  intervals: [0,4,6,9],  family: 'classical',
+      classicalNote: 'French augmented sixth — \u266d6, 1, 2, \u266f4 from the bass. Contains a whole-tone tetrachord; the most dissonant of the three. Resolves to V.' },
+    // German augmented sixth — \u266d6\u20131\u2013\u266d3\u2013\u266f4 (enharmonic = dom7)
+    { name: 'Ger\u207a\u2076 (German +6)', symbol: 'Ger6', intervals: [0,4,7,9],  family: 'classical',
+      classicalNote: 'German augmented sixth — \u266d6, 1, \u266d3, \u266f4 from the bass. Enharmonically identical to a dominant 7th chord. Resolves to V (often via I\u2076\u2084 to avoid parallel 5ths).' },
+  ],
+
+  // Quartal / Quintal chords — built by stacking perfect fourths (quartal) or perfect fifths
+  // (quintal) instead of thirds. Quintal is the inversion of quartal — same pitch content,
+  // different stacking order. Common in jazz (McCoy Tyner, Bill Evans, Herbie Hancock) and
+  // 20th-century classical (Hindemith, Bartók, Schoenberg).
+  // quartal: true — triggers custom breakdown path (modal contexts instead of chord scales,
+  //                  adjacent interval analysis in 'Quartal construction' sub-section).
+  // quartNote: detailed note shown in the 'Quartal construction' breakdown sub-section.
+  quartal: [
+    // 3-note quartal: two stacked perfect fourths
+    { name: 'qrt3 (Quartal, 3-note)',   symbol: 'qrt3',  intervals: [0,5,10],     family: 'quartal', quartal: true,
+      quartNote: 'Three-note quartal chord — two stacked perfect fourths (P4 + P4). The most compact quartal voicing: rootless and tonally ambiguous, any of the three notes can function as the root depending on context. Pioneered in jazz by McCoy Tyner and used throughout modal jazz. Fits naturally over Dorian, Mixolydian, Lydian, Phrygian, and Aeolian — the absence of a third means it floats freely across major and minor contexts. Sound character: open, suspended, modern.' },
+    // 4-note quartal: three stacked perfect fourths
+    { name: 'qrt4 (Quartal, 4-note)',   symbol: 'qrt4',  intervals: [0,5,10,15],  family: 'quartal', quartal: true,
+      quartNote: 'Four-note quartal chord — three stacked perfect fourths (P4 + P4 + P4). The workhorse quartal voicing in jazz piano and guitar comping. Completely symmetrical stack — all adjacent intervals are equal, making root ambiguity total. Used extensively by McCoy Tyner on John Coltrane recordings (A Love Supreme, My Favorite Things) to create a dense, modal wash. Fits Dorian, Mixolydian, Lydian, and Aeolian contexts. Sound character: full, angular, harmonically suspended.' },
+    // 5-note "So What" chord: three P4s + one M3 on top
+    { name: 'qrt5 (So What)',           symbol: 'qrt5',  intervals: [0,5,10,15,19], family: 'quartal', quartal: true,
+      quartNote: 'Five-note "So What" chord — three stacked perfect fourths plus a major third on top (P4 + P4 + P4 + M3). Named for its use by Bill Evans on Miles Davis\u2019 "So What" (Kind of Blue, 1959) — one of the most iconic voicings in jazz history. The major third at the top gives it a subtle warmth compared to a pure quartal stack. Specifically a Dorian voicing: the two shapes Evans played move diatonically up the D Dorian scale. Sound character: lush, modern, modal — the definitive sound of late-1950s jazz impressionism.' },
+    // Mixed quartal with tritone
+    { name: 'qrtTT (Quartal + TT)',     symbol: 'qrtTT', intervals: [0,5,10,16],  family: 'quartal', quartal: true,
+      quartNote: 'Mixed quartal chord — two perfect fourths plus an augmented fourth / tritone on top (P4 + P4 + A4). The tritone replaces the third perfect fourth, injecting tension into the otherwise stable quartal stack. This variant appears in diatonic quartal harmonisations wherever the tritone falls naturally (e.g. B\u2013E\u2013A\u2013E\u266f in C major). Creates a more dissonant, unstable sound than a pure quartal stack. Fits Lydian (the tritone is the characteristic \u266f4) and Lydian Dominant contexts. Sound character: tense, searching, unresolved.' },
+    // 3-note quintal: two stacked perfect fifths
+    { name: 'qnt3 (Quintal, 3-note)',   symbol: 'qnt3',  intervals: [0,7,14],     family: 'quartal', quartal: true,
+      quartNote: 'Three-note quintal chord — two stacked perfect fifths (P5 + P5). The inversional equivalent of the three-note quartal chord: same three pitch classes, wider spacing. Where quartal sounds compact and interlocked, quintal sounds open and spacious — like a power chord expanded upward. Common in Hindemith\u2019s 20th-century counterpoint and in orchestral writing as a "neutral" sonority with no major/minor identity. Fits Dorian, Mixolydian, and Lydian. Sound character: open, hollow, vast — medieval and modern at once.' },
+    // 4-note quintal: three stacked perfect fifths
+    { name: 'qnt4 (Quintal, 4-note)',   symbol: 'qnt4',  intervals: [0,7,14,21],  family: 'quartal', quartal: true,
+      quartNote: 'Four-note quintal chord — three stacked perfect fifths (P5 + P5 + P5). The widest-spanning standard quintal voicing, spanning three octaves minus a whole tone. Inversionally equivalent to the four-note quartal chord but voiced with maximum registral spread. Creates an enormous, cathedral-like sonority when played in the lower register; translucent and ringing in the upper register. Used in Hindemith, Bart\u00f3k, and contemporary orchestral writing for its tonal neutrality and resonance. Sound character: expansive, resonant, harmonically open.' },
+  ],
+
+  // Cluster / Secundal chords — built by stacking major or minor seconds instead of thirds
+  // or fourths. More timbral than harmonic: dense dissonant sound masses used in contemporary
+  // classical, avant-garde, film scoring, and ambient music.
+  // cluster: true — triggers custom breakdown path (no chord scales — "timbral chord" note,
+  //                  adjacent interval analysis in 'Cluster construction' sub-section).
+  // clustNote: detailed note shown in the 'Cluster construction' breakdown sub-section.
+  cluster: [
+    // 3-note major-second cluster
+    { name: 'clust M2 (3-note)',        symbol: 'clust_M2_3',  intervals: [0,2,4],     family: 'cluster', cluster: true,
+      clustNote: 'Three-note major-second cluster — two stacked whole tones (M2 + M2). The mildest cluster voicing: the three notes form the first three degrees of the whole-tone scale, giving it a floating, Impressionist quality rather than a purely percussive noise mass. Debussy and Ravel used this spacing frequently in their piano music. All three pitches can be found in a dominant 7th(♯11) context (e.g. C\u2013D\u2013E over a G7 chord). Sound character: bright, slightly tense, Impressionistic — more colouristic than dissonant.' },
+    // 3-note minor-second cluster
+    { name: 'clust m2 (3-note)',        symbol: 'clust_m2_3',  intervals: [0,1,2],     family: 'cluster', cluster: true,
+      clustNote: 'Three-note minor-second cluster — two stacked semitones (m2 + m2). The most intensely dissonant three-note voicing possible. Three adjacent chromatic pitches played simultaneously create a dense sound mass with no tonal centre — the ear cannot extract a chord quality, only a percussive noise event. Used by Bartók in his piano works (Mikrokosmos, piano concertos) for dramatic effect, and in avant-garde and film music to suggest tension, violence, or chaos. Sound character: extremely dissonant, percussive, avant-garde.' },
+    // 4-note mixed cluster: m2 + M2 + m2
+    { name: 'clust mix (4-note)',       symbol: 'clust_mix_4', intervals: [0,1,3,4],   family: 'cluster', cluster: true,
+      clustNote: 'Four-note mixed cluster — alternating semitone and whole tone (m2 + M2 + m2). The combination of minor and major seconds creates a slightly less uniform, more "organic" cluster than a pure chromatic stack. The outer notes span a major third, which gives the voicing a distant tertian shadow while remaining thoroughly dissonant. Found in Messiaen\u2019s "modes of limited transposition" contexts and in jazz as a dense interior voicing. The interval pattern [0,1,3,4] is the first four notes of a chromatic scale with one gap. Sound character: dense, complex, dissonant but with subtle internal structure.' },
+    // 4-note chromatic cluster
+    { name: 'clust chr (4-note)',       symbol: 'clust_chr_4', intervals: [0,1,2,3],   family: 'cluster', cluster: true,
+      clustNote: 'Four-note chromatic cluster — three consecutive semitones (m2 + m2 + m2). Four adjacent chromatic pitches: the densest, most dissonant standard cluster voicing. No interval larger than a semitone appears between any adjacent pair, making it a pure noise mass with no implied harmony. Henry Cowell coined the term "tone cluster" in the 1920s for this technique, which he notated as solid black rectangles on the staff. Later adopted by Bartók, Ligeti, Penderecki, and film composers. In jazz, compressed chromatic clusters appear in stride piano and as percussive colour in avant-garde playing. Sound character: maximally dissonant, percussive, noise-mass — the most extreme timbral effect available on a standard keyboard.' },
   ],
 
   // POINT 25 (redesigned): Slash chords — root-agnostic types, like every other family.

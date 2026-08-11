@@ -2533,6 +2533,53 @@ function showBreakdown() {
     makeBDRow(augBody, 'Enharmonic', joinSep(computeAugEnharmonics(rootPc, sym)));
     makeBDRow(augBody, 'Note', 'Symmetrical — divides the octave into three equal M3rds');
   }
+  if (sym === 'aug7') {
+    const { section: augSec, body: augBody } = makeCSGroup('Augmented', false);
+    mainBody.appendChild(augSec);
+    makeBDRow(augBody, 'Also known as', '7(\u266f5) — augmented dominant 7th');
+    makeBDRow(augBody, 'Chord scale', 'Whole tone scale — all six notes of the whole-tone scale are available tensions');
+    makeBDRow(augBody, 'Note', 'Altered dominant chord — the \u266f5 acts as a voice-leading tone to the 3rd of the tonic. Functions as V7 in both major and minor. Enharmonically, the \u266f5 and \u266d13 are the same pitch; context determines the spelling.');
+  }
+  if (sym === 'aug9') {
+    const { section: augSec, body: augBody } = makeCSGroup('Augmented', false);
+    mainBody.appendChild(augSec);
+    makeBDRow(augBody, 'Also known as', '7(\u266f5)(9) — augmented dominant 9th');
+    makeBDRow(augBody, 'Chord scale', 'Whole tone scale — the added 9th is the natural 2nd degree of the whole-tone scale above the root');
+    makeBDRow(augBody, 'Note', 'Extension of aug7 with a natural 9th added. The whole-tone scale contains root, M3, \u266f5, \u266d7, and 9 — making aug9 a five-note subset of the whole-tone collection. Used as a colourful V chord with smooth voice leading: \u266f5\u2192III and 9\u2192I.');
+  }
+
+  // Classical
+  if (family === 'classical' && baseChord.classicalNote) {
+    const { section: clSec, body: clBody } = makeCSGroup('Classical function', false);
+    mainBody.appendChild(clSec);
+    makeBDRow(clBody, 'Note', baseChord.classicalNote);
+  }
+
+  // Quartal / Quintal
+  if (baseChord.quartal && baseChord.quartNote) {
+    const QUARTAL_MODAL_CONTEXTS = {
+      qrt3:  'Dorian, Mixolydian, Lydian, Phrygian, Aeolian — fits most modal contexts due to total third-ambiguity',
+      qrt4:  'Dorian, Mixolydian, Lydian, Aeolian — dense enough to imply a modal centre without defining major or minor',
+      qrt5:  'Dorian — specifically the Bill Evans / Miles Davis "So What" Dorian voicing; also fits Aeolian',
+      qrtTT: 'Lydian, Lydian Dominant — the tritone is the characteristic \u266f4 of Lydian; also fits altered dominant contexts',
+      qnt3:  'Dorian, Mixolydian, Lydian — wide open spacing suits any modal context without committing to a quality',
+      qnt4:  'Dorian, Mixolydian, Lydian, Aeolian — maximum registral spread; suits orchestral and wide-voiced modal writing',
+    };
+    const { section: qrtSec, body: qrtBody } = makeCSGroup('Quartal construction', false);
+    mainBody.appendChild(qrtSec);
+    makeBDRow(qrtBody, 'Structure', 'Non-tertian — built by stacking fourths or fifths, not thirds');
+    makeBDRow(qrtBody, 'Modal contexts', QUARTAL_MODAL_CONTEXTS[sym] || 'Context-dependent — any mode lacking a strong tonic pull');
+    makeBDRow(qrtBody, 'Note', baseChord.quartNote);
+  }
+
+  // Cluster / Secundal
+  if (baseChord.cluster && baseChord.clustNote) {
+    const { section: clustSec, body: clustBody } = makeCSGroup('Cluster construction', false);
+    mainBody.appendChild(clustSec);
+    makeBDRow(clustBody, 'Structure', 'Secundal — built by stacking minor or major seconds');
+    makeBDRow(clustBody, 'Chord scales', 'None — cluster chords are timbral sonorities without a standard parent scale or harmonic function');
+    makeBDRow(clustBody, 'Note', baseChord.clustNote);
+  }
 
   // Suspended / Power
   if (sym === 'sus2' || sym === 'sus4') {
@@ -2548,8 +2595,8 @@ function showBreakdown() {
     makeBDRow(pwrBody, 'Note', 'No 3rd or 7th — harmonically open; major or minor context depends on melody');
   }
 
-  // Chord scales
-  {
+  // Chord scales — skipped for quartal and cluster (handled in their own sub-sections above)
+  if (!baseChord.quartal && !baseChord.cluster) {
     const allPcs = new Set(currentMidiNotes.map(m => ((m % 12) + 12) % 12));
     makeChordScalesRow(mainBody, rootPc, allPcs);
   }
