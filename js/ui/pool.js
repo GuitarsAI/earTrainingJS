@@ -373,10 +373,12 @@ function _renderChordQualitySection(body) {
 const VOICING_GROUPS = [
   {
     label: 'Position',
+    basic: true,
     symbols: ['close','open','spread'],
   },
   {
     label: 'Doubling',
+    basic: true,
     symbols: ['dbl_root_oct','dbl_root_above5','dbl_fifth','dbl_root_wrap'],
   },
   {
@@ -437,15 +439,20 @@ function _renderVoicingMulti(body) {
   // Keep refs to all chip elements so global buttons can sync them
   const allChipRefs = []; // { symbol, chipEl }
 
+  // POINT 50: in Basic mode All/None only covers basic voicing symbols
+  const visibleVoicingSymbols = appDifficulty === 'basic'
+    ? VOICING_GROUPS.filter(g => g.basic).flatMap(g => g.symbols)
+    : ALL_VOICING_SYMBOLS;
+
   globalAllBtn.addEventListener('click', e => {
     e.stopPropagation();
-    ALL_VOICING_SYMBOLS.forEach(sym => selectedVoicings.add(sym));
+    visibleVoicingSymbols.forEach(sym => selectedVoicings.add(sym));
     allChipRefs.forEach(({ chipEl }) => chipEl.classList.add('active'));
     _updateAllSectionCounts(body);
   });
   globalNoneBtn.addEventListener('click', e => {
     e.stopPropagation();
-    ALL_VOICING_SYMBOLS.forEach(sym => selectedVoicings.delete(sym));
+    visibleVoicingSymbols.forEach(sym => selectedVoicings.delete(sym));
     allChipRefs.forEach(({ chipEl }) => chipEl.classList.remove('active'));
     _updateAllSectionCounts(body);
   });
@@ -480,7 +487,11 @@ function _renderVoicingMulti(body) {
   body.appendChild(randomSec);
 
   // ── 6 collapsible groups ─────────────────────────────────────────────────
-  VOICING_GROUPS.forEach(group => {
+  const visibleGroups = appDifficulty === 'basic'
+    ? VOICING_GROUPS.filter(g => g.basic)
+    : VOICING_GROUPS;
+
+  visibleGroups.forEach(group => {
     const items = group.symbols
       .map(sym => VOICING_MODES.find(v => v.symbol === sym))
       .filter(Boolean);
@@ -604,8 +615,12 @@ function _renderVoicingSingle(body) {
   randomRow.appendChild(randomChip);
   body.appendChild(randomRow);
 
-  // 6 collapsible groups — single-select
-  VOICING_GROUPS.forEach(group => {
+  // 6 collapsible groups — single-select; POINT 50: basic mode shows Position + Doubling only
+  const visibleGroups = appDifficulty === 'basic'
+    ? VOICING_GROUPS.filter(g => g.basic)
+    : VOICING_GROUPS;
+
+  visibleGroups.forEach(group => {
     const items = group.symbols
       .map(sym => VOICING_MODES.find(v => v.symbol === sym))
       .filter(Boolean);

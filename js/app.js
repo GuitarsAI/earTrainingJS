@@ -62,6 +62,11 @@ function setAppDifficulty(difficulty) {
   document.getElementById('diffChipBasic').classList.toggle('active',    difficulty === 'basic');
   document.getElementById('diffChipAdvanced').classList.toggle('active', difficulty === 'advanced');
 
+  // Reset selectedVoicings and activeVoicingMode — fresh start, no cross-mode memory
+  selectedVoicings.clear();
+  selectedVoicings.add('close');
+  activeVoicingMode = 'close';
+
   // Rebuild pool panel and generate a fresh question for the current mode
   if (currentMode === 'intervals' || currentMode === 'chords') {
     renderPoolPanel();

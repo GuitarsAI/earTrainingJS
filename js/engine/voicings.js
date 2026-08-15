@@ -946,13 +946,21 @@ function applyVoicing(rootMidi, baseIntervals, mode) {
 // 'random':      picks from selectedVoicings in quiz, from all 62 in dict
 
 function resolveVoicingMode() {
+  // POINT 50: basic voicing symbols — Position + Doubling groups only
+  const basicVoicingSymbols = ['close','open','spread','dbl_root_oct','dbl_root_above5','dbl_fifth','dbl_root_wrap'];
+
   if (appMode === 'quiz') {
-    const pool = [...selectedVoicings].filter(s => s !== 'random');
+    let pool = [...selectedVoicings].filter(s => s !== 'random');
+    // In Basic mode, strip any advanced voicings that may linger in the set
+    if (appDifficulty === 'basic') pool = pool.filter(s => basicVoicingSymbols.includes(s));
     if (!pool.length) return 'close';
     return pool[Math.floor(Math.random() * pool.length)];
   }
   if (activeVoicingMode === 'random') {
-    return CONCRETE_VOICING_SYMBOLS[Math.floor(Math.random() * CONCRETE_VOICING_SYMBOLS.length)];
+    const concretePool = appDifficulty === 'basic'
+      ? basicVoicingSymbols
+      : CONCRETE_VOICING_SYMBOLS;
+    return concretePool[Math.floor(Math.random() * concretePool.length)];
   }
   return activeVoicingMode;
 }
