@@ -64,11 +64,76 @@
 - **Mobile-2** Small-phone header overhaul ✓ (Aug 2026) — see current session notes below
 - **41/46 — Group 5 fix** Intervallic voicings redesigned ✓ (Aug 2026) — `cluster_modal` removed, `secundal` redefined as diatonic-step stacking, `cluster_wt` added as distinct pure-whole-tone voicing; range clamping and note-count cap applied across all Group 5 entries
 - **Help update** `help-content.js` updated (Aug 2026) — chords mode description corrected to 12 families; voicing Group 5 entry fixed; scale direction Random chip added; 7 new glossary entries added
-- **50** Basic / Advanced mode — in progress 🔄 (Intervals ✓, Scales ✓, Progressions next)
+- **50** Basic / Advanced mode — complete ✓ (Aug 2026) — Intervals, Chords, Scales, Progressions, Help content all done
 
 ---
 
 ## Current Session — Aug 2026
+
+### Point 50 — Basic / Advanced mode: Help content ✓ COMPLETE
+
+**What was delivered:**
+- New entry "Basic / Advanced mode" added to Controls & Settings section in `help-content.js` — covers what each mode contains for all four modes, the reset-on-switch behaviour, per-mode independence, and that Dictionary mode is unaffected
+- Intervals mode entry updated: clarified that compound intervals are Advanced-only
+- Progressions mode entry updated: corrected answer mechanic description (degree + quality per slot, not "identify from a list"); added Basic vs Advanced pool size note
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/data/help-content.js` | New "Basic / Advanced mode" entry in Controls & Settings; Intervals and Progressions mode entries updated |
+
+---
+
+### Point 50 — Basic / Advanced mode ✓ COMPLETE (all four modes + Help)
+
+A mode toggle in Settings that controls which pool items are visible and selectable. Not a filter — a full mode switch. The quiz only draws from items valid for the current mode. Switching either way resets selections to mode-appropriate defaults — no cross-mode memory. Each mode's Basic/Advanced boundary is self-contained; difficulty in one mode has no bearing on another.
+
+**Final boundary definitions:**
+
+| Area | Basic | Advanced adds |
+|---|---|---|
+| Intervals | All 12 simple (m2 – P8) | 7 compound (m9, M9, ♯9, P11, ♯11, m13, M13) |
+| Chords | maj, Maj7, m, m7, 7, dim, m7b5, o7, aug, sus2, sus4, power | All extensions, classical, quartal, cluster, slash, poly, UST |
+| Scales | Major, Natural Minor, Major Pentatonic, Minor Pentatonic | All other scales |
+| Progressions | 9 core progressions (see below) | All progressions |
+
+**Basic progressions (9 total):**
+
+| Symbol | Name | Group |
+|---|---|---|
+| V-I | Perfect Authentic | Cadences |
+| V7-I | Perfect Authentic (dom7) | Cadences |
+| IV-I | Plagal | Cadences |
+| I-V | Half Cadence | Cadences |
+| I-IV-V-I | Four-chord cadence | Classical |
+| I-IV-V | Rock / folk / blues | Short |
+| I-V-vi-IV | Axis progression | Pop & Rock |
+| I-vi-IV-V | Doo-wop / 50s | Pop & Rock |
+| ii-V-I | Jazz ii–V–I (major) | Jazz |
+
+---
+
+### Point 50 — Basic / Advanced mode: Progressions ✓ COMPLETE
+
+**What was delivered:**
+- `basic: true` flag added to the 9 qualifying entries in `progressions.js`
+- `selectedProgressions` initialised in `defaults.js` using `PROGRESSIONS.filter(p => p.basic)`
+- `setAppDifficulty` in `app.js` resets `selectedProgressions` on every difficulty switch
+- **Bug fixed:** `renderProgressionPoolPanel` in `progressions-mode.js` was overriding the pool.js version and ignoring `appDifficulty` — always showing all progressions. Fixed by adding `visibleProgressions` filter (identical pattern to scales/intervals).
+- **Bug fixed:** `renderDictProgressionPoolPanel` in `progressions-mode.js` had the same issue — fixed with the same pattern. Also added `if (items.length === 0) return` guard to skip empty groups.
+- Both quiz and dict pool panels now scope their Global All/None and section rendering to `visibleProgressions` in Basic mode.
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/data/progressions.js` | `basic: true` on 9 qualifying entries |
+| `js/engine/defaults.js` | `selectedProgressions` default: `PROGRESSIONS.filter(p => p.basic)` |
+| `js/app.js` | `setAppDifficulty` resets `selectedProgressions`; `progressions` already in re-render condition |
+| `js/modes/progressions-mode.js` | `renderProgressionPoolPanel` and `renderDictProgressionPoolPanel` both fixed to filter by `appDifficulty` |
+
+---
 
 ### Point 50 — Basic / Advanced mode: Scales ✓ COMPLETE
 
@@ -117,6 +182,24 @@ Basic scales defined as 4 entries: `pent_maj`, `pent_min`, `major`, `nat_minor`.
 | `js/ui/pool.js` | Interval renderer filters out compound intervals in Basic mode |
 | `js/app.js` | `setAppDifficulty()` implemented; resets `selectedIntervals` on switch |
 | `index.html` | Basic / Advanced toggle chips added to Settings |
+
+---
+
+### Point 50 — Basic / Advanced mode: Chords ✓ COMPLETE
+
+**What was delivered:**
+- `basic: true` flag added to 12 qualifying entries in `chords.js`: `maj`, `Maj7`, `m`, `m7`, `7`, `dim`, `m7b5`, `o7`, `aug`, `sus2`, `sus4`, `power`
+- `pool.js` chord pool renderer filters to `basic: true` entries in Basic mode; Advanced shows all families
+- `setAppDifficulty` in `app.js` resets `selectedChords` using `BASIC_CHORD_SYMBOLS` constant on switch to Basic, or all chords on switch to Advanced
+- Voicing pool in Basic mode limited to Position and Doubling groups only (Groups 1 & 2); all 6 groups visible in Advanced
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/data/chords.js` | `basic: true` on 12 qualifying entries |
+| `js/ui/pool.js` | Chord pool renderer filters on `appDifficulty`; voicing single-select shows Groups 1–2 only in Basic |
+| `js/app.js` | `setAppDifficulty` resets `selectedChords` and `selectedVoicings` on switch |
 
 ---
 
@@ -270,49 +353,30 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 
 ### Point 50 — Basic / Advanced mode
 
-#### Status: In progress 🔄
+#### Status: Complete ✓ (Aug 2026)
 
 A mode toggle in Settings that controls which pool items are visible and selectable. Not a filter — a full mode switch. The quiz only draws from items valid for the current mode.
+
+**Behaviour on mode switch:**
+- Switching either way resets selections to mode-appropriate defaults — no cross-mode memory
+- Each mode's Basic/Advanced boundary is self-contained — difficulty is per-mode, not global
+- Default for new users: **Basic**
+
+**Toggle location:** Settings panel — a Basic / Advanced chip pair
+
+**State:** Single `appDifficulty: 'basic' | 'advanced'` variable in `state.js`. All pool rendering and quiz draw logic gates on this.
+
+**Basic flag:** A `basic: true` field on each qualifying entry in `chords.js`, `scales.js`, and `progressions.js`. The UI filters on this flag; Advanced shows everything.
 
 **Progress:**
 
 | Area | Status |
 |---|---|
 | Intervals | ✓ Complete |
+| Chords | ✓ Complete |
 | Scales | ✓ Complete |
-| Progressions | ← Next |
-| Chords | Not started |
-| Help content | Not started |
-
-**Behaviour on mode switch:**
-- Switching either way resets selections to mode-appropriate defaults — no cross-mode memory
-- If a question is mid-session when the toggle is flipped, the session resets
-- Default for new users: **Basic**
-
-**Toggle location:** Settings panel — a Basic / Advanced chip pair, persistent (saved to `localStorage`)
-
-**State:** Single `appDifficulty: 'basic' | 'advanced'` variable in `state.js`. All pool rendering and quiz draw logic gates on this.
-
-**Basic flag:** A `basic: true` field added to each eligible entry in `chords.js`, `scales.js`, and `progressions.js`. The UI filters on this flag; Advanced shows everything.
-
-**Boundary definitions:**
-
-| Area | Basic | Advanced adds |
-|---|---|---|
-| Intervals | All 12 simple (m2 – octave) | 7 compound (m9, M9, ♯9, P11, ♯11, m13, M13) |
-| Chords | Major/minor triads + 7ths; Dom7; dim triad + m7♭5 + °7; aug triad; sus2, sus4, power | All extensions (9/11/13), classical, quartal, cluster, slash, poly, UST |
-| Scales | Major, Natural Minor, Major Pentatonic, Minor Pentatonic | Everything else |
-| Progressions | Most common diatonic progressions only (to be confirmed from `progressions.js`) | All progressions |
-
-**Remaining files to change:**
-
-| File | Change |
-|---|---|
-| `js/data/chords.js` | Add `basic: true` flag to qualifying entries |
-| `js/data/progressions.js` | Add `basic: true` flag to qualifying entries |
-| `js/ui/pool.js` | Filter chord and progression pool renderers on `appDifficulty` + `basic` flag |
-| `js/app.js` | `setAppDifficulty` — add chords and progressions reset branches |
-| `js/data/help-content.js` | Document Basic / Advanced mode in Help |
+| Progressions | ✓ Complete |
+| Help content | ✓ Complete |
 
 ---
 
@@ -331,6 +395,11 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 #### BUG-4 — Resolution notation: Key/C chip selection has no effect
 **Fix:** `renderResolutionNotation()` now fully wires `chordKeySigMode` — computes `keySigStr`, calls `respellForKeySig()`, calls `stave.addKeySignature()`. (Aug 2026)
+
+#### BUG-8 — Basic/Advanced switch has no effect in Progressions mode
+**Symptom:** Switching between Basic and Advanced in Progressions mode changed nothing — all progressions remained visible in both quiz pool and dictionary.
+**Root cause:** `progressions-mode.js` defined its own `renderProgressionPoolPanel` that silently overrode the correctly-filtering version in `pool.js`. Both `renderProgressionPoolPanel` and `renderDictProgressionPoolPanel` in `progressions-mode.js` passed the full unfiltered `PROGRESSIONS` array regardless of `appDifficulty`.
+**Fix:** Added `visibleProgressions` filter (`appDifficulty === 'basic' ? PROGRESSIONS.filter(p => p.basic) : [...PROGRESSIONS]`) to both functions in `progressions-mode.js`. Added `if (items.length === 0) return` guard for empty groups. Scoped Global All/None and meta count to `visibleProgressions`. (Aug 2026)
 
 #### BUG-6 — Progression: breakdown panel not shown post-answer
 **Fix:** Added `progressions` branch to `showBreakdown()`; fixed `updateStatsTable()` → `updateScore()`; added `answered = true`; wired `showBreakdown()` in both quiz and dict paths. (Aug 2026)
@@ -385,24 +454,12 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 ### Next steps (priority order)
 
-1. **Point 50 — Basic / Advanced mode: Progressions** ← NEXT
-   - Share `js/data/progressions.js` to confirm basic boundary
-   - Add `basic: true` to qualifying entries
-   - Filter progression pool renderer in `pool.js`
-   - Reset `selectedProgressions` in `setAppDifficulty`
-
-2. **Point 50 — Basic / Advanced mode: Chords**
-   - Add `basic: true` to qualifying entries in `chords.js`
-   - Filter chord pool renderer in `pool.js`
-   - Reset `selectedChords` in `setAppDifficulty`
-
-3. **Point 50 — Basic / Advanced mode: Help content**
-   - Document the Basic / Advanced toggle in `help-content.js`
-
-4. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
+1. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
    Split into `chords-tertian.js`, `chords-special.js`, `chords-classical.js`, `chords-quartal.js`.
 
-5. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+2. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+
+3. **Spaced repetition** — weight pool toward weak spots rather than uniform random (see Parking Lot)
 
 ---
 

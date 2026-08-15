@@ -60,7 +60,7 @@ const HELP_SECTIONS = [
     entries: [
       {
         term: 'Intervals mode',
-        body: 'Trains you to identify the distance between two notes. The app plays two notes (together or in sequence depending on your style setting) and you name the interval.\n\nThe pool is split into Simple intervals (within one octave, 0–12 semitones) and Extended / Compound intervals (beyond one octave: m9, M9, ♯9, P11, ♯11, m13, M13). Compound intervals are collapsed and unselected by default.',
+        body: 'Trains you to identify the distance between two notes. The app plays two notes (together or in sequence depending on your style setting) and you name the interval.\n\nThe pool is split into Simple intervals (within one octave, 0–12 semitones) and Extended / Compound intervals (beyond one octave: m9, M9, ♯9, P11, ♯11, m13, M13). Compound intervals are only available in Advanced mode and are collapsed and unselected by default.',
       },
       {
         term: 'Chords mode',
@@ -72,7 +72,7 @@ const HELP_SECTIONS = [
       },
       {
         term: 'Progressions mode',
-        body: 'Trains you to identify common chord progressions by ear. The app plays a sequence of chords and you identify the progression from the list.\n\nProgressions are shown in Roman numeral notation (e.g. I–V–vi–IV) so they work in any key. The breakdown shows each chord in the progression with its degree, name, notes, and harmonic function.',
+        body: 'Trains you to identify common chord progressions by ear. The app plays a sequence of chords and you identify each chord\'s degree and quality in the progression.\n\nProgressions are shown in Roman numeral notation (e.g. I–V–vi–IV) so they work in any key. The breakdown shows each chord in the progression with its degree, name, notes, and harmonic function.\n\nIn Basic mode, the pool contains 9 core progressions spanning cadences, classical, pop, and jazz. Advanced unlocks the full library across all groups.',
       },
     ],
   },
@@ -85,6 +85,10 @@ const HELP_SECTIONS = [
       {
         term: 'The Pool panel',
         body: 'The pool is the set of items the Quiz mode draws from. Tap any chip to toggle it in or out of the pool. Only selected (highlighted) items will appear as questions.\n\nSections with selected items expand automatically when you open the panel. Sections without any selected items start collapsed.',
+      },
+      {
+        term: 'Basic / Advanced mode',
+        body: 'A toggle in the Settings panel that controls which items are available for practice. Basic shows a curated starter set — the most important items in each mode. Advanced unlocks the full library.\n\nWhat each mode contains:\n• Intervals — Basic: all 12 simple intervals (m2 – P8). Advanced adds 7 compound intervals (m9, M9, ♯9, P11, ♯11, m13, M13).\n• Chords — Basic: major and minor triads and 7ths, dominant 7th, diminished family, augmented triad, sus2, sus4, power chord. Advanced adds all extensions, classical chords, quartal, cluster, slash, polychords, and USTs.\n• Scales — Basic: Major, Natural Minor, Major Pentatonic, Minor Pentatonic. Advanced adds all hexatonic, diatonic modal, and octatonic scales.\n• Progressions — Basic: the 9 most common progressions (four cadences, I–IV–V, I–IV–V–I, Axis, Doo-wop, Jazz ii–V–I). Advanced unlocks all progression groups.\n\nSwitching difficulty resets your pool selection to the defaults for that mode — no cross-mode memory is kept. Each mode\'s boundary is independent: you can be in Advanced for Chords and Basic for Scales at the same time.\n\nThe toggle does not affect Dictionary mode item browsing — you can always look up any item regardless of difficulty setting.',
       },
       {
         term: 'All / None buttons',
