@@ -82,13 +82,41 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
       return { key: respelled, forcedAcc };
     }
 
-    // Add accidentals for a StaveNote, skipping any already in the key sig.
+    // Add accidentals for a StaveNote, correctly handling three cases:
+    //
+    //   1. The note's letter conflicts with the key sig (different accidental on
+    //      the same letter, e.g. F natural when key sig has F#, or Bb when key
+    //      sig has B natural implied) — add an explicit accidental to cancel the
+    //      key sig. For a plain natural note this means adding ♮.
+    //
+    //   2. The note is covered by the key sig with the SAME accidental — skip it
+    //      (VexFlow renders the key sig glyph; no extra mark needed), unless
+    //      forcedAcc is set (double→single respell case).
+    //
+    //   3. The note has its own accidental not covered by the key sig — add it.
+    //
     // keys: array of { key, forcedAcc } objects (already respelled).
-    // forcedAcc=true means draw the accidental even if covered by key sig
-    // (same-letter double→single respell: key sig has one flat, note needs two).
     function addAccidentalsFiltered(sn, keys) {
       keys.forEach(({ key, forcedAcc }, i) => {
+        const letterAcc = key.split('/')[0]; // e.g. 'f', 'f#', 'bb'
+        const letter = letterAcc[0];         // e.g. 'f'
+
+        // Case 1: same letter, different accidental → must cancel the key sig.
+        // e.g. key sig has 'f#' but note is 'f' (natural) → add ♮
+        // e.g. key sig has 'bb' but note is 'b' (natural) → add ♮
+        const conflictsWithKeySig = [...coveredLetters].some(covered =>
+          covered[0] === letter && covered !== letterAcc
+        );
+        if (conflictsWithKeySig) {
+          const acc = vexAccidental(key);
+          sn.addModifier(new VF.Accidental(acc ?? 'n'), i);
+          return;
+        }
+
+        // Case 2: covered by key sig with same accidental — skip (unless forcedAcc).
         if (!forcedAcc && isCoveredByKeySig(key, coveredLetters)) return;
+
+        // Case 3: not covered — add whatever accidental the note has (if any).
         const acc = vexAccidental(key);
         if (acc) sn.addModifier(new VF.Accidental(acc), i);
       });
@@ -273,6 +301,7 @@ function getChordRootName() {
   }
   return spelledRoot(((currentChordRootMidi ?? currentMidiNotes[0]) % 12 + 12) % 12);
 }
+
 function renderPolyNotation(keySigStr) {
   const VF = (typeof Vex !== 'undefined' && Vex.Flow) ? Vex.Flow
            : (typeof VexFlow !== 'undefined') ? VexFlow : null;
@@ -307,9 +336,27 @@ function renderPolyNotation(keySigStr) {
     return { key: respelled, forcedAcc };
   }
 
+  // Same fix as in renderNotation: detect letter conflicts with the key sig
+  // and add a cancellation accidental (♮ for natural notes) when needed.
   function addAccidentalsFiltered(sn, keys) {
     keys.forEach(({ key, forcedAcc }, i) => {
+      const letterAcc = key.split('/')[0];
+      const letter = letterAcc[0];
+
+      // Case 1: same letter, different accidental → cancel the key sig.
+      const conflictsWithKeySig = [...coveredLetters].some(covered =>
+        covered[0] === letter && covered !== letterAcc
+      );
+      if (conflictsWithKeySig) {
+        const acc = vexAccidental(key);
+        sn.addModifier(new VF.Accidental(acc ?? 'n'), i);
+        return;
+      }
+
+      // Case 2: covered by key sig with same accidental — skip (unless forcedAcc).
       if (!forcedAcc && isCoveredByKeySig(key, coveredLetters)) return;
+
+      // Case 3: not covered — add whatever accidental the note has (if any).
       const acc = vexAccidental(key);
       if (acc) sn.addModifier(new VF.Accidental(acc), i);
     });
@@ -460,4 +507,3 @@ function showNotation() {
   document.getElementById('notationPanel').style.display = 'block';
   showBreakdown();
 }
-
