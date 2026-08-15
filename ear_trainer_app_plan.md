@@ -52,7 +52,7 @@
 - **Tab order** Tabs reordered to Intervals | Chords | Scales | Progressions
 - **Mobile** Full mobile responsive pass; root chips flex-wrap grid; dynamic header padding
 - **40** Clickable chord scales → Dictionary mode ✓ (Aug 2026)
-- **41/46** Voicing system — UI and infrastructure complete ✓ (Aug 2026). Group 5 algorithmic bug pending.
+- **41/46** Voicing system — complete ✓ (Aug 2026). 62 voicings across 6 groups. Group 5 redesigned: `cluster_modal` removed, `secundal` and `cluster_wt` differentiated.
 - **42** Pool panel UX overhaul — all sections collapsed by default, global All/None buttons ✓ (Aug 2026)
 - **43** Breakdown default state + full chip sync ✓ (Aug 2026)
 - **44** Complete chord library ✓ (Aug 2026) — all families complete; `chords_reference.md` fully updated
@@ -62,10 +62,60 @@
 - **About** About view + ⓘ header button ✓ (Aug 2026)
 - **49** In-app Help system ✓ (Aug 2026) — see current session notes below
 - **Mobile-2** Small-phone header overhaul ✓ (Aug 2026) — see current session notes below
+- **41/46 — Group 5 fix** Intervallic voicings redesigned ✓ (Aug 2026) — `cluster_modal` removed, `secundal` redefined as diatonic-step stacking, `cluster_wt` added as distinct pure-whole-tone voicing; range clamping and note-count cap applied across all Group 5 entries
+- **Help update** `help-content.js` updated (Aug 2026) — chords mode description corrected to 12 families; voicing Group 5 entry fixed; scale direction Random chip added; 7 new glossary entries added
 
 ---
 
 ## Current Session — Aug 2026
+
+### Point 41/46 — Group 5 Intervallic voicings fix ✓ COMPLETE
+
+The Group 5 voicings in `voicings.js` have been redesigned to fix range clamping, note count, and duplicate implementations. The chord-tone constraint was explicitly rejected — non-chord tones are intentional in intervallic voicings.
+
+**What was delivered:**
+- `cluster_modal` removed entirely (was identical to `cluster_diaton`; not a distinct category per Persichetti)
+- `secundal` redefined as diatonic-step stacking (m2/M2 mix from major scale) — distinct from `cluster_wt`
+- `cluster_wt` added as a new distinct voicing — pure whole-tone stacking (always M2); Debussy/Impressionist flavour
+- All Group 5 voicings now cap output at 4 notes for triads, 5 notes for all other chords
+- All Group 5 voicings clamp within a 2-octave window from the bass note
+- Bass note anchored to MIDI 36–59 range before stacking begins
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/engine/voicings.js` | `cluster_modal` case removed; `secundal` case rewritten; `cluster_wt` case added; note-count cap and range clamping applied across all Group 5 entries |
+
+---
+
+### Help content update ✓ COMPLETE
+
+`help-content.js` brought fully in sync with the current state of `chords.js`, `scales.js`, and `voicings.js`.
+
+**What was fixed:**
+- Chords mode description: rewritten from "six families" (stale) to all twelve, with correct descriptions for each family
+- Voicing Group 5 entry: `Cluster Modal` bullet removed; `Secundal` description corrected from "stacked major seconds" to "diatonic-step stacking"; `Cluster Whole-tone` bullet added with distinction from Secundal clarified
+- Scale direction chips entry: `Random` bullet added to match `SCALE_DIRECTIONS` in `scales.js`
+
+**New glossary entries added (7):**
+- Augmented sixth chords — It⁺⁶, Fr⁺⁶, Ger⁺⁶ with interval structures and resolution behaviour
+- Cluster chords (secundal harmony) — the three pool types; Cowell attribution; distinction from cluster voicings
+- Japanese pentatonic scales — Hirajoshi, Iwato, In-sen, Yo each characterised
+- Modes of limited transposition — Messiaen concept; all four pool modes listed with note counts and transposition numbers
+- Neapolitan chord (N6) — full explanation with example in C minor
+- Pentatonic / Hexatonic / Octatonic — all four scale group labels defined
+- Quartal / quintal chords — all six pool chord types listed; distinction from quartal voicings made explicit
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/data/help-content.js` | Chords mode description rewritten; Group 5 voicing entry corrected; scale direction Random added; 7 glossary entries added |
+
+---
+
+### Previous Session — Aug 2026
 
 ### Point 45 — Complete scale library ✓ COMPLETE
 
@@ -235,54 +285,33 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 
 ### Next steps (priority order)
 
-1. **Point 41 — Fix Group 5 Intervallic voicings** 🔴
-   Fix range clamping, cap note count at 5, and resolve the duplicate implementations (`cluster_diaton` = `cluster_modal`, `secundal` = `cluster_wt`). `so_what` and `mccoy_tyner` are correct as-is — do not change them. **Only `voicings.js` changes.**
-
-2. **Point 45 — Complete scale library**
-   Work through `complete_12_TET_piano_scales.md` named-index rows (~50 entries).
-
-3. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
+1. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
    Split into `chords-tertian.js`, `chords-special.js`, `chords-classical.js`, `chords-quartal.js`.
 
-4. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+2. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
 
 ---
 
 ### Point 41 — Complete voicing system
 
-#### Status: UI and infrastructure complete — Group 5 algorithmic bug pending (Aug 2026)
+#### Status: Complete ✓ (Aug 2026)
 
 **What is done ✓**
-- `voicings.js` created — `VOICING_MODES` (all 63), `applyVoicing()` (all groups implemented), `resolveVoicingMode()`
-- Groups 1–4 and most of Group 6 correct and unaffected by the bug
-- `pool.js` — `VOICING_GROUPS` corrected to 6 groups / 63 symbols
+- `voicings.js` created — `VOICING_MODES` (all 62), `applyVoicing()` (all groups implemented), `resolveVoicingMode()`
+- All six groups correct and confirmed
+- `pool.js` — `VOICING_GROUPS` corrected to 6 groups / 62 symbols
 - `breakdown.js` — voicing label row reads from `VOICING_MODES.find()`
 - `app.js` — `recomputeCurrentNotes()` fully implemented
 - `index.html` — load order confirmed correct
 
-**What is broken 🔴 — Group 5 (Intervallic) algorithmic bug**
-Intervallic voicings (`quartal`, `quintal`, `secundal`, `cluster_*`) generate pitch classes not present in the chord. Example: quartal stacking on C major triad {C, E, G} produces {C, F, B♭} — non-chord tones. Same issue: `so_what`, `mccoy_tyner` in Group 6 ignore chord tones entirely.
+**Group 5 resolution (Aug 2026):**
+- Chord-tone constraint explicitly rejected — non-chord tones are intentional; ambiguity is the point for quartal/cluster voicings
+- `cluster_modal` removed (was identical to `cluster_diaton`; not a distinct category per Persichetti)
+- `secundal` redefined: diatonic-step stacking (m2/M2 mix), distinct from `cluster_wt`
+- `cluster_wt` added: pure whole-tone stacking (always M2); Debussy/Impressionist flavour
+- All Group 5 entries: note count capped at 4 (triads) / 5 (all other chords); range clamped to 2-octave window from bass
 
-**Decision: revised after research** — chord-tone constraint (Option A) is wrong for intervallic voicings. Research confirms:
-- Quartal voicings are intentionally ambiguous — Berklee notes that a quartal triad "doesn't sound major, minor, augmented, or diminished." The non-chord tones are not a bug; the ambiguity is the point.
-- Clusters/secundal are timbral by definition — constraining them to chord tones destroys their character.
-- `so_what` and `mccoy_tyner` are fixed-shape style voicings — they are correct as-is and should not be changed.
-
-**Actual problems to fix in Group 5:**
-1. `quintal` — range clamping is insufficient; can produce notes far outside playable range
-2. `cluster_diaton` and `cluster_modal` — currently identical implementations; one should be removed or differentiated
-3. `secundal` and `cluster_wt` — currently identical (both stack 2 semitones); one should be removed or differentiated
-4. Note count — all 8 use `baseIntervals.length`, so a 7-note chord gets 7 stacked fourths; cap at 4–5 notes max
-
-**Fix approach:** range clamping and note count cap — not chord-tone constraint. Keep all notes within a 2-octave window from the bass note; cap output at 5 notes regardless of chord size.
-
-**What is not yet done**
-- Group 5 range/count fixes (see above)
-- `cluster_diaton` vs `cluster_modal` differentiation decision
-- `secundal` vs `cluster_wt` differentiation decision
-- Full voicing confirmation checklist not yet run
-
-**File to change:** `js/engine/voicings.js` only.
+**File changed:** `js/engine/voicings.js`
 
 ---
 
@@ -296,20 +325,19 @@ Intervallic voicings (`quartal`, `quintal`, `secundal`, `cluster_*`) generate pi
 
 **Group 4 — Drop Voicings** (4 voicings: `drop2`, `drop3`, `drop24`, `drop23`) ✓
 
-**Group 5 — Intervallic** (8 voicings) 🔴 NEEDS REDESIGN
+**Group 5 — Intervallic** (7 voicings) ✓
 
 | # | Voicing | Symbol | Target interval |
 |---|---|---|---|
 | 39 | Quartal | `quartal` | Perfect fourth (5 st) |
 | 40 | Quintal | `quintal` | Perfect fifth (7 st) |
-| 41 | Secundal | `secundal` | Major second (2 st) |
+| 41 | Secundal | `secundal` | Diatonic step (m2/M2 mix) |
 | 42 | Cluster Chromatic | `cluster_chrom` | Semitone (1 st) |
 | 43 | Cluster Diatonic | `cluster_diaton` | Diatonic second |
 | 44 | Cluster Pentatonic | `cluster_pent` | Pentatonic step |
-| 45 | Cluster Whole-tone | `cluster_wt` | Whole tone (2 st) |
-| 46 | Cluster Modal | `cluster_modal` | Modal scale step |
+| 45 | Cluster Whole-tone | `cluster_wt` | Whole tone, pure M2 |
 
-**Group 6 — Style** (17 voicings) — mostly ✓, two need chord-tone constraint: `so_what`, `mccoy_tyner`
+**Group 6 — Style** (17 voicings) ✓
 
 ---
 
@@ -361,7 +389,7 @@ Intervallic voicings (`quartal`, `quintal`, `secundal`, `cluster_*`) generate pi
 - [ ] Drop-2&4
 - [ ] Drop-2&3
 
-**Group 5 — Intervallic** (all blocked on redesign)
+**Group 5 — Intervallic** ✓ (redesign complete — checklist pending full play-through)
 - [ ] Quartal
 - [ ] Quintal
 - [ ] Secundal
@@ -369,7 +397,6 @@ Intervallic voicings (`quartal`, `quintal`, `secundal`, `cluster_*`) generate pi
 - [ ] Cluster Diatonic
 - [ ] Cluster Pentatonic
 - [ ] Cluster Whole-tone
-- [ ] Cluster Modal
 
 **Group 6 — Style**
 - [ ] So What

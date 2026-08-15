@@ -94,10 +94,14 @@ function renderHelpView() {
     card.className = 'help-card';
     card.dataset.sectionId = section.id;
 
-    const title = document.createElement('div');
-    title.className = 'help-card-title';
-    title.textContent = section.title;
-    card.appendChild(title);
+    // Section header is a collapsible <details> — closed by default (no 'open' attribute)
+    const sectionDetails = document.createElement('details');
+    sectionDetails.className = 'help-section-details';
+
+    const sectionSummary = document.createElement('summary');
+    sectionSummary.className = 'help-card-title';
+    sectionSummary.textContent = section.title;
+    sectionDetails.appendChild(sectionSummary);
 
     const entriesWrap = document.createElement('div');
     entriesWrap.className = 'help-entries';
@@ -131,9 +135,10 @@ function renderHelpView() {
       entriesWrap.appendChild(details);
     });
 
-    card.appendChild(entriesWrap);
+    sectionDetails.appendChild(entriesWrap);
+    card.appendChild(sectionDetails);
     wrapper.appendChild(card);
-    sectionEls.push({ card, section });
+    sectionEls.push({ card, sectionDetails, section });
   });
 
   view.appendChild(wrapper);
@@ -142,7 +147,7 @@ function renderHelpView() {
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
 
-    sectionEls.forEach(({ card, section }) => {
+    sectionEls.forEach(({ card, sectionDetails, section }) => {
       const entries = card.querySelectorAll('.help-entry');
       let sectionHasMatch = false;
 
@@ -162,6 +167,12 @@ function renderHelpView() {
       });
 
       card.style.display = sectionHasMatch ? '' : 'none';
+      // Auto-expand section when search has matches; collapse when no matches or query cleared
+      if (q) {
+        sectionDetails.open = sectionHasMatch;
+      } else {
+        sectionDetails.open = false;
+      }
     });
   });
 }
