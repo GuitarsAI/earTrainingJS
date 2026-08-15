@@ -64,28 +64,13 @@
 - **Mobile-2** Small-phone header overhaul ✓ (Aug 2026) — see current session notes below
 - **41/46 — Group 5 fix** Intervallic voicings redesigned ✓ (Aug 2026) — `cluster_modal` removed, `secundal` redefined as diatonic-step stacking, `cluster_wt` added as distinct pure-whole-tone voicing; range clamping and note-count cap applied across all Group 5 entries
 - **Help update** `help-content.js` updated (Aug 2026) — chords mode description corrected to 12 families; voicing Group 5 entry fixed; scale direction Random chip added; 7 new glossary entries added
-- **50** Basic / Advanced mode — complete ✓ (Aug 2026) — Intervals, Chords, Scales, Progressions, Help content all done
+- **50** Basic / Advanced mode — complete ✓ (Aug 2026) — Intervals, Chords, Scales, Progressions all done
 
 ---
 
 ## Current Session — Aug 2026
 
-### Point 50 — Basic / Advanced mode: Help content ✓ COMPLETE
-
-**What was delivered:**
-- New entry "Basic / Advanced mode" added to Controls & Settings section in `help-content.js` — covers what each mode contains for all four modes, the reset-on-switch behaviour, per-mode independence, and that Dictionary mode is unaffected
-- Intervals mode entry updated: clarified that compound intervals are Advanced-only
-- Progressions mode entry updated: corrected answer mechanic description (degree + quality per slot, not "identify from a list"); added Basic vs Advanced pool size note
-
-**Files changed:**
-
-| File | Change |
-|---|---|
-| `js/data/help-content.js` | New "Basic / Advanced mode" entry in Controls & Settings; Intervals and Progressions mode entries updated |
-
----
-
-### Point 50 — Basic / Advanced mode ✓ COMPLETE (all four modes + Help)
+### Point 50 — Basic / Advanced mode ✓ COMPLETE (all four modes)
 
 A mode toggle in Settings that controls which pool items are visible and selectable. Not a filter — a full mode switch. The quiz only draws from items valid for the current mode. Switching either way resets selections to mode-appropriate defaults — no cross-mode memory. Each mode's Basic/Advanced boundary is self-contained; difficulty in one mode has no bearing on another.
 
@@ -376,7 +361,7 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 | Chords | ✓ Complete |
 | Scales | ✓ Complete |
 | Progressions | ✓ Complete |
-| Help content | ✓ Complete |
+| Help content | Not started |
 
 ---
 
@@ -454,12 +439,9 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 ### Next steps (priority order)
 
-1. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
-   Split into `chords-tertian.js`, `chords-special.js`, `chords-classical.js`, `chords-quartal.js`.
+1. **Interval data file split** — extract `INTERVALS` (and related constants) out of `chords.js` into a dedicated `js/data/intervals.js`, consistent with how `scales.js` was split out. `chords.js` should contain chord data only.
 
 2. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
-
-3. **Spaced repetition** — weight pool toward weak spots rather than uniform random (see Parking Lot)
 
 ---
 
@@ -618,7 +600,6 @@ All named entries from `complete_12_TET_piano_scales.md` implemented. See Curren
 
 ## Parking Lot
 
-- Spaced repetition — weight pool toward weak spots rather than uniform random
 - Quiz history — prevent same chord/scale/interval repeating back-to-back
 - Timed mode — answer before the clock runs out
 - MIDI input — play answer on a connected keyboard instead of the dropdown
