@@ -748,7 +748,11 @@ const SCALE_GROUP_CONFIG = {
 // Single source of truth for group structure; used by both quiz and dict renderers.
 function iterateScaleGroups(callback) {
   const groupMap = new Map();
-  SCALES.forEach(s => {
+  // POINT 50: in Basic mode only show scales with basic: true
+  const visibleScales = appDifficulty === 'basic'
+    ? SCALES.filter(s => s.basic)
+    : SCALES;
+  visibleScales.forEach(s => {
     const key = s.group || 'other';
     if (!groupMap.has(key)) groupMap.set(key, []);
     groupMap.get(key).push(s);
@@ -762,10 +766,12 @@ function iterateScaleGroups(callback) {
 
 function renderScalePoolPanel(panel) {
   // POINT 28: Group by the 'group' field on each SCALES entry — auto-discovers new groups.
+  // POINT 50: iterateScaleGroups already filters to basic scales in Basic mode.
   const { body } = makePoolPanelShell(panel, 'Training pool — Scales', null);
   const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateScaleQuestion();
 
-  makeGlobalAllNone(body, [...SCALES], selectedScales,
+  const visibleScales = appDifficulty === 'basic' ? SCALES.filter(s => s.basic) : [...SCALES];
+  makeGlobalAllNone(body, visibleScales, selectedScales,
     () => body.querySelectorAll('.pool-chip'), onChange);
 
   iterateScaleGroups((key, title, items, cfg) => {

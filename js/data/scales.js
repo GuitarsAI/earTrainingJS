@@ -6,8 +6,8 @@
 // quality: 'major' | 'minor' | null (null = no standard key sig, fall back to C)
 const SCALES = [
   // ── Pentatonic (5 notes) ──────────────────────────────────────────────────
-  { name: 'Major Pentatonic', displayName: 'Major Pentatonic (Ionian Pentatonic)',   symbol: 'pent_maj',      intervals: [0,2,4,7,9,12],      parentKey: { offset: 0,  quality: 'major' }, group: 'pentatonic' },
-  { name: 'Minor Pentatonic', displayName: 'Minor Pentatonic (Aeolian Pentatonic)',  symbol: 'pent_min',      intervals: [0,3,5,7,10,12],     parentKey: { offset: 0,  quality: 'minor' }, group: 'pentatonic' },
+  { name: 'Major Pentatonic', displayName: 'Major Pentatonic (Ionian Pentatonic)',   symbol: 'pent_maj',      intervals: [0,2,4,7,9,12],      parentKey: { offset: 0,  quality: 'major' }, group: 'pentatonic', basic: true },
+  { name: 'Minor Pentatonic', displayName: 'Minor Pentatonic (Aeolian Pentatonic)',  symbol: 'pent_min',      intervals: [0,3,5,7,10,12],     parentKey: { offset: 0,  quality: 'minor' }, group: 'pentatonic', basic: true },
   { name: 'Dorian Pentatonic',                                                        symbol: 'pent_dorian',   intervals: [0,2,3,7,9,12],      parentKey: { offset: -2, quality: 'major' }, group: 'pentatonic' },
   { name: 'Phrygian Pentatonic',                                                      symbol: 'pent_phrygian', intervals: [0,1,3,5,7,12],      parentKey: { offset: -4, quality: 'major' }, group: 'pentatonic' },
   { name: 'Lydian Pentatonic',                                                        symbol: 'pent_lydian',   intervals: [0,2,4,6,9,12],      parentKey: { offset: 0,  quality: 'major' }, group: 'pentatonic' },
@@ -31,8 +31,8 @@ const SCALES = [
   { name: 'Messiaen Mode 5',                                                          symbol: 'messiaen_5',    intervals: [0,1,5,7,8,11,12],   parentKey: { offset: 0,  quality: null   }, group: 'hexatonic' },
 
   // ── Diatonic / Modal (7 notes) ───────────────────────────────────────────
-  { name: 'Major',                                                                    symbol: 'major',         intervals: [0,2,4,5,7,9,11,12],  parentKey: { offset: 0,  quality: 'major' }, group: 'diatonic' },
-  { name: 'Natural Minor',                                                            symbol: 'nat_minor',     intervals: [0,2,3,5,7,8,10,12],  parentKey: { offset: 0,  quality: 'minor' }, group: 'diatonic' },
+  { name: 'Major',                                                                    symbol: 'major',         intervals: [0,2,4,5,7,9,11,12],  parentKey: { offset: 0,  quality: 'major' }, group: 'diatonic', basic: true },
+  { name: 'Natural Minor',                                                            symbol: 'nat_minor',     intervals: [0,2,3,5,7,8,10,12],  parentKey: { offset: 0,  quality: 'minor' }, group: 'diatonic', basic: true },
   { name: 'Harmonic Minor',                                                           symbol: 'harm_minor',    intervals: [0,2,3,5,7,8,11,12],  parentKey: { offset: 0,  quality: 'minor' }, group: 'diatonic' },
   { name: 'Melodic Minor',                                                            symbol: 'mel_minor',     intervals: [0,2,3,5,7,9,11,12],  parentKey: { offset: 0,  quality: 'minor' }, group: 'diatonic' },
   { name: 'Harmonic Major',                                                           symbol: 'harm_major',    intervals: [0,2,4,5,7,8,11,12],  parentKey: { offset: 0,  quality: 'major' }, group: 'diatonic' },

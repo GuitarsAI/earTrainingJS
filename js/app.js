@@ -62,13 +62,21 @@ function setAppDifficulty(difficulty) {
   document.getElementById('diffChipBasic').classList.toggle('active',    difficulty === 'basic');
   document.getElementById('diffChipAdvanced').classList.toggle('active', difficulty === 'advanced');
 
+  // Reset selectedScales — fresh start, no cross-mode memory
+  selectedScales.clear();
+  if (difficulty === 'basic') {
+    SCALES.filter(s => s.basic).forEach(s => selectedScales.add(s.symbol));
+  } else {
+    SCALES.forEach(s => selectedScales.add(s.symbol));
+  }
+
   // Reset selectedVoicings and activeVoicingMode — fresh start, no cross-mode memory
   selectedVoicings.clear();
   selectedVoicings.add('close');
   activeVoicingMode = 'close';
 
   // Rebuild pool panel and generate a fresh question for the current mode
-  if (currentMode === 'intervals' || currentMode === 'chords') {
+  if (currentMode === 'intervals' || currentMode === 'chords' || currentMode === 'scales') {
     renderPoolPanel();
     if (appMode === 'dict') setAppMode('dict');
     else generateQuestion();
