@@ -899,7 +899,11 @@ function getResolutionInfo() {
         let targetRootMidi   = (Math.floor(srcMidi / 12) * 12) + targetRootPc;
         if (targetRootMidi < srcMidi - 6) targetRootMidi += 12;
         if (targetRootMidi > srcMidi + 6) targetRootMidi -= 12;
-        const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+        // Use pre-computed voice leading moves (minimal motion, correct register)
+        // rather than buildResolutionMidi which blindly stacks intervals from the root.
+        const targetMidi = (primaryRes.voiceLeading && primaryRes.voiceLeading.length)
+          ? primaryRes.voiceLeading.map(m => m.toMidi)
+          : buildResolutionMidi(targetRootMidi, targetQuality);
         const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
         const label          = primaryRes.cadenceName || primaryRes.resolutionType || '→';
         return { targetRootMidi, targetMidi, targetName, targetQuality, label };
