@@ -764,6 +764,27 @@ function iterateScaleGroups(callback) {
   });
 }
 
+function renderProgressionPoolPanel(panel) {
+  const { body } = makePoolPanelShell(panel, 'Training pool — Progressions', null);
+  const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateProgressionQuestion();
+
+  // POINT 50: in Basic mode only show progressions with basic: true
+  const visibleProgressions = appDifficulty === 'basic'
+    ? PROGRESSIONS.filter(p => p.basic)
+    : [...PROGRESSIONS];
+
+  makeGlobalAllNone(body, visibleProgressions, selectedProgressions,
+    () => body.querySelectorAll('.pool-chip'), onChange);
+
+  // Group by PROG_GROUPS order, filtering to visible progressions
+  PROG_GROUPS.forEach(groupName => {
+    const items = visibleProgressions.filter(p => p.group === groupName);
+    if (items.length === 0) return;
+    const collapsed = PROG_GROUP_COLLAPSED[groupName] !== false;
+    makeSection(body, groupName, items, selectedProgressions, onChange, collapsed);
+  });
+}
+
 function renderScalePoolPanel(panel) {
   // POINT 28: Group by the 'group' field on each SCALES entry — auto-discovers new groups.
   // POINT 50: iterateScaleGroups already filters to basic scales in Basic mode.

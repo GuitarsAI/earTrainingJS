@@ -502,17 +502,23 @@ function showProgressionNotation() {
 // ─── POINT 38: Pool panels ────────────────────────────────────────────────────
 
 function renderProgressionPoolPanel(panel) {
+  // POINT 50: in Basic mode only show progressions with basic: true
+  const visibleProgressions = appDifficulty === 'basic'
+    ? PROGRESSIONS.filter(p => p.basic)
+    : [...PROGRESSIONS];
+
   const { body, updateMeta } = makePoolPanelShell(panel, 'Training pool — Progressions',
-    () => `${PROGRESSIONS.filter(p => selectedProgressions.has(p.symbol)).length} / ${PROGRESSIONS.length}`);
+    () => `${visibleProgressions.filter(p => selectedProgressions.has(p.symbol)).length} / ${visibleProgressions.length}`);
 
   const onChangeFn = () => { updateMeta(); };
 
-  // Global All / None
-  makeGlobalAllNone(body, PROGRESSIONS, selectedProgressions,
+  // Global All / None — scoped to visible progressions only
+  makeGlobalAllNone(body, visibleProgressions, selectedProgressions,
     () => body.querySelectorAll('.pool-chip'), onChangeFn);
 
   PROG_GROUPS.forEach(group => {
-    const items = PROGRESSIONS.filter(p => p.group === group);
+    const items = visibleProgressions.filter(p => p.group === group);
+    if (items.length === 0) return;
     const collapsed = PROG_GROUP_COLLAPSED[group] ?? true;
     makeProgSection(body, group, items, collapsed, onChangeFn);
   });
@@ -624,8 +630,14 @@ function renderDictProgressionPoolPanel() {
   panel.innerHTML = '';
   const { body } = makePoolPanelShell(panel, 'Dictionary — Progressions', null);
 
+  // POINT 50: in Basic mode only show progressions with basic: true
+  const visibleProgressions = appDifficulty === 'basic'
+    ? PROGRESSIONS.filter(p => p.basic)
+    : [...PROGRESSIONS];
+
   PROG_GROUPS.forEach(group => {
-    const items = PROGRESSIONS.filter(p => p.group === group);
+    const items = visibleProgressions.filter(p => p.group === group);
+    if (items.length === 0) return;
     const collapsed = PROG_GROUP_COLLAPSED[group] ?? false;
     makeDictProgSection(body, group, items, collapsed);
   });

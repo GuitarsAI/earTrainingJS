@@ -70,13 +70,21 @@ function setAppDifficulty(difficulty) {
     SCALES.forEach(s => selectedScales.add(s.symbol));
   }
 
+  // Reset selectedProgressions — fresh start, no cross-mode memory
+  selectedProgressions.clear();
+  if (difficulty === 'basic') {
+    PROGRESSIONS.filter(p => p.basic).forEach(p => selectedProgressions.add(p.symbol));
+  } else {
+    PROGRESSIONS.forEach(p => selectedProgressions.add(p.symbol));
+  }
+
   // Reset selectedVoicings and activeVoicingMode — fresh start, no cross-mode memory
   selectedVoicings.clear();
   selectedVoicings.add('close');
   activeVoicingMode = 'close';
 
   // Rebuild pool panel and generate a fresh question for the current mode
-  if (currentMode === 'intervals' || currentMode === 'chords' || currentMode === 'scales') {
+  if (currentMode === 'intervals' || currentMode === 'chords' || currentMode === 'scales' || currentMode === 'progressions') {
     renderPoolPanel();
     if (appMode === 'dict') setAppMode('dict');
     else generateQuestion();

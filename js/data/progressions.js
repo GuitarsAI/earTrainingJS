@@ -1,12 +1,12 @@
 const PROGRESSIONS = [
   // ── Cadences (2 chords) ──────────────────────────────────────────────────
-  { symbol: 'V-I',         name: 'Perfect Authentic',          group: 'Cadences',
+  { symbol: 'V-I',         name: 'Perfect Authentic',          group: 'Cadences', basic: true,
     degrees: [7, 0],     qualities: ['maj', 'maj'] },
-  { symbol: 'V7-I',        name: 'Perfect Authentic (dom7)',    group: 'Cadences',
+  { symbol: 'V7-I',        name: 'Perfect Authentic (dom7)',    group: 'Cadences', basic: true,
     degrees: [7, 0],     qualities: ['7', 'maj'] },
-  { symbol: 'IV-I',        name: 'Plagal',                      group: 'Cadences',
+  { symbol: 'IV-I',        name: 'Plagal',                      group: 'Cadences', basic: true,
     degrees: [5, 0],     qualities: ['maj', 'maj'] },
-  { symbol: 'I-V',         name: 'Half Cadence',                group: 'Cadences',
+  { symbol: 'I-V',         name: 'Half Cadence',                group: 'Cadences', basic: true,
     degrees: [0, 7],     qualities: ['maj', 'maj'] },
   { symbol: 'ii-V',        name: 'Half Cadence (jazz)',         group: 'Cadences',
     degrees: [2, 7],     qualities: ['m', 'maj'] },
@@ -40,7 +40,7 @@ const PROGRESSIONS = [
   // ── Classical (3–6 chords) ────────────────────────────────────────────────
   { symbol: 'I-V-I',       name: 'Basic tonic–dominant',        group: 'Classical',
     degrees: [0, 7, 0],  qualities: ['maj', 'maj', 'maj'] },
-  { symbol: 'I-IV-V-I',    name: 'Four-chord cadence',          group: 'Classical',
+  { symbol: 'I-IV-V-I',    name: 'Four-chord cadence',          group: 'Classical', basic: true,
     degrees: [0, 5, 7, 0],   qualities: ['maj', 'maj', 'maj', 'maj'] },
   { symbol: 'I-ii-V-I',    name: 'Supertonic cadence',          group: 'Classical',
     degrees: [0, 2, 7, 0],   qualities: ['maj', 'm', 'maj', 'maj'] },
@@ -54,7 +54,7 @@ const PROGRESSIONS = [
     degrees: [0, 5, 0, 7, 0],    qualities: ['maj', 'maj', 'maj', 'maj', 'maj'] },
 
   // ── Short (3 chords) ─────────────────────────────────────────────────────
-  { symbol: 'I-IV-V',      name: 'Rock / folk / blues',         group: 'Short',
+  { symbol: 'I-IV-V',      name: 'Rock / folk / blues',         group: 'Short', basic: true,
     degrees: [0, 5, 7],   qualities: ['maj', 'maj', 'maj'] },
   { symbol: 'I-V-IV',      name: 'Reverse rock',                group: 'Short',
     degrees: [0, 7, 5],   qualities: ['maj', 'maj', 'maj'] },
@@ -74,13 +74,13 @@ const PROGRESSIONS = [
     degrees: [0, 5, 10],  qualities: ['m', 'm', 'maj'] },
 
   // ── Pop & Rock (4 chords) ─────────────────────────────────────────────────
-  { symbol: 'I-V-vi-IV',   name: 'Axis progression',           group: 'Pop & Rock',
+  { symbol: 'I-V-vi-IV',   name: 'Axis progression',           group: 'Pop & Rock', basic: true,
     degrees: [0, 7, 9, 5],   qualities: ['maj', 'maj', 'm', 'maj'] },
   { symbol: 'vi-IV-I-V',   name: 'Axis (vi start)',            group: 'Pop & Rock',
     degrees: [9, 5, 0, 7],   qualities: ['m', 'maj', 'maj', 'maj'] },
   { symbol: 'I-IV-vi-V',   name: 'Pop variant',                group: 'Pop & Rock',
     degrees: [0, 5, 9, 7],   qualities: ['maj', 'maj', 'm', 'maj'] },
-  { symbol: 'I-vi-IV-V',   name: 'Doo-wop / 50s',             group: 'Pop & Rock',
+  { symbol: 'I-vi-IV-V',   name: 'Doo-wop / 50s',             group: 'Pop & Rock', basic: true,
     degrees: [0, 9, 5, 7],   qualities: ['maj', 'm', 'maj', 'maj'] },
   { symbol: 'I-iii-IV-V',  name: 'Ascending bright',           group: 'Pop & Rock',
     degrees: [0, 4, 5, 7],   qualities: ['maj', 'm', 'maj', 'maj'] },
@@ -104,7 +104,7 @@ const PROGRESSIONS = [
     degrees: [0, 9, 2, 7],   qualities: ['maj', 'm', 'm', 'maj'] },
 
   // ── Jazz (4–6 chords) ────────────────────────────────────────────────────
-  { symbol: 'ii-V-I',      name: 'Jazz ii–V–I (major)',        group: 'Jazz',
+  { symbol: 'ii-V-I',      name: 'Jazz ii–V–I (major)',        group: 'Jazz', basic: true,
     degrees: [2, 7, 0],   qualities: ['m7', '7', 'maj7'] },
   { symbol: 'ii-V-i',      name: 'Jazz ii–V–i (minor)',        group: 'Jazz',
     degrees: [2, 7, 0],   qualities: ['m7b5', '7', 'm'] },
@@ -276,6 +276,7 @@ const PROG_GROUPS = ['Cadences', 'Diminished', 'Classical', 'Short', 'Pop & Rock
 
 // Which groups start collapsed in the pool panel
 const PROG_GROUP_COLLAPSED = {
+  Cadences: false,
   Diminished: true, Classical: true, Short: true,
   'Pop & Rock': true, Jazz: true, Blues: true,
   Minor: true, Rock: true, Reggae: true,
@@ -283,14 +284,7 @@ const PROG_GROUP_COLLAPSED = {
 };
 
 // ─── Progression state ────────────────────────────────────────────────────────
-const selectedProgressions = new Set(
-  PROGRESSIONS.filter(p => ['I-V-vi-IV', 'I-IV-V-I', 'ii-V-I', 'I-vi-IV-V'].includes(p.symbol)).map(p => p.symbol)
-);
-// Default: a handful of common ones across cadences + short + pop
-// If none match, fall back to first 8
-if (selectedProgressions.size === 0) {
-  PROGRESSIONS.slice(0, 8).forEach(p => selectedProgressions.add(p.symbol));
-}
+// selectedProgressions is initialised in defaults.js (after PROGRESSIONS is defined)
 
 let currentProgression = null;    // the PROGRESSIONS entry for this question
 let currentProgRootMidi = 60;     // MIDI of tonic for this question
