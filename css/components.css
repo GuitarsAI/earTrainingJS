@@ -365,6 +365,13 @@
 .kbd-hint { font-size: 0.75rem; color: var(--text-faint); text-align: center; margin-top: 0.5rem; letter-spacing: 0.02em; }
 
 /* ── POINT 37: Voice leading ── */
+/* Selected resolution card — teal border highlight */
+.vl-selected {
+  border-color: var(--border-active) !important;
+  background: var(--bg-chip-active) !important;
+}
+.vl-selected .cs-arrow { color: var(--accent); }
+
 .vl-table { width: 100%; border-collapse: collapse; margin-top: 0.25rem; font-size: 0.8125rem; }
 .vl-table td { padding: 0.18rem 0.35rem; color: var(--text); }
 .vl-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; }

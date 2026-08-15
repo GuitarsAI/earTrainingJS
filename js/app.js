@@ -454,8 +454,10 @@ function dictShow() {
   }
 
   answered = true; // so showNotation + showBreakdown render without restriction
-  resolutionActive = false; // POINT 37: reset so notation shows current chord, not resolution
-  resolutionRootMidi = null; // reset stored root so new chord computes fresh
+  resolutionActive = false;   // POINT 37: reset so notation shows current chord, not resolution
+  resolutionRootMidi = null;  // reset stored root so new chord computes fresh
+  selectedResolution = null;  // clear any user-selected resolution target
+  currentVoiceLeadingAnalysis = null; // POINT 37: always rebuild for the current chord/root
   showNotation();
   renderInversionChips();
   showBreakdown();
@@ -629,7 +631,11 @@ function recomputeCurrentNotes() {
   // ── Always refresh UI ────────────────────────────────────────────────────────
   // In dict mode: always. In quiz mode: only after answering.
   // showCurrentView() dispatches to chord or resolution view as appropriate.
-  if (appMode === 'dict' || answered) { showCurrentView(); showBreakdown(); }
+  if (appMode === 'dict' || answered) {
+    currentVoiceLeadingAnalysis = null; // POINT 37: root/voicing changed — force rebuild
+    resolutionRootMidi = null;          // POINT 37: force re-derive resolution target
+    showCurrentView(); showBreakdown();
+  }
   // Always update the root badge to reflect the new pitch
   if (currentMode === 'chords' && currentChord) {
     updateRootBadge(appMode === 'dict' || answered ? getChordRootName() : (showRoot ? getChordRootName() : null));

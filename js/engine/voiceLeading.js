@@ -186,10 +186,28 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
     }
   }
 
-  // Sort: highest tension first, then by scale commonality
+  // Sort priority:
+  //   1. Dominant-function contexts first — a dominant 7th chord (major 3rd + minor 7th)
+  //      is harmonically dominant by definition and must never surface as tonic/departure.
+  //      G7 in G mixolydian (tonic, tension 0) must lose to G7 in C major (dominant, tension 0.88).
+  //   2. Scale commonality — more common scales (major > nat_minor > ...) surface before exotic ones.
+  //   3. Tension — within same commonality band, higher tension context listed first.
+  const isDominantQuality = chordIntervals
+    ? (deriveChordQuality(chordIntervals) === 'dominant')
+    : false;
+
   contexts.sort((a, b) => {
-    if (Math.abs(b.tension - a.tension) > 0.05) return b.tension - a.tension;
-    return scaleCommonality(b.scaleSymbol) - scaleCommonality(a.scaleSymbol);
+    // Tier 1: if chord is dominant quality, dominant-function contexts always first
+    if (isDominantQuality) {
+      const aIsDom = a.harmonicFunction === 'dominant' ? 1 : 0;
+      const bIsDom = b.harmonicFunction === 'dominant' ? 1 : 0;
+      if (bIsDom !== aIsDom) return bIsDom - aIsDom;
+    }
+    // Tier 2: scale commonality
+    const cDiff = scaleCommonality(b.scaleSymbol) - scaleCommonality(a.scaleSymbol);
+    if (cDiff !== 0) return cDiff;
+    // Tier 3: tension
+    return b.tension - a.tension;
   });
 
   return contexts;
@@ -231,42 +249,84 @@ function scoreTension(degSemitones, chordPcs, chordRootPc) {
 
 // ─── 5. STEP 5 — RESOLUTION TARGET DERIVATION ────────────────────────────────
 
-// For a given context, compute all plausible resolution targets.
-// Returns array of resolution objects ranked by strength, e.g.:
-// [
-//   { targetRootPc, targetQuality, resolutionType, cadenceName, strength },
-//   ...
-// ]
+// For a given context, compute resolutions, departures, and substitutions.
+//
+// Returns an object with three arrays, each entry ranked by strength:
+//   resolutions   — true harmonic resolutions (tension → rest)
+//   departures    — motion away from a stable tonic chord
+//   substitutions — reharmonisation alternatives (not resolutions)
+//
+// Each entry: { targetRootPc, targetQuality, resolutionType, cadenceName, strength }
+//
+// resolutionType values:
+//   resolutions:   'authentic' | 'authentic_minor' | 'deceptive' | 'plagal' |
+//                  'to_dominant' | 'half_cadence' | 'leading_tone'
+//   departures:    'departure'
+//   substitutions: 'tritone_sub' | 'related_ii'
 //
 // context: one entry from findDiatonicContexts()
-function deriveResolutionTargets(context) {
+function deriveResolutionTargets(context, chordRootPc) {
   const { degSemitones, scaleRootPc, harmonicFunction } = context;
-  const resolutions = [];
 
-  // Tonic — stable, no tension, suggest departure instead
+  const resolutions   = [];
+  const departures    = [];
+  const substitutions = [];
+
+  // ── TONIC — stable chord, no tension to resolve ──────────────────────────────
+  // Provide departure paths only. No resolutions, no substitutions.
   if (harmonicFunction === 'tonic' && context.tension < 0.2) {
-    resolutions.push({
-      targetRootPc:    (scaleRootPc + 5) % 12,   // IV
-      targetQuality:   'major',
-      resolutionType:  'departure',
-      cadenceName:     'I → IV',
-      strength:        0.3,
+
+    // Most common departure: I → IV (subdominant motion)
+    departures.push({
+      targetRootPc:   (scaleRootPc + 5) % 12,
+      targetQuality:  'major',
+      resolutionType: 'departure',
+      cadenceName:    'I → IV',
+      strength:       0.7,
     });
-    resolutions.push({
-      targetRootPc:    (scaleRootPc + 2) % 12,   // ii
-      targetQuality:   'minor',
-      resolutionType:  'departure',
-      cadenceName:     'I → ii',
-      strength:        0.2,
+
+    // I → V (move toward dominant)
+    departures.push({
+      targetRootPc:   (scaleRootPc + 7) % 12,
+      targetQuality:  'dominant',
+      resolutionType: 'departure',
+      cadenceName:    'I → V',
+      strength:       0.6,
     });
-    return resolutions;
+
+    // I → ii (predominant departure)
+    departures.push({
+      targetRootPc:   (scaleRootPc + 2) % 12,
+      targetQuality:  'minor',
+      resolutionType: 'departure',
+      cadenceName:    'I → ii',
+      strength:       0.5,
+    });
+
+    // I → vi (tonic prolongation / relative minor departure)
+    departures.push({
+      targetRootPc:   (scaleRootPc + 9) % 12,
+      targetQuality:  'minor',
+      resolutionType: 'departure',
+      cadenceName:    'I → vi',
+      strength:       0.4,
+    });
+
+    return { resolutions, departures, substitutions };
   }
 
-  // Dominant function (V, VII, ♯IV/♭V) → resolves to tonic
+  // ── DOMINANT — V7, VII°, ♭V (tritone degree) → resolves to tonic ─────────────
+  // Standard order per tonal harmony (Berklee, Aldwell & Schachter):
+  //   1. Authentic cadence V → I  (strongest — both chords in root position = perfect authentic)
+  //   2. Authentic cadence V → i  (to minor tonic — applies when scale is minor)
+  //   3. Deceptive cadence V → vi (interrupted resolution — vi substitutes for I)
+  // Substitutions are separate (not resolutions):
+  //   - Tritone sub: D♭7 substitutes FOR G7; both still resolve TO C, not to each other
+  //   - Related ii:  Dm7 precedes G7 in the ii–V–I; it is not a resolution target of G7
   if (harmonicFunction === 'dominant') {
-    const tonicRootPc = scaleRootPc; // tonic of the scale
+    const tonicRootPc = scaleRootPc;
 
-    // Primary: V → I (authentic cadence)
+    // 1. Authentic cadence — V7 → I (major tonic)
     resolutions.push({
       targetRootPc:   tonicRootPc,
       targetQuality:  'major',
@@ -275,7 +335,17 @@ function deriveResolutionTargets(context) {
       strength:       1.0,
     });
 
-    // Deceptive: V → vi
+    // 2. Authentic cadence — V7 → i (minor tonic)
+    // Always listed; the UI can filter by scale type if desired.
+    resolutions.push({
+      targetRootPc:   tonicRootPc,
+      targetQuality:  'minor',
+      resolutionType: 'authentic_minor',
+      cadenceName:    'V → i',
+      strength:       0.9,
+    });
+
+    // 3. Deceptive cadence — V → vi
     resolutions.push({
       targetRootPc:   (tonicRootPc + 9) % 12,
       targetQuality:  'minor',
@@ -284,21 +354,39 @@ function deriveResolutionTargets(context) {
       strength:       0.6,
     });
 
-    // Tritone substitution: resolve to chord a TT away from V
-    resolutions.push({
-      targetRootPc:   (tonicRootPc + 1) % 12,    // ♭II of the tonic
-      targetQuality:  'major',
+    // Substitutions (separate array — not resolutions)
+    // Tritone sub: 6 semitones away from the dominant chord's own root.
+    // e.g. G7 (chordRootPc=7) → D♭7 (7+6=1). D♭7 also resolves to C, same tonic.
+    // chordRootPc is passed in from analyseChord(); fallback: scaleRootPc+7 (V of tonic).
+    const ttSubRootPc = ((chordRootPc !== undefined ? chordRootPc : (scaleRootPc + 7)) + 6) % 12;
+    substitutions.push({
+      targetRootPc:   ttSubRootPc,
+      targetQuality:  'dominant',
       resolutionType: 'tritone_sub',
-      cadenceName:    'V → ♭II (tritone sub)',
-      strength:       0.5,
+      cadenceName:    'Tritone sub',
+      strength:       0.8,
+    });
+
+    // Related ii: the minor seventh chord whose root is a P4 below the dominant root.
+    // e.g. for G7 → Dm7 (ii of C major). This is a predecessor, not a resolution target.
+    const relatedIiRootPc = (context.scaleRootPc + 2) % 12; // ii of the tonic scale
+    substitutions.push({
+      targetRootPc:   relatedIiRootPc,
+      targetQuality:  'm7',
+      resolutionType: 'related_ii',
+      cadenceName:    'Related ii7',
+      strength:       0.7,
     });
   }
 
-  // Subdominant function (IV, ii, ♭VI, ♭VII) → resolves to V or I
+  // ── SUBDOMINANT — IV, ♭VI, ♭VII → typically moves to dominant, then resolves ──
+  // Standard order:
+  //   1. IV → V  (subdominant to dominant — most common motion)
+  //   2. IV → I  (plagal cadence — weaker, "amen" cadence)
   if (harmonicFunction === 'subdominant') {
     const tonicRootPc = scaleRootPc;
 
-    // Primary: → V (move to dominant)
+    // 1. To dominant (IV → V) — prepares authentic cadence
     resolutions.push({
       targetRootPc:   (tonicRootPc + 7) % 12,
       targetQuality:  'dominant',
@@ -307,7 +395,7 @@ function deriveResolutionTargets(context) {
       strength:       0.8,
     });
 
-    // Plagal: IV → I
+    // 2. Plagal cadence (IV → I)
     resolutions.push({
       targetRootPc:   tonicRootPc,
       targetQuality:  'major',
@@ -317,10 +405,14 @@ function deriveResolutionTargets(context) {
     });
   }
 
-  // Predominant (ii, II) → V → I (or directly)
+  // ── PREDOMINANT — II, ii → moves to V, then to I ─────────────────────────────
+  // Standard order:
+  //   1. ii → V  (the ii–V motion — backbone of jazz and tonal harmony)
+  //   2. ii → I  (direct resolution — weak, but possible; avoid in strict voice leading)
   if (harmonicFunction === 'predominant') {
     const tonicRootPc = scaleRootPc;
 
+    // 1. ii → V (move to dominant — by far the strongest predominant motion)
     resolutions.push({
       targetRootPc:   (tonicRootPc + 7) % 12,
       targetQuality:  'dominant',
@@ -329,16 +421,17 @@ function deriveResolutionTargets(context) {
       strength:       0.9,
     });
 
+    // 2. ii → I (direct — weak, used in some cadential contexts)
     resolutions.push({
       targetRootPc:   tonicRootPc,
       targetQuality:  'major',
       resolutionType: 'direct',
       cadenceName:    'ii → I',
-      strength:       0.4,
+      strength:       0.3,
     });
   }
 
-  return resolutions;
+  return { resolutions, departures, substitutions };
 }
 
 
@@ -503,6 +596,13 @@ function qualityToIntervals(quality) {
 // chordFamily:       string from CHORD_TYPES family field (for ambiguous check)
 //
 // Returns: { contexts, isAmbiguous }
+// Each context now carries three arrays:
+//   ctx.resolutions   — true harmonic resolutions, ordered strongest first
+//   ctx.departures    — departure paths (tonic chords only)
+//   ctx.substitutions — reharmonisation alternatives (e.g. tritone sub, related ii)
+//
+// Voice leading is pre-computed for every entry in resolutions and departures.
+// Substitutions carry no voice leading (they are chord substitutes, not targets).
 function analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi, chordFamily) {
   // Flag families where algorithm can't reliably resolve
   const isAmbiguous = AMBIGUOUS_FAMILIES.has(chordFamily);
@@ -512,15 +612,28 @@ function analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi
 
   // For each context, derive resolution targets and voice leading
   for (const ctx of contexts) {
-    ctx.resolutions = deriveResolutionTargets(ctx);
+    const derived = deriveResolutionTargets(ctx, chordRootPc);
 
-    // Compute voice leading for each resolution target
-    for (const res of ctx.resolutions) {
-      if (sourceMidi && sourceMidi.length) {
+    ctx.resolutions   = derived.resolutions;
+    ctx.departures    = derived.departures;
+    ctx.substitutions = derived.substitutions;
+
+    // Pre-compute voice leading for every true resolution
+    if (sourceMidi && sourceMidi.length) {
+      for (const res of ctx.resolutions) {
         res.voiceLeading = computeVoiceLeadingRules(
           sourceMidi, res.targetRootPc, res.targetQuality, ctx
         );
       }
+
+      // Pre-compute voice leading for departure paths too
+      for (const dep of ctx.departures) {
+        dep.voiceLeading = computeVoiceLeadingRules(
+          sourceMidi, dep.targetRootPc, dep.targetQuality, ctx
+        );
+      }
+
+      // Substitutions do not get voice leading — they are not resolution targets
     }
   }
 

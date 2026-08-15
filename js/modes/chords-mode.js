@@ -184,8 +184,11 @@ function _buildVoiceLeadingAnalysis() {
   }
 
   // ── Normal chord (including inversions) ──────────────────────────────────────
+  // Derive pitch classes from the chord's canonical intervals, not from voiced
+  // MIDI notes — voicing can omit or alter notes depending on mode/register,
+  // which causes wrong scale matches (e.g. G7 matching F major instead of C major).
   const rootPc = toPc(currentChordRootMidi);
-  const pitchClasses = currentMidiNotes.map(toPc);
   const baseChord = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
+  const pitchClasses = baseChord.intervals.map(i => (rootPc + i) % 12);
   return analyseChord(rootPc, pitchClasses, baseChord.intervals, currentMidiNotes, baseChord.family);
 }
