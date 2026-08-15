@@ -571,85 +571,138 @@ function getChordScales(rootPc, chordPcs) {
 // Render a collapsible "Chord scales" sub-section into panel.
 // rootPc: the tonal centre pitch class (integer 0-11)
 // chordPcs: iterable of pitch classes to match
+// ─── Mobile layout helper ────────────────────────────────────────────────────
+function isMobile() { return window.innerWidth <= 600; }
+
 function makeChordScalesRow(panel, rootPc, chordPcs) {
   const matches = getChordScales(rootPc, new Set([...chordPcs].map(p => ((p % 12) + 12) % 12)));
   if (!matches.length) return;
 
-  // Wrapper row so the label aligns with other breakdown rows
-  const rowWrap = document.createElement('div');
-  rowWrap.className = 'breakdown-row';
+  const countLabel = matches.length + ' scale' + (matches.length === 1 ? '' : 's') + ' fit';
 
-  const keyEl = document.createElement('span');
-  keyEl.className = 'breakdown-key';
-  keyEl.textContent = 'Chord scales';
-  rowWrap.appendChild(keyEl);
+  // ── Helper: build the scale rows into a body element ─────────────────────
+  function buildScaleRows(body, mobile) {
+    matches.forEach(sc => {
+      const row = document.createElement('div');
+      row.className = mobile ? 'cs-row cs-row-link cs-row-mobile' : 'cs-row cs-row-link';
+      row.title = 'Open in Dictionary';
+      row.addEventListener('click', () => {
+        if (currentMode !== 'scales') {
+          switchMode('scales', sc.symbol);
+        } else {
+          dictSymbol = sc.symbol;
+          setAppMode('dict');
+        }
+      });
 
-  const valEl = document.createElement('span');
-  valEl.className = 'breakdown-val';
-  valEl.style.flex = '1';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'cs-name';
+      nameEl.textContent = sc.name;
+      row.appendChild(nameEl);
 
-  // Collapsible section
-  const sec = document.createElement('div');
-  sec.className = 'cs-section';
-
-  const hdr = document.createElement('div');
-  hdr.className = 'cs-header';
-  const hdrText = document.createElement('span');
-  hdrText.textContent = matches.length + ' scale' + (matches.length === 1 ? '' : 's') + ' fit';
-  const arrow = document.createElement('span');
-  arrow.className = 'cs-arrow';
-  arrow.textContent = '▸';
-  hdr.appendChild(hdrText);
-  hdr.appendChild(arrow);
-
-  const body = document.createElement('div');
-  body.className = 'cs-body';
-
-  hdr.addEventListener('click', () => {
-    const open = body.classList.toggle('open');
-    arrow.textContent = open ? '▾' : '▸';
-  });
-
-  matches.forEach(sc => {
-    const row = document.createElement('div');
-    row.className = 'cs-row cs-row-link';
-    row.title = 'Open in Dictionary';
-    row.addEventListener('click', () => {
-      if (currentMode !== 'scales') {
-        switchMode('scales', sc.symbol);
-      } else {
-        dictSymbol = sc.symbol;
-        setAppMode('dict');
+      if (sc.tag) {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'cs-tag';
+        tagEl.textContent = sc.tag;
+        row.appendChild(tagEl);
       }
+
+      if (sc.note) {
+        const noteEl = document.createElement('span');
+        noteEl.className = 'cs-note';
+        noteEl.textContent = sc.note;
+        row.appendChild(noteEl);
+      }
+
+      body.appendChild(row);
+    });
+  }
+
+  if (isMobile()) {
+    // ── Mobile: full-width collapsible, header = "CHORD SCALES — N scales fit" ──
+    const wrap = document.createElement('div');
+    wrap.className = 'cs-mobile-wrap';
+
+    const sec = document.createElement('div');
+    sec.className = 'cs-section';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'cs-header';
+
+    const hdrLabel = document.createElement('span');
+    hdrLabel.style.cssText = 'font-size:0.7rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-right:0.4rem;';
+    hdrLabel.textContent = 'Chord Scales';
+
+    const hdrCount = document.createElement('span');
+    hdrCount.style.cssText = 'flex:1;font-size:0.75rem;color:var(--text-faint);';
+    hdrCount.textContent = '— ' + countLabel;
+
+    const arrow = document.createElement('span');
+    arrow.className = 'cs-arrow';
+    arrow.textContent = '▸';
+
+    hdr.appendChild(hdrLabel);
+    hdr.appendChild(hdrCount);
+    hdr.appendChild(arrow);
+
+    const body = document.createElement('div');
+    body.className = 'cs-body';
+
+    hdr.addEventListener('click', () => {
+      const open = body.classList.toggle('open');
+      arrow.textContent = open ? '▾' : '▸';
     });
 
-    const nameEl = document.createElement('span');
-    nameEl.className = 'cs-name';
-    nameEl.textContent = sc.name;
-    row.appendChild(nameEl);
+    buildScaleRows(body, true);
 
-    if (sc.tag) {
-      const tagEl = document.createElement('span');
-      tagEl.className = 'cs-tag';
-      tagEl.textContent = sc.tag;
-      row.appendChild(tagEl);
-    }
+    sec.appendChild(hdr);
+    sec.appendChild(body);
+    wrap.appendChild(sec);
+    panel.appendChild(wrap);
 
-    if (sc.note) {
-      const noteEl = document.createElement('span');
-      noteEl.className = 'cs-note';
-      noteEl.textContent = sc.note;
-      row.appendChild(noteEl);
-    }
+  } else {
+    // ── Desktop: original layout — label | collapsible side by side ───────────
+    const rowWrap = document.createElement('div');
+    rowWrap.className = 'breakdown-row';
 
-    body.appendChild(row);
-  });
+    const keyEl = document.createElement('span');
+    keyEl.className = 'breakdown-key';
+    keyEl.textContent = 'Chord scales';
+    rowWrap.appendChild(keyEl);
 
-  sec.appendChild(hdr);
-  sec.appendChild(body);
-  valEl.appendChild(sec);
-  rowWrap.appendChild(valEl);
-  panel.appendChild(rowWrap);
+    const valEl = document.createElement('span');
+    valEl.className = 'breakdown-val';
+    valEl.style.flex = '1';
+
+    const sec = document.createElement('div');
+    sec.className = 'cs-section';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'cs-header';
+    const hdrText = document.createElement('span');
+    hdrText.textContent = countLabel;
+    const arrow = document.createElement('span');
+    arrow.className = 'cs-arrow';
+    arrow.textContent = '▸';
+    hdr.appendChild(hdrText);
+    hdr.appendChild(arrow);
+
+    const body = document.createElement('div');
+    body.className = 'cs-body';
+
+    hdr.addEventListener('click', () => {
+      const open = body.classList.toggle('open');
+      arrow.textContent = open ? '▾' : '▸';
+    });
+
+    buildScaleRows(body, false);
+
+    sec.appendChild(hdr);
+    sec.appendChild(body);
+    valEl.appendChild(sec);
+    rowWrap.appendChild(valEl);
+    panel.appendChild(rowWrap);
+  }
 }
 
 // ─── POINT 37: Voice leading resolution ──────────────────────────────────────
@@ -1023,6 +1076,148 @@ function makeVoiceLeadingRow(panel) {
 
   if (cache && !cache.isAmbiguous && cache.contexts && cache.contexts.length) {
 
+    if (isMobile()) {
+      // ── Mobile: full-width — plain label above, contexts stack below ──────────
+      const mobileWrap = document.createElement('div');
+      mobileWrap.className = 'cs-mobile-wrap';
+
+      const resLabel = document.createElement('span');
+      resLabel.className = 'vl-resolves-label-mobile';
+      resLabel.textContent = 'Resolves to';
+      mobileWrap.appendChild(resLabel);
+
+      cache.contexts.forEach((ctx, ctxIdx) => {
+        const scaleRootName = spelledRoot(ctx.scaleRootPc);
+        const isDeparture   = ctx.harmonicFunction === 'tonic' && ctx.tension < 0.2;
+
+        const ctxSec = document.createElement('div');
+        ctxSec.className = 'cs-section';
+        ctxSec.style.margin = '0.25rem 0';
+
+        const ctxHdr = document.createElement('div');
+        ctxHdr.className = 'cs-header';
+
+        const romanEl = document.createElement('span');
+        romanEl.style.cssText = 'color:var(--accent);font-weight:700;margin-right:0.4rem;min-width:2rem;display:inline-block;';
+        romanEl.textContent = ctx.roman;
+
+        const scaleEl = document.createElement('span');
+        scaleEl.style.cssText = 'flex:1;font-size:0.85rem;';
+        scaleEl.textContent = scaleRootName + ' ' + ctx.scaleName;
+
+        const fnEl = document.createElement('span');
+        fnEl.style.cssText = 'font-size:0.75rem;color:var(--accent-text);margin-right:0.4rem;';
+        fnEl.textContent = fnLabel(ctx.harmonicFunction);
+
+        const dotsEl = document.createElement('span');
+        dotsEl.style.cssText = 'font-size:0.7rem;letter-spacing:-1px;color:var(--accent);margin-right:0.35rem;';
+        dotsEl.textContent = tensionDots(ctx.tension);
+
+        const ctxArrow = document.createElement('span');
+        ctxArrow.className = 'cs-arrow';
+        ctxArrow.textContent = ctxIdx === 0 ? '▾' : '▸';
+
+        ctxHdr.appendChild(romanEl);
+        ctxHdr.appendChild(scaleEl);
+        ctxHdr.appendChild(fnEl);
+        ctxHdr.appendChild(dotsEl);
+        ctxHdr.appendChild(ctxArrow);
+
+        const ctxBody = document.createElement('div');
+        ctxBody.className = ctxIdx === 0 ? 'cs-body open' : 'cs-body';
+        ctxBody.style.padding = '0.25rem 0.625rem 0.4rem';
+
+        ctxHdr.addEventListener('click', () => {
+          const isOpen = ctxBody.classList.toggle('open');
+          ctxArrow.textContent = isOpen ? '▾' : '▸';
+        });
+
+        if (isDeparture) {
+          const note = document.createElement('div');
+          note.style.cssText = 'font-size:0.8rem;color:var(--accent-text);margin-bottom:0.3rem;padding:0.2rem 0;';
+          note.textContent = 'Stable tonic — no resolution needed. Departure paths:';
+          ctxBody.appendChild(note);
+        }
+
+        (ctx.resolutions || []).forEach((res, resIdx) => {
+          const targetRootName = spelledRoot(res.targetRootPc);
+          const targetLabel    = targetRootName + engineQualToSuffix(res.targetQuality);
+          const strengthPct    = Math.round(res.strength * 100) + '%';
+
+          const resSec = document.createElement('div');
+          resSec.className = 'cs-section';
+          resSec.style.margin = '0.2rem 0';
+
+          const resHdr = document.createElement('div');
+          resHdr.className = 'cs-header';
+          resHdr.style.paddingLeft = '0.5rem';
+
+          const resNameEl = document.createElement('span');
+          resNameEl.style.cssText = 'font-weight:600;margin-right:0.5rem;';
+          resNameEl.textContent = '→ ' + targetLabel;
+
+          const cadEl = document.createElement('span');
+          cadEl.style.cssText = 'flex:1;font-size:0.78rem;color:var(--accent-text);';
+          cadEl.textContent = resTypeLabel(res.resolutionType);
+
+          const strEl = document.createElement('span');
+          strEl.style.cssText = 'font-size:0.72rem;color:var(--accent-text);margin-right:0.3rem;';
+          strEl.textContent = strengthPct;
+
+          const resArrow = document.createElement('span');
+          resArrow.className = 'cs-arrow';
+          resArrow.textContent = (ctxIdx === 0 && resIdx === 0) ? '▾' : '▸';
+
+          resHdr.appendChild(resNameEl);
+          resHdr.appendChild(cadEl);
+          resHdr.appendChild(strEl);
+          resHdr.appendChild(resArrow);
+
+          const resBody = document.createElement('div');
+          resBody.className = (ctxIdx === 0 && resIdx === 0) ? 'cs-body open' : 'cs-body';
+          resBody.style.padding = '0.25rem 0.625rem';
+
+          resHdr.addEventListener('click', () => {
+            const isOpen = resBody.classList.toggle('open');
+            resArrow.textContent = isOpen ? '▾' : '▸';
+          });
+
+          if (res.voiceLeading && res.voiceLeading.length) {
+            resBody.appendChild(buildVLTable(res.voiceLeading, rootMidi, rootPc, sym));
+          } else {
+            const buildKey     = engineQualToBuildKey(res.targetQuality);
+            let tgtRootMidi    = (Math.floor(rootMidi / 12) * 12) + res.targetRootPc;
+            if (tgtRootMidi < rootMidi - 6) tgtRootMidi += 12;
+            if (tgtRootMidi > rootMidi + 6) tgtRootMidi -= 12;
+            const targetMidi   = buildResolutionMidi(tgtRootMidi, buildKey);
+            const oldVl        = computeVoiceLeading(sourceMidi, targetMidi);
+            const sorted       = [...sourceMidi].sort((a, b) => a - b);
+            const moves        = oldVl.map((v, i) => {
+              const fMidi = sorted[i] ?? rootMidi;
+              const semi  = v.absSemi ?? 0;
+              const dir   = v.dir === '↑' ? 'up' : v.dir === '↓' ? 'down' : 'none';
+              const toPc  = targetMidi.reduce((best, t) =>
+                Math.abs(t - fMidi) < Math.abs(best - fMidi) ? t : best, targetMidi[0]);
+              return { fromMidi: fMidi, toMidi: toPc, semitones: semi, direction: dir };
+            });
+            resBody.appendChild(buildVLTable(moves, rootMidi, rootPc, sym));
+          }
+
+          resSec.appendChild(resHdr);
+          resSec.appendChild(resBody);
+          ctxBody.appendChild(resSec);
+        });
+
+        ctxSec.appendChild(ctxHdr);
+        ctxSec.appendChild(ctxBody);
+        mobileWrap.appendChild(ctxSec);
+      });
+
+      panel.appendChild(mobileWrap);
+      return;
+    }
+
+    // ── Desktop: original layout — label | collapsible side by side ───────────
     const rowWrap = document.createElement('div');
     rowWrap.className = 'breakdown-row';
     rowWrap.style.alignItems = 'flex-start';

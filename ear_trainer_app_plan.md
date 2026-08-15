@@ -65,10 +65,44 @@
 - **41/46 — Group 5 fix** Intervallic voicings redesigned ✓ (Aug 2026) — `cluster_modal` removed, `secundal` redefined as diatonic-step stacking, `cluster_wt` added as distinct pure-whole-tone voicing; range clamping and note-count cap applied across all Group 5 entries
 - **Help update** `help-content.js` updated (Aug 2026) — chords mode description corrected to 12 families; voicing Group 5 entry fixed; scale direction Random chip added; 7 new glossary entries added
 - **50** Basic / Advanced mode — complete ✓ (Aug 2026) — Intervals, Chords, Scales, Progressions all done
+- **Mobile-3** Mobile breakdown fixes ✓ (Aug 2026) — Settings panel open bug fixed; dark mode now default for new users; Chord Scales and Voice Leading rebuilt as full-width collapsibles on mobile
 
 ---
 
 ## Current Session — Aug 2026
+
+### Mobile-3 — Mobile breakdown fixes ✓ COMPLETE
+
+Three bugs fixed; two files changed.
+
+**Bug 1 — Settings panel would not open on mobile**
+`mobile.css` hid `#settingsPanelBody` but had no `.open` override (unlike pool panels which had one). JS toggles `.open` on the element — CSS never re-showed it.
+Fix: added `#settingsPanelBody.open { display: block; }` to `mobile.css`.
+
+**Bug 2 — Dark mode defaulted to light for new users**
+Theme init in `app.js`: `let theme = stored || LIGHT`. Users with no `localStorage` entry always got light mode.
+Fix: changed to `stored || DARK`. Existing users with a saved preference are unaffected.
+
+**Bug 3 — Chord Scales and Voice Leading clipped on the right on mobile**
+Root cause: both sections were rendered as `breakdown-row` (flex, side-by-side) with a `breakdown-key` label on the left and the collapsible content on the right. The label consumed ~90px, leaving the collapsible too narrow — content overflowed and was clipped by `overflow: hidden` on `.cs-section`.
+
+CSS-only fix (wrapping rows) was insufficient because the inner `vl-table` columns all have `white-space: nowrap` for layout reasons, and the nested collapsibles (context → resolution → vl-table) cannot be constrained purely via CSS without breaking the desktop layout.
+
+**Decision: JS restructure on mobile, desktop untouched.**
+- `isMobile()` helper: `window.innerWidth <= 600`
+- `makeChordScalesRow` on mobile: skip the `breakdown-row` wrapper entirely; render a standalone full-width `cs-section` with header "CHORD SCALES — N SCALES FIT". Each scale row: name on line 1, tag + note on line 2 (via `cs-row-mobile` class in `mobile.css`)
+- `makeVoiceLeadingRow` on mobile: skip the `breakdown-row` wrapper; "RESOLVES TO" becomes a plain full-width label above the context collapsibles, which stack full-width
+- Desktop: zero change — both paths guarded by `isMobile()`
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `app.js` | `stored \|\| DARK` (line 789) |
+| `mobile.css` | `#settingsPanelBody.open`, `.cs-row-mobile` layout rules |
+| `breakdown.js` | `isMobile()` helper; `makeChordScalesRow` and `makeVoiceLeadingRow` mobile path |
+
+---
 
 ### Point 50 — Basic / Advanced mode ✓ COMPLETE (all four modes)
 
@@ -442,6 +476,8 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 1. **Interval data file split** — extract `INTERVALS` (and related constants) out of `chords.js` into a dedicated `js/data/intervals.js`, consistent with how `scales.js` was split out. `chords.js` should contain chord data only.
 
 2. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+
+3. **Mobile-3 testing** — verify Settings opens in all four modes; verify Chord Scales and Voice Leading render full-width on narrow screens; verify desktop layout unchanged
 
 ---
 

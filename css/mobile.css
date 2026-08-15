@@ -44,8 +44,9 @@
     padding: 0.3rem 0.5rem;
     min-height: 2.25rem;
   }
-  /* Extra breathing room between sticky header and root panel */
-  #rootPanel { margin-top: 1.25rem; }
+  /* Settings is now first — it gets the top margin; root panel follows */
+  #settingsPanel { margin-top: 1.25rem; }
+  #rootPanel { margin-top: 0; }
 
   /* ── 7. Pool & Settings panels: collapsed by default on mobile ── */
   #poolPanel .pool-panel-body,
@@ -79,17 +80,45 @@
   /* ── 15. Keyboard hint: hide on mobile (Space/Enter less relevant) ── */
   .kbd-hint { display: none; }
 
-  /* ── 16b. Chord scales rows: wrap so tag + note don't overflow ── */
-  .cs-row { flex-wrap: wrap; align-items: baseline; }
-  .cs-name { flex-basis: 100%; }          /* name always on its own line */
-  .cs-tag  { flex-shrink: 0; }
-  .cs-note { flex-shrink: 0; }
-
-  /* ── 16c. Voice leading table: allow columns 3-4 to wrap ── */
-  .vl-table td:nth-child(3),
-  .vl-table td:nth-child(4) { white-space: normal; word-break: break-word; }
-
   /* ── 16. Footer: YouTube on own row, three LinkedIn badges below ── */
   .app-footer { margin-top: 1.5rem; }
   .app-footer-badges a:first-child { width: 100%; display: flex; justify-content: center; }
+
+  /* ── 17. Chord scales mobile rows: name full-width, tag + note below ── */
+  .cs-row-mobile {
+    flex-wrap: wrap;
+    gap: 0.25rem 0.4rem;
+    padding: 0.35rem 0.375rem;
+  }
+  .cs-row-mobile .cs-name {
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .cs-row-mobile .cs-tag  { flex-shrink: 0; }
+  .cs-row-mobile .cs-note {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    font-style: italic;
+  }
+
+  /* ── 18. Voice leading mobile: full-width resolves-to label ── */
+  .vl-resolves-label-mobile {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.3rem 0.1rem 0.4rem;
+    display: block;
+  }
+
+  /* ── 19. Chord scales + voice leading mobile wrappers: full width ── */
+  .cs-mobile-wrap {
+    margin-top: 0.5rem;
+  }
+  .cs-mobile-wrap .cs-section {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }

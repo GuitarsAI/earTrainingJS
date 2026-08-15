@@ -51,30 +51,8 @@
 
 <div id="app">
 
-  <!-- Root selection — collapsible panel -->
-  <div class="pool-panel" id="rootPanel" style="margin-top:0.75rem">
-    <div class="pool-panel-header" id="rootPanelHeader">
-      <span class="pool-panel-title">Root note</span>
-      <span class="pool-panel-arrow" id="rootPanelArrow">▸</span>
-    </div>
-    <div class="pool-panel-body" id="rootPanelBody">
-      <div class="register-chips" id="rootChips" style="margin-bottom:0.5rem"></div>
-      <!-- POINT 8: Root note toggle (easy/hard) -->
-      <div class="root-toggle-row" id="rootToggleRow">
-        <label>
-          <input type="checkbox" id="showRootChk" checked>
-          Show root note
-        </label>
-        <span id="rootBadge" class="root-badge"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- POINT 10: Training pool panel (shown per mode) -->
-  <div class="pool-panel" id="poolPanel"></div>
-
   <!-- POINT 19: Collapsible Settings panel — houses all chip controls -->
-  <div class="settings-panel" id="settingsPanel">
+  <div class="settings-panel" id="settingsPanel" style="margin-top:0.75rem">
     <div class="settings-panel-header" id="settingsPanelHeader">
       <span class="settings-panel-title">Settings</span>
       <span class="settings-panel-arrow" id="settingsPanelArrow">▸</span>
@@ -110,6 +88,28 @@
       </div>
     </div>
   </div>
+
+  <!-- Root selection — collapsible panel -->
+  <div class="pool-panel" id="rootPanel">
+    <div class="pool-panel-header" id="rootPanelHeader">
+      <span class="pool-panel-title">Root note</span>
+      <span class="pool-panel-arrow" id="rootPanelArrow">▸</span>
+    </div>
+    <div class="pool-panel-body" id="rootPanelBody">
+      <div class="register-chips" id="rootChips" style="margin-bottom:0.5rem"></div>
+      <!-- POINT 8: Root note toggle (easy/hard) -->
+      <div class="root-toggle-row" id="rootToggleRow">
+        <label>
+          <input type="checkbox" id="showRootChk" checked>
+          Show root note
+        </label>
+        <span id="rootBadge" class="root-badge"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- POINT 10: Training pool panel (shown per mode) -->
+  <div class="pool-panel" id="poolPanel"></div>
 
   <div class="play-area" id="playArea">
     <div class="play-label" id="playLabel">Play interval (together)</div>
