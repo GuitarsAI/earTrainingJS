@@ -64,6 +64,7 @@
 - **Mobile-2** Small-phone header overhaul ✓ (Aug 2026) — see current session notes below
 - **41/46 — Group 5 fix** Intervallic voicings redesigned ✓ (Aug 2026) — `cluster_modal` removed, `secundal` redefined as diatonic-step stacking, `cluster_wt` added as distinct pure-whole-tone voicing; range clamping and note-count cap applied across all Group 5 entries
 - **Help update** `help-content.js` updated (Aug 2026) — chords mode description corrected to 12 families; voicing Group 5 entry fixed; scale direction Random chip added; 7 new glossary entries added
+- **50** Basic / Advanced mode — in progress 🔄
 
 ---
 
@@ -217,6 +218,48 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 
 ---
 
+### Point 50 — Basic / Advanced mode
+
+#### Status: In progress 🔄
+
+A mode toggle in Settings that controls which pool items are visible and selectable. Not a filter — a full mode switch. The quiz only draws from items valid for the current mode.
+
+**Behaviour on mode switch:**
+- Switching either way resets selections to mode-appropriate defaults — no cross-mode memory
+- If a question is mid-session when the toggle is flipped, the session resets
+- Default for new users: **Basic**
+
+**Toggle location:** Settings panel — a Basic / Advanced chip pair, persistent (saved to `localStorage`)
+
+**State:** Single `appMode: 'basic' | 'advanced'` variable in `state.js`. All pool rendering and quiz draw logic gates on this.
+
+**Basic flag:** A `basic: true` field added to each eligible entry in `chords.js`, `scales.js`, and `progressions.js`. The UI filters on this flag; Advanced shows everything.
+
+**Boundary definitions:**
+
+| Area | Basic | Advanced adds |
+|---|---|---|
+| Intervals | All 12 simple (m2 – octave) | 7 compound (m9, M9, ♯9, P11, ♯11, m13, M13) |
+| Chords | Major/minor triads + 7ths; Dom7; dim triad + m7♭5 + °7; aug triad; sus2, sus4, power | All extensions (9/11/13), classical, quartal, cluster, slash, poly, UST |
+| Scales | Major, Natural Minor, Harmonic Minor, Melodic Minor, Major Pentatonic, Minor Pentatonic, Blues | Everything else |
+| Progressions | Most common diatonic progressions only (to be confirmed from `progressions.js`) | All progressions |
+
+**Files to change:**
+
+| File | Change |
+|---|---|
+| `js/engine/state.js` | Add `appMode` state variable |
+| `js/engine/defaults.js` | Add `defaultBasicSelected*` sets; `resetToModeDefaults()` helper |
+| `js/data/chords.js` | Add `basic: true` flag to qualifying entries |
+| `js/data/scales.js` | Add `basic: true` flag to qualifying entries |
+| `js/data/progressions.js` | Add `basic: true` flag to qualifying entries |
+| `js/ui/pool.js` | Filter all pool renderers on `appMode` + `basic` flag |
+| `js/app.js` | Mode switch handler; session reset on toggle; persist to `localStorage` |
+| `index.html` | Basic / Advanced toggle chips in Settings section |
+| `js/data/help-content.js` | Document Basic / Advanced mode in Help |
+
+---
+
 ## Bug Tracker
 
 ### Fixed ✓
@@ -285,10 +328,12 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 
 ### Next steps (priority order)
 
-1. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
+1. **Point 50 — Basic / Advanced mode** ← NEXT
+
+2. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
    Split into `chords-tertian.js`, `chords-special.js`, `chords-classical.js`, `chords-quartal.js`.
 
-2. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+3. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
 
 ---
 
