@@ -285,11 +285,16 @@ function _familyTitle(key) {
 // value, preserving the order in which subFamily values first appear in the array.
 function _buildChordFamilies() {
   const sections = [];
+  const isBasic = appDifficulty === 'basic';
   for (const [key, entries] of Object.entries(CHORD_TYPES)) {
-    const hasSubFamilies = entries.some(e => e.subFamily);
+    // POINT 50: in Basic mode filter to basic:true entries only; skip empty families entirely
+    const filtered = isBasic ? entries.filter(e => e.basic) : entries;
+    if (filtered.length === 0) continue;
+
+    const hasSubFamilies = filtered.some(e => e.subFamily);
     if (hasSubFamilies) {
       const seen = new Map();
-      entries.forEach(e => {
+      filtered.forEach(e => {
         if (!e.subFamily) return;
         if (!seen.has(e.subFamily)) seen.set(e.subFamily, []);
         seen.get(e.subFamily).push(e);
@@ -298,7 +303,7 @@ function _buildChordFamilies() {
         sections.push({ title: UST_SUBFAMILY_TITLES[sf] || sf, items });
       });
     } else {
-      sections.push({ title: _familyTitle(key), items: entries });
+      sections.push({ title: _familyTitle(key), items: filtered });
     }
   }
   return sections;

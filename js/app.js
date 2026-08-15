@@ -37,10 +37,12 @@ function switchMode(mode, targetSymbol = null) {
 }
 
 // ─── POINT 50: Basic / Advanced mode ─────────────────────────────────────────
+const BASIC_CHORD_SYMBOLS = ['maj','Maj7','m','m7','7','dim','m7b5','o7','aug','sus2','sus4','power'];
+
 function setAppDifficulty(difficulty) {
   appDifficulty = difficulty;
 
-  // Reset selectedIntervals to mode defaults — fresh start, no cross-mode memory
+  // Reset selectedIntervals — fresh start, no cross-mode memory
   selectedIntervals.clear();
   if (difficulty === 'basic') {
     INTERVALS.filter(i => !i.compound).forEach(i => selectedIntervals.add(i.symbol));
@@ -48,12 +50,20 @@ function setAppDifficulty(difficulty) {
     INTERVALS.forEach(i => selectedIntervals.add(i.symbol));
   }
 
+  // Reset selectedChords — fresh start, no cross-mode memory
+  selectedChords.clear();
+  if (difficulty === 'basic') {
+    BASIC_CHORD_SYMBOLS.forEach(s => selectedChords.add(s));
+  } else {
+    getAllChords().forEach(c => selectedChords.add(c.symbol));
+  }
+
   // Sync toggle chip UI
   document.getElementById('diffChipBasic').classList.toggle('active',    difficulty === 'basic');
   document.getElementById('diffChipAdvanced').classList.toggle('active', difficulty === 'advanced');
 
-  // Rebuild pool panel to show/hide compound section, then generate a fresh question
-  if (currentMode === 'intervals') {
+  // Rebuild pool panel and generate a fresh question for the current mode
+  if (currentMode === 'intervals' || currentMode === 'chords') {
     renderPoolPanel();
     if (appMode === 'dict') setAppMode('dict');
     else generateQuestion();
