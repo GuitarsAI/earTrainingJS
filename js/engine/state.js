@@ -4,6 +4,7 @@ var piano = null;
 var audioCtx = null;
 var answered = false;
 var appMode = 'dict'; // 'quiz' | 'dict'
+var appDifficulty = 'basic'; // 'basic' | 'advanced'
 var correct = 0, total = 0, streak = 0;
 
 // Chord mode state

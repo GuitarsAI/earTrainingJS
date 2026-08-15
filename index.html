@@ -80,6 +80,14 @@
       <span class="settings-panel-arrow" id="settingsPanelArrow">▸</span>
     </div>
     <div class="settings-panel-body" id="settingsPanelBody">
+      <!-- POINT 50: Basic / Advanced mode toggle -->
+      <div class="settings-section" id="difficultySection">
+        <div class="settings-section-label">Mode</div>
+        <div class="settings-chips" id="difficultyChips">
+          <button class="style-chip active" id="diffChipBasic"    onclick="setAppDifficulty('basic')">Basic</button>
+          <button class="style-chip"        id="diffChipAdvanced" onclick="setAppDifficulty('advanced')">Advanced</button>
+        </div>
+      </div>
       <!-- POINT 41: Voicing chips moved to chord pool panel (renderChordPoolPanel) -->
       <!-- Chord playback style chips (shown in chord mode, POINT 6) -->
       <div class="settings-section" id="chordStyleSection" style="display:none">

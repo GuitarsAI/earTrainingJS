@@ -36,6 +36,30 @@ function switchMode(mode, targetSymbol = null) {
   }
 }
 
+// ─── POINT 50: Basic / Advanced mode ─────────────────────────────────────────
+function setAppDifficulty(difficulty) {
+  appDifficulty = difficulty;
+
+  // Reset selectedIntervals to mode defaults — fresh start, no cross-mode memory
+  selectedIntervals.clear();
+  if (difficulty === 'basic') {
+    INTERVALS.filter(i => !i.compound).forEach(i => selectedIntervals.add(i.symbol));
+  } else {
+    INTERVALS.forEach(i => selectedIntervals.add(i.symbol));
+  }
+
+  // Sync toggle chip UI
+  document.getElementById('diffChipBasic').classList.toggle('active',    difficulty === 'basic');
+  document.getElementById('diffChipAdvanced').classList.toggle('active', difficulty === 'advanced');
+
+  // Rebuild pool panel to show/hide compound section, then generate a fresh question
+  if (currentMode === 'intervals') {
+    renderPoolPanel();
+    if (appMode === 'dict') setAppMode('dict');
+    else generateQuestion();
+  }
+}
+
 // POINT 12: Render root note and octave register chip rows
 function renderRegisterPanel() {
   // Full chromatic list with both enharmonic spellings for each accidental pitch class.
@@ -236,8 +260,11 @@ function renderDictPoolPanel() {
     _renderChordSubGroups(body);
   } else if (currentMode === 'intervals') {
     // POINT 39: split into simple and compound
-    makeDictSection(body, 'Simple intervals',    INTERVALS.filter(i => !i.compound), false, false);
-    makeDictSection(body, 'Extended / Compound', INTERVALS.filter(i =>  i.compound), false, true);
+    // POINT 50: compound section hidden in basic mode
+    makeDictSection(body, 'Simple intervals', INTERVALS.filter(i => !i.compound), false, false);
+    if (appDifficulty === 'advanced') {
+      makeDictSection(body, 'Extended / Compound', INTERVALS.filter(i => i.compound), false, true);
+    }
   } else {
     iterateScaleGroups((key, title, items, cfg) => {
       const useDisplayName = !!(cfg && cfg.sectionFn === 'withDisplayName');

@@ -697,14 +697,21 @@ function _updateSectionCount(sec, symbols) {
 function renderIntervalPoolPanel(panel) {
   const { body } = makePoolPanelShell(panel, 'Training pool — Intervals', null);
   // POINT 39: split into simple and compound sections — all collapsed by default
+  // POINT 50: compound section hidden in basic mode
   const onChange39 = () => appMode === 'dict' ? setAppMode('dict') : generateIntervalQuestion();
 
-  const allIntervalItems = [...INTERVALS];
-  makeGlobalAllNone(body, allIntervalItems, selectedIntervals,
+  const visibleIntervals = appDifficulty === 'basic'
+    ? INTERVALS.filter(i => !i.compound)
+    : [...INTERVALS];
+
+  makeGlobalAllNone(body, visibleIntervals, selectedIntervals,
     () => body.querySelectorAll('.pool-chip'), onChange39);
 
-  makeSection(body, 'Simple intervals',    INTERVALS.filter(i => !i.compound), selectedIntervals, onChange39, true);
-  makeSection(body, 'Extended / Compound', INTERVALS.filter(i =>  i.compound), selectedIntervals, onChange39, true);
+  makeSection(body, 'Simple intervals', INTERVALS.filter(i => !i.compound), selectedIntervals, onChange39, true);
+
+  if (appDifficulty === 'advanced') {
+    makeSection(body, 'Extended / Compound', INTERVALS.filter(i => i.compound), selectedIntervals, onChange39, true);
+  }
 }
 
 // Display titles and section-renderer choice for scale group values.
