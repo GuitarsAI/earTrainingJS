@@ -66,6 +66,8 @@
 - **Help update** `help-content.js` updated (Aug 2026) — chords mode description corrected to 12 families; voicing Group 5 entry fixed; scale direction Random chip added; 7 new glossary entries added
 - **50** Basic / Advanced mode — complete ✓ (Aug 2026) — Intervals, Chords, Scales, Progressions all done
 - **Mobile-3** Mobile breakdown fixes ✓ (Aug 2026) — Settings panel open bug fixed; dark mode now default for new users; Chord Scales and Voice Leading rebuilt as full-width collapsibles on mobile
+- **BUG-9** Notation key sig conflict fix ✓ (Aug 2026) — chord tones conflicting with active key signature now correctly show cancellation accidentals (♮ etc.); verified across all 540 chord/root combinations
+- **BUG-5** Closed (Aug 2026) — resolution notation two-chord layout: cannot reproduce; removed from open bugs
 
 ---
 
@@ -426,15 +428,17 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 #### BUG-7 — Progression notation: staves missing clef, misaligned, cut off
 **Fix:** `showProgressionNotation()` fully rewritten as a single continuous score with one grand staff decision, proper chord labels, horizontal scroll. (Aug 2026)
 
+#### BUG-9 — Chord notation: notes conflicting with key signature rendered incorrectly
+**Symptom:** In Key mode, chord tones whose letter appears in the key sig with a different accidental (e.g. F natural when key sig is G major / F#) rendered at the wrong pitch — no cancellation accidental was added.
+**Root cause:** `addAccidentalsFiltered` in `notation.js` only checked coverage (skip if covered, add if not) but never handled the conflict case — same letter, different accidental.
+**Fix:** Added conflict detection in both `addAccidentalsFiltered` instances (in `renderNotation` and `renderPolyNotation`). When a conflict is detected, forces an explicit accidental — ♮ for natural notes, otherwise the correct symbol. Verified across all 540 chord/root combinations via simulation. (Aug 2026)
+**File changed:** `js/engine/notation.js`
+
 ---
 
 ### Open Bugs 🔴
 
-#### BUG-5 — Resolution notation: VexFlow two-chord layout is fragile
-**Symptom:** Source and resolution chords sometimes render in wrong positions or overlap.
-**Root cause:** Uses a single stave with `[srcNote, BarNote, tgtNote]` as half-notes in one voice. `BarNote` inside a single voice is fragile in VexFlow.
-**Fix approach:** Use two separate stave segments or two independent voices.
-**Status:** Deferred — needs more testing to confirm visible impact before prioritising.
+*No open bugs.*
 
 ---
 
@@ -475,9 +479,9 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 1. **Interval data file split** — extract `INTERVALS` (and related constants) out of `chords.js` into a dedicated `js/data/intervals.js`, consistent with how `scales.js` was split out. `chords.js` should contain chord data only.
 
-2. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+2. **Mobile-3 testing** — verify Settings opens in all four modes; verify Chord Scales and Voice Leading render full-width on narrow screens; verify desktop layout unchanged.
 
-3. **Mobile-3 testing** — verify Settings opens in all four modes; verify Chord Scales and Voice Leading render full-width on narrow screens; verify desktop layout unchanged
+3. **`RESOLUTION_TARGETS` cleanup** — retained as live fallback for voice leading; remove once engine is confirmed stable.
 
 ---
 
@@ -636,9 +640,4 @@ All named entries from `complete_12_TET_piano_scales.md` implemented. See Curren
 
 ## Parking Lot
 
-- Quiz history — prevent same chord/scale/interval repeating back-to-back
-- Timed mode — answer before the clock runs out
-- MIDI input — play answer on a connected keyboard instead of the dropdown
-- Export session stats as CSV
-- `RESOLUTION_TARGETS` cleanup — retained as live fallback for voice leading; remove once engine is confirmed stable
-- BUG-5 — Resolution notation VexFlow two-chord layout (defer until confirmed causing visible problems)
+*Empty — all parked items either completed, moved to TODO, or removed.*
