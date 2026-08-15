@@ -786,7 +786,7 @@ document.addEventListener('keydown', e => {
   const DARK   = 'dark';
   const LIGHT  = 'light';
   const stored = localStorage.getItem('earTrainerTheme');
-  let theme = stored || LIGHT;
+  let theme = stored || DARK;
   if (theme === DARK) root.setAttribute('data-theme', DARK);
 
   function syncEmoji() {

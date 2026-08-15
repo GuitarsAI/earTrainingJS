@@ -54,6 +54,8 @@
   /* Override: allow JS-toggled .open to show panels (ID specificity fix) */
   #poolPanel .pool-panel-body.open,
   #rootPanel .pool-panel-body.open { display: block; }
+  /* Settings panel — same pattern, same fix */
+  #settingsPanelBody.open { display: block; }
 
   /* ── 8. Play area: compact, no wasted space ── */
   .play-area { padding: 1rem; }
@@ -76,6 +78,16 @@
 
   /* ── 15. Keyboard hint: hide on mobile (Space/Enter less relevant) ── */
   .kbd-hint { display: none; }
+
+  /* ── 16b. Chord scales rows: wrap so tag + note don't overflow ── */
+  .cs-row { flex-wrap: wrap; align-items: baseline; }
+  .cs-name { flex-basis: 100%; }          /* name always on its own line */
+  .cs-tag  { flex-shrink: 0; }
+  .cs-note { flex-shrink: 0; }
+
+  /* ── 16c. Voice leading table: allow columns 3-4 to wrap ── */
+  .vl-table td:nth-child(3),
+  .vl-table td:nth-child(4) { white-space: normal; word-break: break-word; }
 
   /* ── 16. Footer: YouTube on own row, three LinkedIn badges below ── */
   .app-footer { margin-top: 1.5rem; }
