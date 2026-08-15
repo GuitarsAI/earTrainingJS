@@ -64,11 +64,61 @@
 - **Mobile-2** Small-phone header overhaul ✓ (Aug 2026) — see current session notes below
 - **41/46 — Group 5 fix** Intervallic voicings redesigned ✓ (Aug 2026) — `cluster_modal` removed, `secundal` redefined as diatonic-step stacking, `cluster_wt` added as distinct pure-whole-tone voicing; range clamping and note-count cap applied across all Group 5 entries
 - **Help update** `help-content.js` updated (Aug 2026) — chords mode description corrected to 12 families; voicing Group 5 entry fixed; scale direction Random chip added; 7 new glossary entries added
-- **50** Basic / Advanced mode — in progress 🔄
+- **50** Basic / Advanced mode — in progress 🔄 (Intervals ✓, Scales ✓, Progressions next)
 
 ---
 
 ## Current Session — Aug 2026
+
+### Point 50 — Basic / Advanced mode: Scales ✓ COMPLETE
+
+Basic scales defined as 4 entries: `pent_maj`, `pent_min`, `major`, `nat_minor`. Melodic Minor was explicitly excluded after review.
+
+**What was delivered:**
+- `basic: true` flag added to `pent_maj`, `pent_min`, `major`, `nat_minor` in `scales.js`
+- `iterateScaleGroups` in `pool.js` filters `SCALES` to `basic: true` entries when `appDifficulty === 'basic'` — covers both quiz (`renderScalePoolPanel`) and dict (`renderDictPoolPanel`) in one place
+- Global All/None in `renderScalePoolPanel` updated to operate only on visible (basic-flagged) scales in Basic mode
+- `setAppDifficulty` in `app.js` resets `selectedScales` on every mode switch and triggers scales re-render
+- `defaults.js` initial `selectedScales` updated to the 4 Basic scales
+
+**Basic mode visible scales:**
+- Pentatonic: Major Pentatonic, Minor Pentatonic
+- Diatonic: Major, Natural Minor
+- Hexatonic and Octatonic sections hidden entirely in Basic mode
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/data/scales.js` | `basic: true` on `pent_maj`, `pent_min`, `major`, `nat_minor` |
+| `js/ui/pool.js` | `iterateScaleGroups` filters on `basic` flag in Basic mode; global All/None scoped to visible scales |
+| `js/app.js` | `setAppDifficulty` resets `selectedScales`; `scales` added to mode re-render condition |
+| `js/engine/defaults.js` | `selectedScales` default updated to 4 Basic scales |
+
+---
+
+### Point 50 — Basic / Advanced mode: Intervals ✓ COMPLETE
+
+**What was delivered:**
+- `appDifficulty: 'basic' | 'advanced'` added to `state.js`
+- `compound` flag already present on all 7 compound intervals in `chords.js` — no new data change needed
+- `pool.js` interval renderer hides compound intervals when `appDifficulty === 'basic'`
+- `setAppDifficulty` in `app.js` resets `selectedIntervals`, stripping compound entries when switching to Basic
+- `defaults.js` default `selectedIntervals` confirmed correct (already filtered to `!i.compound`)
+- Basic / Advanced toggle chips added to Settings section in `index.html`
+
+**Basic mode: all 12 simple intervals (m2 – P8). Advanced adds: m9, M9, ♯9, P11, ♯11, m13, M13.**
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/engine/state.js` | `appDifficulty: 'basic'` added |
+| `js/ui/pool.js` | Interval renderer filters out compound intervals in Basic mode |
+| `js/app.js` | `setAppDifficulty()` implemented; resets `selectedIntervals` on switch |
+| `index.html` | Basic / Advanced toggle chips added to Settings |
+
+---
 
 ### Point 41/46 — Group 5 Intervallic voicings fix ✓ COMPLETE
 
@@ -224,6 +274,16 @@ On small phones (Samsung S5, iPhone SE, ~360px wide), the header was overcrowded
 
 A mode toggle in Settings that controls which pool items are visible and selectable. Not a filter — a full mode switch. The quiz only draws from items valid for the current mode.
 
+**Progress:**
+
+| Area | Status |
+|---|---|
+| Intervals | ✓ Complete |
+| Scales | ✓ Complete |
+| Progressions | ← Next |
+| Chords | Not started |
+| Help content | Not started |
+
 **Behaviour on mode switch:**
 - Switching either way resets selections to mode-appropriate defaults — no cross-mode memory
 - If a question is mid-session when the toggle is flipped, the session resets
@@ -231,7 +291,7 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 **Toggle location:** Settings panel — a Basic / Advanced chip pair, persistent (saved to `localStorage`)
 
-**State:** Single `appMode: 'basic' | 'advanced'` variable in `state.js`. All pool rendering and quiz draw logic gates on this.
+**State:** Single `appDifficulty: 'basic' | 'advanced'` variable in `state.js`. All pool rendering and quiz draw logic gates on this.
 
 **Basic flag:** A `basic: true` field added to each eligible entry in `chords.js`, `scales.js`, and `progressions.js`. The UI filters on this flag; Advanced shows everything.
 
@@ -241,21 +301,17 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 |---|---|---|
 | Intervals | All 12 simple (m2 – octave) | 7 compound (m9, M9, ♯9, P11, ♯11, m13, M13) |
 | Chords | Major/minor triads + 7ths; Dom7; dim triad + m7♭5 + °7; aug triad; sus2, sus4, power | All extensions (9/11/13), classical, quartal, cluster, slash, poly, UST |
-| Scales | Major, Natural Minor, Harmonic Minor, Melodic Minor, Major Pentatonic, Minor Pentatonic, Blues | Everything else |
+| Scales | Major, Natural Minor, Major Pentatonic, Minor Pentatonic | Everything else |
 | Progressions | Most common diatonic progressions only (to be confirmed from `progressions.js`) | All progressions |
 
-**Files to change:**
+**Remaining files to change:**
 
 | File | Change |
 |---|---|
-| `js/engine/state.js` | Add `appMode` state variable |
-| `js/engine/defaults.js` | Add `defaultBasicSelected*` sets; `resetToModeDefaults()` helper |
 | `js/data/chords.js` | Add `basic: true` flag to qualifying entries |
-| `js/data/scales.js` | Add `basic: true` flag to qualifying entries |
 | `js/data/progressions.js` | Add `basic: true` flag to qualifying entries |
-| `js/ui/pool.js` | Filter all pool renderers on `appMode` + `basic` flag |
-| `js/app.js` | Mode switch handler; session reset on toggle; persist to `localStorage` |
-| `index.html` | Basic / Advanced toggle chips in Settings section |
+| `js/ui/pool.js` | Filter chord and progression pool renderers on `appDifficulty` + `basic` flag |
+| `js/app.js` | `setAppDifficulty` — add chords and progressions reset branches |
 | `js/data/help-content.js` | Document Basic / Advanced mode in Help |
 
 ---
@@ -306,7 +362,8 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 | Voice leading engine | `js/engine/voiceLeading.js` |
 | Voicing data, algorithms (`VOICING_MODES`, `applyVoicing`, `resolveVoicingMode`) | `js/engine/voicings.js` |
 | Breakdown panel (`showBreakdown`) | `js/breakdown/breakdown.js` |
-| Chord data (`CHORD_TYPES`, `INTERVALS`, `SCALES`) | `js/data/chords.js` |
+| Chord data (`CHORD_TYPES`, `INTERVALS`) | `js/data/chords.js` |
+| Scale data (`SCALES`, `SCALE_DIRECTIONS`) | `js/data/scales.js` |
 | Enharmonic spelling engine | `js/data/spelling.js` |
 | Key signature helpers | `js/data/keysig.js` |
 | Progression data (`PROGRESSIONS`) | `js/data/progressions.js` |
@@ -328,16 +385,28 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 ### Next steps (priority order)
 
-1. **Point 50 — Basic / Advanced mode** ← NEXT
+1. **Point 50 — Basic / Advanced mode: Progressions** ← NEXT
+   - Share `js/data/progressions.js` to confirm basic boundary
+   - Add `basic: true` to qualifying entries
+   - Filter progression pool renderer in `pool.js`
+   - Reset `selectedProgressions` in `setAppDifficulty`
 
-2. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
+2. **Point 50 — Basic / Advanced mode: Chords**
+   - Add `basic: true` to qualifying entries in `chords.js`
+   - Filter chord pool renderer in `pool.js`
+   - Reset `selectedChords` in `setAppDifficulty`
+
+3. **Point 50 — Basic / Advanced mode: Help content**
+   - Document the Basic / Advanced toggle in `help-content.js`
+
+4. **Point 44 — File split** (optional, do when `chords.js` feels unwieldy)
    Split into `chords-tertian.js`, `chords-special.js`, `chords-classical.js`, `chords-quartal.js`.
 
-3. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
+5. **BUG-5** — Fix fragile two-chord VexFlow layout (defer until confirmed causing visible problems)
 
 ---
 
-### Point 41 — Complete voicing system
+## Point 41 — Complete voicing system
 
 #### Status: Complete ✓ (Aug 2026)
 
