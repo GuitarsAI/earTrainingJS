@@ -92,6 +92,31 @@ const SCALE_CHARACTER = {
   pent_lydian:   'Bright and floating — ♯4 lifts it above the standard major pentatonic',
   pent_mixo:     'Bluesy and open — sus flavour with a dominant ♭7',
   pent_locrian:  'Unstable, chromatic — the darkest pentatonic, rarely used melodically',
+  // POINT 45 — new pentatonics
+  pent_dom:      'Bright, dominant-flavoured — major 3rd and ♭7 give it a funky, bluesy confidence; favoured by John McLaughlin',
+  pent_sus:      'Open, floating — built on a sus4 chord with no 3rd; ancient Egyptian/Chinese character, works over major or minor',
+  pent_hirajoshi:'Melancholic, contemplative — traditional koto tuning; minor 3rd and ♭6 create a wistful Japanese character',
+  pent_iwato:    'Ominous, ceremonial — the darkest Japanese pentatonic; Locrian-like tension from ♭2 and ♭5, no resolution',
+  pent_insen:    'Mysterious, somber — koto scale with a half-step above the root; deep and introspective Japanese colour',
+  pent_yo:       'Bright, folk-like — traditional Japanese major pentatonic with no semitones; festive and accessible to Western ears',
+  // POINT 45 — new hexatonics
+  blues_maj:     'Warm, gospel-inflected — major pentatonic with a chromatic ♭3 passing tone; brighter and more resolved than minor blues',
+  prometheus_liszt: 'Dense, chromatic — Liszt\'s variant of the Prometheus/mystic sound; darker and more dissonant than Scriabin\'s version',
+  tritone_hex:   'Symmetrical, bitonal — two major triads a tritone apart; angular and unstable, used in jazz for dominant substitution',
+  messiaen_5:    'Sparse, otherworldly — only 6 transpositions; Messiaen\'s most severe mode, stark and ritualistic',
+  // POINT 45 — new diatonics
+  harm_major:    'Lush, bittersweet — major scale with a ♭6; combines major brightness with a haunting chromatic pull, common in jazz',
+  neap_minor:    'Dramatic, Romantic — Neapolitan minor with ♭2 and raised 7th; operatic tension, rich in leading-tone drive',
+  dbl_harmonic:  'Intense, exotic — two augmented 2nds create a striking Middle Eastern/Byzantine colour; also called Arabic or Hijaz Kar',
+  spanish:       'Passionate, Flamenco — Phrygian Dominant family with raised 7th; the sound of cante jondo and classical guitar',
+  hung_minor:    'Dramatic, Gypsy — harmonic minor with ♯4; two augmented 2nds give it a fiery Eastern European intensity',
+  romanian_minor:'Exotic, Eastern — Dorian with ♯4 (tritone); used in Jewish, Greek, and Romanian folk music; also called Ukrainian Dorian or Mi Shebeirach',
+  dorian_s4:     'Mysterious, fusion — Dorian with a ♯4 tritone substitution; adds Lydian brightness to a minor context',
+  phrygian_n6:   'Dark with a lift — Phrygian\'s ♭2 tension softened by a natural 6th; second mode of melodic minor, also called Dorian ♭2',
+  messiaen_6:    'Shimmering, colouristic — Messiaen\'s mode 6, a whole-tone scale with added chromatic neighbour tones; luminous and ambiguous',
+  // POINT 45 — new octatonics
+  messiaen_3:    'Joyful, exuberant — Messiaen\'s most colourful mode; 9 notes, 4 transpositions; evokes birdsong and natural vitality',
+  messiaen_4:    'Dense, angular — 8 notes, 6 transpositions; Messiaen\'s most chromatic mode; unsettled and mysterious',
 };
 
 // Modal parent scale info (for modes derived from a parent)

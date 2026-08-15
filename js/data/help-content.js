@@ -64,7 +64,7 @@ const HELP_SECTIONS = [
       },
       {
         term: 'Chords mode',
-        body: 'Trains you to identify chords by ear. The app plays a chord built on a random root (or a pinned root if you set one) and you name it.\n\nChords are organised into six families:\n• Triads — three-note chords: major, minor, diminished, augmented, suspended, power\n• Seventh chords — four-note chords adding a seventh above the triad\n• Extended chords — 9th, 11th, and 13th chords\n• Slash chords — a chord with a specific bass note that isn\'t its root (e.g. C/E)\n• Polychords — two triads stacked on top of each other\n• Upper Structure Triads (UST) — a triad played over a shell voicing; a jazz reharmonisation technique',
+        body: 'Trains you to identify chords by ear. The app plays a chord built on a random root (or a pinned root if you set one) and you name it.\n\nChords are organised into twelve families:\n• Major — triads, added-note chords, sixth chords, and major 7th extensions\n• Minor — minor triads, minor 6th, minor 7th, and minor-major 7th extensions\n• Dominant — dominant 7th chords and all altered, suspended, and extended dominant variants\n• Diminished — diminished triad, half-diminished (m7♭5), fully diminished 7th (°7), and °7(Maj7)\n• Augmented — augmented triad and augmented 7th variants\n• Suspended — sus2, sus4, power chord (5th only), and suspended extensions\n• Classical — chromatic pre-dominant chords from common-practice harmony: Neapolitan (N6) and the three augmented sixth chords (Italian, French, German)\n• Quartal / Quintal — chords built by stacking perfect fourths or fifths instead of thirds\n• Cluster — chords built by stacking seconds; dense, timbral sonorities\n• Slash chords — a triad over a bass note that isn\'t its root, creating ambiguous or extended harmony\n• Polychords — two independent triads stacked on top of each other\n• Upper Structure Triads (UST) — a triad played over a shell voicing; a jazz reharmonisation technique',
       },
       {
         term: 'Scales mode',
@@ -122,7 +122,7 @@ Click Reset to clear the stats without starting a new session.`,
       },
       {
         term: 'Scale direction chips',
-        body: '• Ascending — scale played from root up to octave\n• Descending — scale played from octave down to root\n• Both — ascending then descending in one phrase',
+        body: '• Ascending — scale played from root up to octave\n• Descending — scale played from octave down to root\n• Both — ascending then descending in one phrase\n• Random — the app picks one of the above randomly for each question',
       },
       {
         term: 'Inversions toggle (Chords)',
@@ -148,7 +148,7 @@ Click Reset to clear the stats without starting a new session.`,
       },
       {
         term: 'Voicing chips — Group 5: Intervallic',
-        body: 'Voicings built by stacking a single interval type rather than chord tones. The resulting sound may include notes outside the chord — the character comes from the interval pattern, not the harmony.\n\n• Quartal — stacked perfect fourths (5 semitones). The modal jazz staple; associated with McCoy Tyner, Herbie Hancock, and Miles Davis\'s Kind of Blue era.\n• Quintal — stacked perfect fifths (7 semitones). Open, hollow sound.\n• Secundal — stacked major seconds (2 semitones). Whole-tone cluster character.\n• Cluster Chromatic — stacked semitones. Maximum chromatic density.\n• Cluster Diatonic — stacked diatonic seconds within the chord\'s scale. Softer cluster.\n• Cluster Pentatonic — stacked pentatonic steps. Open, percussive; McCoy Tyner influence.\n• Cluster Whole-tone — stacked whole tones. Impressionist / Debussy flavour.\n• Cluster Modal — stacked modal scale steps in the current tonal context.',
+        body: 'Voicings built by stacking a single interval type rather than chord tones. The resulting sound may include notes outside the chord — the character comes from the interval pattern, not the harmony.\n\n• Quartal — stacked perfect fourths (5 semitones). The modal jazz staple; associated with McCoy Tyner, Herbie Hancock, and Miles Davis\'s Kind of Blue era.\n• Quintal — stacked perfect fifths (7 semitones). Open, hollow sound.\n• Secundal — diatonic-step stacking (mix of semitones and whole tones following the major scale). Softer, more organic cluster texture than pure chromatic stacking.\n• Cluster Chromatic — stacked semitones. Maximum chromatic density.\n• Cluster Diatonic — adjacent diatonic scale steps stacked upward. Less abrasive than chromatic.\n• Cluster Pentatonic — stacked pentatonic steps. Open, percussive; McCoy Tyner influence.\n• Cluster Whole-tone — stacked whole tones (pure major seconds). Impressionist / Debussy flavour; distinct from Secundal which mixes step sizes.',
       },
       {
         term: 'Voicing chips — Group 6: Style',
@@ -319,6 +319,10 @@ Click Reset to clear the stats without starting a new session.`,
         body: 'A symbol that raises or lowers a note by a semitone. ♯ (sharp) raises by one semitone. ♭ (flat) lowers by one semitone. ♮ (natural) cancels a previous sharp or flat. Double-sharp (𝄪) raises by two semitones. Double-flat (𝄫) lowers by two semitones.',
       },
       {
+        term: 'Augmented sixth chords',
+        body: 'Three chromatic pre-dominant chords from common-practice harmony, all built on the lowered 6th degree (♭6) of the scale. They are named by national tradition and distinguished by their inner notes:\n\n• Italian (It⁺⁶) — ♭6, 1, ♯4. Three voices: the defining augmented sixth interval between ♭6 and ♯4 expands outward by a semitone in each direction to resolve to the octave on V.\n• French (Fr⁺⁶) — ♭6, 1, 2, ♯4. Four voices: adds the 2nd above the root, creating a whole-tone tetrachord. The most dissonant of the three.\n• German (Ger⁺⁶) — ♭6, 1, ♭3, ♯4. Four voices: enharmonically identical to a dominant 7th chord, but functions as a pre-dominant resolving to V (often via I⁶⁄₄ to avoid parallel 5ths).\n\nAll three resolve to V. They appear in the Classical family of the chord pool.',
+      },
+      {
         term: 'Cadence',
         body: 'A harmonic motion that creates a sense of resolution or pause — the musical equivalent of a punctuation mark. Types used in this app:\n\n• Perfect authentic cadence — V → I, both in root position, tonic in the top voice. The strongest possible resolution; full stop in music.\n• Imperfect authentic cadence — V → I, but either chord is inverted, or the tonic is not in the top voice. Weaker than perfect authentic.\n• Half cadence — any progression that ends on V. Feels unresolved; like a comma or question mark.\n• Deceptive cadence — V → vi (or another unexpected chord instead of I). Creates surprise by avoiding the expected resolution.\n• Plagal cadence — IV → I. The "Amen" cadence; softer and more final-sounding than authentic.',
       },
@@ -337,6 +341,10 @@ Click Reset to clear the stats without starting a new session.`,
       {
         term: 'Chord scales',
         body: 'A scale that fits over a chord — meaning all the chord\'s notes are contained within the scale. Used in jazz and contemporary harmony to choose which notes are available for improvisation or harmonisation over a given chord without creating unwanted clashes.',
+      },
+      {
+        term: 'Cluster chords (secundal harmony)',
+        body: 'Chords built by stacking seconds (major 2nds, minor 2nds, or a mix) instead of thirds or fourths. The result is a dense dissonant sound mass — more timbral than harmonic. Cluster chords do not imply a traditional chord quality; the ear perceives them as texture and colour rather than functional harmony.\n\nThree types appear in the chord pool:\n• Major-second cluster (M2 + M2) — mild, Impressionistic; suggests whole-tone scale\n• Minor-second cluster (m2 + m2) — intensely dissonant; percussive noise mass\n• Mixed cluster (m2 + M2 mix) — intermediate density; complex internal structure\n\nThe technique was named "tone cluster" by Henry Cowell in the 1920s and was developed by Bartók, Ligeti, and Penderecki. In jazz it appears in stride piano and avant-garde playing as a percussive colour effect.\n\nNote: Cluster chords in the pool are distinct from Cluster voicings — the voicings apply a cluster spacing to any chord; the cluster chord family uses clusters as the chord\'s fundamental structure.',
       },
       {
         term: 'Compound interval',
@@ -383,16 +391,32 @@ Click Reset to clear the stats without starting a new session.`,
         body: 'When you flip an interval by placing the lower note above the upper note (or vice versa), you get the inversion. A major 3rd (4 semitones) inverts to a minor 6th (8 semitones). The two always add up to 12 semitones (one octave). Quality inverts too: major ↔ minor, augmented ↔ diminished, perfect stays perfect.',
       },
       {
+        term: 'Japanese pentatonic scales',
+        body: 'A family of five-note scales from Japanese musical tradition, included in the Pentatonic group of the scale pool. Each has a distinct mood and interval structure very different from Western major or minor pentatonics:\n\n• Hirajoshi — the most common Japanese pentatonic; basis of much koto music. Alternating wide and narrow intervals give it a characteristic "floating" quality.\n• Iwato — named after a Shinto shrine; built on a symmetrical pattern of semitone + perfect fourth. Dark, tense, and sparse.\n• In-sen — literally "shadow"; starts with a semitone step then leaps a fourth, giving a shadowy, introverted character. Common in shamisen music.\n• Yo — the brighter of the traditional Japanese scales, closer to a major pentatonic in feel. Used in folk songs and festival music.\n\nAll four have no standard Western key signature and are labelled with parentKey: null in the scale data.',
+      },
+      {
         term: 'Mode / modal degree',
         body: 'A mode is a scale derived from another scale by starting on a different degree and using the same notes. The seven modes of the major scale are Ionian (major), Dorian, Phrygian, Lydian, Mixolydian, Aeolian (natural minor), and Locrian. Each has a distinct character because the pattern of whole and half steps is different.\n\nThe modal degree is which degree of the parent scale the mode starts on. Dorian starts on degree 2 of major; Mixolydian on degree 5.',
+      },
+      {
+        term: 'Modes of limited transposition',
+        body: 'A set of scales identified by the composer Olivier Messiaen whose pitch-class content repeats before all 12 transpositions are exhausted. Because the scale divides the octave into equal or symmetrical segments, transposing it by certain intervals produces the exact same set of pitch classes — only a limited number of transpositions yield genuinely different notes.\n\nFor example, the whole-tone scale (Messiaen Mode 1) has only 2 distinct transpositions; the diminished scale (Mode 2) has only 3.\n\nModes in the scale pool:\n• Messiaen Mode 3 — 9 notes; divides the octave into three equal major-third segments, each filled with a whole tone + semitone. 4 distinct transpositions.\n• Messiaen Mode 4 — 8 notes; semitone + semitone + major 3rd pattern, repeated twice. 6 transpositions.\n• Messiaen Mode 5 — 6 notes (hexatonic); semitone + major 3rd + semitone, repeated twice. 6 transpositions.\n• Messiaen Mode 6 — 8 notes; two whole tones + semitone + semitone, repeated twice. 6 transpositions.\n\nThese scales are symmetric and lack a strong tonal centre, giving them an ambiguous, otherworldly quality. They appear in the Octatonic and Hexatonic groups of the scale pool depending on note count.',
       },
       {
         term: 'Modal character tags',
         body: 'Tags that summarise the overall sound of a scale:\n• Bright — raised intervals relative to major; more tension, lifted quality (e.g. Lydian)\n• Neutral — similar brightness to major; everyday Western sound (e.g. Major, Mixolydian)\n• Dark — lowered intervals relative to major; heavier, minor-influenced (e.g. Dorian, Phrygian)\n• Exotic — unusual interval combinations giving a non-Western or dramatic flavour\n• Symmetric — the scale divides the octave into equal segments (whole-tone, diminished, augmented)\n• Ambiguous — lacks a strong tonal pull or leading tone (e.g. whole-tone, some pentatonics)',
       },
       {
+        term: 'Neapolitan chord (N6)',
+        body: 'A major triad built on the lowered second degree (♭II) of the scale — a chromatic pre-dominant chord from common-practice harmony. It typically appears in first inversion (hence the label N6, from the figured bass 6), with the third of the chord (the original tonic note) in the bass.\n\nFor example, in C minor the Neapolitan is D♭ major (D♭–F–A♭), usually voiced as F–A♭–D♭ with F in the bass. It resolves to V or V7.\n\nThe Neapolitan creates a striking colour because the ♭II degree is a semitone above the tonic, far outside the home key. It appears in the Classical family of the chord pool alongside the augmented sixth chords.',
+      },
+      {
         term: 'Parent scale',
         body: 'The scale from which a mode is derived. For example, Dorian\'s parent scale is Major — Dorian uses the same notes as a major scale but starts on the 2nd degree. The parent relationship explains why modes with the same parent share the same harmonic field (just rotated).',
+      },
+      {
+        term: 'Pentatonic / Hexatonic / Octatonic',
+        body: 'Labels for scale groups defined by note count, used to organise the scale pool:\n\n• Pentatonic — 5 notes per octave. Includes Western major and minor pentatonics, modal pentatonics, and the Japanese pentatonic family (Hirajoshi, Iwato, In-sen, Yo).\n• Hexatonic — 6 notes per octave. Includes the blues scale, whole-tone scale, augmented scale, Prometheus, and Messiaen Mode 5.\n• Diatonic — 7 notes per octave. The largest group: major, natural/harmonic/melodic minor, all church modes, and related scales such as Hungarian Minor, Double Harmonic, and Romanian Minor.\n• Octatonic — 8 notes per octave. The diminished scales (whole-half and half-whole) and Messiaen Modes 3, 4, and 6.\n\nNote count affects how the scale sounds: fewer notes create wider, more open gaps; more notes create denser, more chromatic textures.',
       },
       {
         term: 'Polychord',
@@ -405,6 +429,10 @@ Click Reset to clear the stats without starting a new session.`,
       {
         term: 'Qualified Roman numeral',
         body: 'A Roman numeral with a flat or sharp prefix indicating how the degree differs from the major scale. ♭III means the note three semitones above the root (one semitone lower than the major 3rd). ♯IV means the note six semitones above (one semitone higher than the perfect 4th). Used throughout the breakdown to label scale degrees and chord tones.',
+      },
+      {
+        term: 'Quartal / quintal chords',
+        body: 'Chords built by stacking perfect fourths (quartal) or perfect fifths (quintal) instead of thirds. Because they contain no major or minor third, they have no traditional chord quality — they float between major and minor, sounding open, ambiguous, and modern.\n\nQuintal chords are the inversional equivalent of quartal chords: the same pitch classes, stacked in the opposite direction.\n\nChord types in the pool:\n• qrt3 — three-note quartal (two stacked fourths): the most compact, maximally ambiguous\n• qrt4 — four-note quartal (three stacked fourths): the workhorse jazz quartal voicing; McCoy Tyner / Coltrane era\n• qrt5 / So What — three fourths plus a major third on top: Bill Evans\'s voicing from "So What" (Kind of Blue)\n• qrtTT — two fourths plus a tritone: injects tension into the quartal stack\n• qnt3 — three-note quintal (two stacked fifths): open, spacious, "hollow" quality\n• qnt4 — four-note quintal (three stacked fifths): vast, cathedral-like resonance\n\nDistinct from Quartal voicings, which apply a quartal spacing to any chord type.',
       },
       {
         term: 'Quartal / quintal voicing',
