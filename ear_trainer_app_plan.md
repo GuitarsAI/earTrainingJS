@@ -56,7 +56,7 @@
 - **42** Pool panel UX overhaul — all sections collapsed by default, global All/None buttons ✓ (Aug 2026)
 - **43** Breakdown default state + full chip sync ✓ (Aug 2026)
 - **44** Complete chord library ✓ (Aug 2026) — all families complete; `chords_reference.md` fully updated
-- **45** Complete scale library — reference file exists; implementation not yet started
+- **45** Complete scale library ✓ (Aug 2026) — all named entries added to `scales.js`; pool panel auto-discovers groups via `group` field
 - **47** Harmonic field in scale breakdown ✓ (Aug 2026)
 - **48** Collapsible breakdown sub-sections ✓ (Aug 2026)
 - **About** About view + ⓘ header button ✓ (Aug 2026)
@@ -66,6 +66,35 @@
 ---
 
 ## Current Session — Aug 2026
+
+### Point 45 — Complete scale library ✓ COMPLETE
+
+All named entries from `complete_12_TET_piano_scales.md` have been added to `scales.js`. The `SCALES` array is now the single source of truth; the pool panel auto-discovers groups via the `group` field on each entry — no hardcoded indices or counts anywhere.
+
+**What was delivered:**
+- `scales.js` split out from `chords.js` as a standalone file
+- 46 scales total across four cardinality groups: 13 pentatonic, 8 hexatonic, 21 diatonic/modal, 4 octatonic
+- New entries: Iwato, In-sen, Hirajoshi, Yo, Dominant Pentatonic, Suspended Pentatonic, Dorian/Phrygian/Lydian/Mixolydian/Locrian pentatonics; Major Blues, Prometheus Liszt, Tritone Hexatonic, Messiaen Mode 5; Harmonic Major, Neapolitan Minor, Double Harmonic, Spanish/Flamenco, Hungarian Minor, Romanian Minor, Dorian ♯4, Phrygian ♮6, Messiaen Mode 6; Messiaen Modes 3 & 4
+- Each entry carries `group: 'pentatonic' | 'hexatonic' | 'diatonic' | 'octatonic'`
+- `SCALE_GROUP_CONFIG` in `pool.js` maps group keys to display titles and section renderer choice
+
+**Bug found and fixed — dict mode pool used hardcoded `SCALES.slice()` indices:**
+- `renderDictPoolPanel()` in `app.js` was slicing `SCALES` by hardcoded index boundaries written for the old 25-scale array
+- After Point 45 expanded the array, every group boundary was wrong, causing scales to appear under the wrong section heading in Dictionary mode
+- Fix: extracted `iterateScaleGroups(callback)` helper in `pool.js` — iterates `SCALES` by `group` field using a `Map` in insertion order, looks up title and config from `SCALE_GROUP_CONFIG`
+- Both `renderScalePoolPanel` (quiz) and `renderDictPoolPanel` (dict) now call `iterateScaleGroups` — one source of truth, no hardcoded indices
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/data/scales.js` | New file — `SCALES` array and `SCALE_DIRECTIONS` extracted from `chords.js`; full scale library added |
+| `js/ui/pool.js` | `iterateScaleGroups()` helper added; `renderScalePoolPanel` refactored to use it |
+| `js/app.js` | `renderDictPoolPanel` scales branch: hardcoded `SCALES.slice()` calls replaced with `iterateScaleGroups()` |
+
+---
+
+### Previous Session — Aug 2026
 
 ### Point 49 — In-app Help system ✓ COMPLETE
 
@@ -383,23 +412,9 @@ Split `chords.js` into focused files when it becomes unwieldy. All expose entrie
 
 ### Point 45 — Complete scale library
 
-#### Status: Reference complete — implementation not yet started
+#### Status: Complete ✓ (Aug 2026)
 
-`complete_12_TET_piano_scales.md` is the master catalogue. Target: the named/literature index (~50 named entries).
-
-**Missing entries include:**
-- Japanese pentatonics: Iwato, In-sen, Hirajoshi, Yo, Ritsu
-- Hexatonics: Tritone Hexatonic, Prometheus Liszt, Major/Minor Blues, Messiaen Mode 5
-- Heptatonics: Harmonic Major, Neapolitan Minor, Double Harmonic/Byzantine, Hungarian Minor, Romanian Minor, Dorian ♯4, Phrygian ♮6
-- Octatonics: Messiaen Modes 3, 4, 6
-
-#### Implementation steps
-1. Audit current 25 scales against reference — correct any wrong interval patterns
-2. Add each missing named entry to `chords.js` (`SCALES` array)
-3. Verify: interval pattern, enharmonic spelling, degree numerals
-4. Add new pool panel chips in `pool.js` within the correct cardinality group
-5. Confirm chord-scales intersection logic still works for all new entries
-6. Update reference file status column as each scale is added
+All named entries from `complete_12_TET_piano_scales.md` implemented. See Current Session notes above for full detail.
 
 ---
 
