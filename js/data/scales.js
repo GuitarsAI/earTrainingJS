@@ -51,7 +51,7 @@ const SCALES = [
   { name: 'Romanian Minor',   displayName: 'Romanian Minor (Ukrainian Dorian)',       symbol: 'romanian_minor',intervals: [0,2,3,6,7,9,10,12],  parentKey: { offset: 0,  quality: null   }, group: 'diatonic' },
   { name: 'Dorian ♯4',                                                               symbol: 'dorian_s4',     intervals: [0,2,3,6,7,9,11,12],  parentKey: { offset: 0,  quality: null   }, group: 'diatonic' },
   { name: 'Phrygian ♮6',                                                             symbol: 'phrygian_n6',   intervals: [0,1,3,5,7,9,11,12],  parentKey: { offset: 0,  quality: null   }, group: 'diatonic' },
-  { name: 'Messiaen Mode 3',                                                          symbol: 'messiaen_3',    intervals: [0,2,3,4,6,8,9,10,12],parentKey: { offset: 0,  quality: null   }, group: 'diatonic' },
+  { name: 'Messiaen Mode 3',                                                          symbol: 'messiaen_3',    intervals: [0,2,3,4,6,8,9,10,12],parentKey: { offset: 0,  quality: null   }, group: 'octatonic' },
   { name: 'Messiaen Mode 6',                                                          symbol: 'messiaen_6',    intervals: [0,2,4,6,8,9,11,12],  parentKey: { offset: 0,  quality: null   }, group: 'diatonic' },
 
   // ── Octatonic (8 notes) ──────────────────────────────────────────────────

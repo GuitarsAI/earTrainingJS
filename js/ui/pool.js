@@ -716,6 +716,23 @@ const SCALE_GROUP_CONFIG = {
   octatonic:  { title: 'Octatonic (8 notes)',        sectionFn: 'standard' },
 };
 
+// Iterate SCALES grouped by the 'group' field, in insertion order.
+// callback(key, title, items, cfg) — cfg is the SCALE_GROUP_CONFIG entry or undefined.
+// Single source of truth for group structure; used by both quiz and dict renderers.
+function iterateScaleGroups(callback) {
+  const groupMap = new Map();
+  SCALES.forEach(s => {
+    const key = s.group || 'other';
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key).push(s);
+  });
+  groupMap.forEach((items, key) => {
+    const cfg = SCALE_GROUP_CONFIG[key];
+    const title = cfg ? cfg.title : (key.charAt(0).toUpperCase() + key.slice(1));
+    callback(key, title, items, cfg);
+  });
+}
+
 function renderScalePoolPanel(panel) {
   // POINT 28: Group by the 'group' field on each SCALES entry — auto-discovers new groups.
   const { body } = makePoolPanelShell(panel, 'Training pool — Scales', null);
@@ -724,17 +741,7 @@ function renderScalePoolPanel(panel) {
   makeGlobalAllNone(body, [...SCALES], selectedScales,
     () => body.querySelectorAll('.pool-chip'), onChange);
 
-  // Collect groups in insertion order, deduplicated
-  const groupMap = new Map();
-  SCALES.forEach(s => {
-    const key = s.group || 'other';
-    if (!groupMap.has(key)) groupMap.set(key, []);
-    groupMap.get(key).push(s);
-  });
-
-  groupMap.forEach((items, key) => {
-    const cfg = SCALE_GROUP_CONFIG[key];
-    const title = cfg ? cfg.title : (key.charAt(0).toUpperCase() + key.slice(1));
+  iterateScaleGroups((key, title, items, cfg) => {
     if (cfg && cfg.sectionFn === 'withDisplayName') {
       makeSectionWithDisplayName(body, title, items, selectedScales, onChange, true);
     } else {

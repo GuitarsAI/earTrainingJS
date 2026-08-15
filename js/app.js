@@ -239,10 +239,10 @@ function renderDictPoolPanel() {
     makeDictSection(body, 'Simple intervals',    INTERVALS.filter(i => !i.compound), false, false);
     makeDictSection(body, 'Extended / Compound', INTERVALS.filter(i =>  i.compound), false, true);
   } else {
-    makeDictSection(body, 'Pentatonic (5 notes)',       SCALES.slice(0, 7),  true);
-    makeDictSection(body, 'Hexatonic (6 notes)',        SCALES.slice(7, 11));
-    makeDictSection(body, 'Diatonic / Modal (7 notes)', SCALES.slice(11, 23));
-    makeDictSection(body, 'Octatonic (8 notes)',        SCALES.slice(23));
+    iterateScaleGroups((key, title, items, cfg) => {
+      const useDisplayName = !!(cfg && cfg.sectionFn === 'withDisplayName');
+      makeDictSection(body, title, items, useDisplayName, false);
+    });
   }
 }
 
