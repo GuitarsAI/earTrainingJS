@@ -592,7 +592,9 @@ function showBreakdownChords(panel) {
   }
 
   // Dominant
-  if (family === 'dominant' && (sym === '7' || sym === '7_9' || sym === '7_b9' || sym === '7_s9' || sym === '7_13' || sym === '7_9_13')) {
+  const hasMajorThird = baseChord.intervals.some(i => i % 12 === 4);
+  const hasMinorSev   = baseChord.intervals.some(i => i % 12 === 10);
+  if (family === 'dominant' && hasMajorThird && hasMinorSev) {
     const { subName, iiName, resMaj, resMin } = computeTritoneSubInfo(rootPc, sym);
     const { section: domSec, body: domBody } = makeCSGroup('Dominant', false);
     mainBody.appendChild(domSec);

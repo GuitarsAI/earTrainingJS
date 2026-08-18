@@ -56,6 +56,12 @@ const LOWERCASE_QUALITIES = new Set(['minor', 'diminished']);
 // See algorithm plan § 6 Edge Cases.
 const AMBIGUOUS_FAMILIES = new Set(['aug', 'augmented', 'sus', 'suspended', 'poly', 'ust']);
 
+// Core tones that must fit the scale in a fuzzy match (root + major 3rd + minor 7th).
+// Used for altered dominant chords whose extensions (♭9, ♯11, ♭13) are chromatic
+// by design and would prevent any exact scale match.
+// Intervals are relative to chord root (semitones).
+const DOMINANT_CORE_INTERVALS = [0, 4, 10]; // root, M3, m7
+
 
 // ─── 2. HELPERS ──────────────────────────────────────────────────────────────
 
@@ -125,6 +131,15 @@ function deriveChordQuality(intervals) {
   return 'major'; // fallback
 }
 
+// Build the set of core pitch classes for a dominant chord (root + M3 + m7).
+// These are the defining tones of a dominant 7th; alterations (♭9, ♯11, ♭13)
+// are intentionally excluded so that fuzzy matching can find a tonal home
+// even when the full chord is chromatic.
+// chordRootPc: 0–11
+function buildDominantCorePcs(chordRootPc) {
+  return new Set(DOMINANT_CORE_INTERVALS.map(i => (chordRootPc + i) % 12));
+}
+
 
 // ─── 3. STEP 3 — DIATONIC CONTEXT DISCOVERY ──────────────────────────────────
 
@@ -132,6 +147,11 @@ function deriveChordQuality(intervals) {
 // find every scale (across all 25 SCALES × 12 roots) that contains all
 // chord pitch classes. For each match, compute the scale degree, Roman
 // numeral, harmonic function, and tension score.
+//
+// For altered dominant chords (dominant quality with 2+ chromatic alterations),
+// a second fuzzy pass is performed using only the core tones (root, M3, m7).
+// Fuzzy matches are tagged with matchQuality: 0.8 and de-duplicated against
+// exact matches so the same context is never listed twice.
 //
 // chordRootPc:      integer 0–11
 // chordPitchClasses: iterable of pitch class integers 0–11
@@ -143,13 +163,18 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
   const chordQuality = chordIntervals ? deriveChordQuality(chordIntervals) : 'major';
   const contexts = [];
 
+  // Key used to de-duplicate contexts across exact and fuzzy passes.
+  // Two contexts are the same if they share scale symbol + scale root.
+  const seen = new Set();
+
+  // ── Pass 1: Exact match — all chord pitch classes must fit the scale ──────
   for (const scale of SCALES) {
     for (let scaleRootPc = 0; scaleRootPc < 12; scaleRootPc++) {
 
       // Build scale pitch class set for this root
       const scalePcs = buildScalePcs(scaleRootPc, scale.intervals);
 
-      // Check if ALL chord pitch classes are in this scale (exact match)
+      // Check if ALL chord pitch classes are in this scale
       let fits = true;
       for (const pc of chordPcs) {
         if (!scalePcs.has(pc)) { fits = false; break; }
@@ -159,54 +184,154 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
       // Check chord root is actually in the scale
       if (!scalePcs.has(chordRootPc)) continue;
 
-      // Compute scale degree (semitones from scale root to chord root)
-      const degSemitones = chordDegreeInScale(scaleRootPc, chordRootPc);
-
-      // Roman numeral — reuse existing semitoneToDegree() from breakdown.js
-      const roman = (typeof semitoneToDegree === 'function')
+      const degSemitones    = chordDegreeInScale(scaleRootPc, chordRootPc);
+      const roman           = (typeof semitoneToDegree === 'function')
         ? semitoneToDegree(degSemitones, chordQuality)
-        : degSemitones.toString(); // fallback if not yet available
-
-      // Harmonic function from degree
+        : degSemitones.toString();
       const harmonicFunction = FUNCTION_MAP[degSemitones] || 'tonic';
+      const tension          = scoreTension(degSemitones, chordPcs, chordRootPc);
 
-      // Tension score
-      const tension = scoreTension(degSemitones, chordPcs, chordRootPc);
+      const key = `${scale.symbol}:${scaleRootPc}`;
+      seen.add(key);
 
       contexts.push({
-        scaleSymbol:      scale.symbol,         // e.g. 'major', 'harm_minor'
-        scaleName:        scale.name,            // e.g. 'Major', 'Harmonic Minor'
-        scaleRootPc,                             // 0–11
-        degSemitones,                            // semitones from scale root to chord root
-        roman,                                   // e.g. 'ii', 'V', '♭VII'
-        harmonicFunction,                        // 'tonic' | 'predominant' | 'subdominant' | 'dominant'
-        tension,                                 // 0.0 – 1.0
-        matchQuality: 1.0,                       // 1.0 = exact; 0.8 = fuzzy (future)
+        scaleSymbol:      scale.symbol,
+        scaleName:        scale.name,
+        scaleGroup:       scale.group || 'diatonic',
+        scaleRootPc,
+        degSemitones,
+        roman,
+        harmonicFunction,
+        tension,
+        matchQuality: 1.0,   // exact match
       });
     }
   }
 
-  // Sort priority:
-  //   1. Dominant-function contexts first — a dominant 7th chord (major 3rd + minor 7th)
-  //      is harmonically dominant by definition and must never surface as tonic/departure.
-  //      G7 in G mixolydian (tonic, tension 0) must lose to G7 in C major (dominant, tension 0.88).
-  //   2. Scale commonality — more common scales (major > nat_minor > ...) surface before exotic ones.
-  //   3. Tension — within same commonality band, higher tension context listed first.
+  // ── Pass 2: Fuzzy match for altered dominant chords ───────────────────────
+  // An altered dominant has dominant quality (M3 + m7) plus 2 or more
+  // chromatic alterations (♭9, ♯9, ♯11, ♭13, etc.). Its extensions are
+  // deliberately non-diatonic, so no single scale contains all its notes —
+  // exact matching returns nothing, leaving the chord without a resolution.
+  //
+  // Fix: match scales against core tones only (root + M3 + m7). If the scale
+  // accepts those three tones AND the chord root sits at scale degree 7
+  // (dominant degree), we have a valid dominant context in that key.
+  // The chord still resolves to that key's tonic; the alterations are
+  // understood as chromatic colour, not scale membership violations.
+  //
+  // matchQuality is set to 0.8 to distinguish fuzzy entries from exact ones.
+  // Contexts already found in Pass 1 are skipped (de-duplication via `seen`).
+
+  const alterationCount = countAlterations(chordRootPc, chordPcs);
+  const isDominantQualityForFuzzy = chordQuality === 'dominant';
+
+  if (isDominantQualityForFuzzy && alterationCount >= 2) {
+    const corePcs = buildDominantCorePcs(chordRootPc);
+
+    for (const scale of SCALES) {
+      for (let scaleRootPc = 0; scaleRootPc < 12; scaleRootPc++) {
+
+        const key = `${scale.symbol}:${scaleRootPc}`;
+        if (seen.has(key)) continue; // already have an exact match for this context
+
+        const scalePcs = buildScalePcs(scaleRootPc, scale.intervals);
+
+        // Core tones (root + M3 + m7) must all fit the scale
+        let coreFits = true;
+        for (const pc of corePcs) {
+          if (!scalePcs.has(pc)) { coreFits = false; break; }
+        }
+        if (!coreFits) continue;
+
+        // Chord root must be in the scale
+        if (!scalePcs.has(chordRootPc)) continue;
+
+        const degSemitones     = chordDegreeInScale(scaleRootPc, chordRootPc);
+        const harmonicFunction = FUNCTION_MAP[degSemitones] || 'tonic';
+
+        // Only keep dominant-function contexts from the fuzzy pass.
+        // A dominant chord with altered extensions sitting on, say, degree I
+        // of a mixolydian scale would be misleading — we want the resolution
+        // context (V → I), not a tonic reading.
+        if (harmonicFunction !== 'dominant') continue;
+
+        const roman   = (typeof semitoneToDegree === 'function')
+          ? semitoneToDegree(degSemitones, chordQuality)
+          : degSemitones.toString();
+
+        // Tension: use full chord pcs for scoring (alterations still count)
+        const tension = scoreTension(degSemitones, chordPcs, chordRootPc);
+
+        seen.add(key);
+
+        contexts.push({
+          scaleSymbol:      scale.symbol,
+          scaleName:        scale.name,
+          scaleGroup:       scale.group || 'diatonic',
+          scaleRootPc,
+          degSemitones,
+          roman,
+          harmonicFunction,
+          tension,
+          matchQuality: 0.8,   // fuzzy — core tones only
+        });
+      }
+    }
+  }
+
+  // ── Sort ──────────────────────────────────────────────────────────────────
+  // Sort priority (Berklee functional harmony — most musically relevant first):
+  //
+  //   1. Dominant function first — for dominant-quality chords, a context where
+  //      the chord functions as V must always surface before any other reading,
+  //      regardless of how well the chord fits that scale. An altered dominant
+  //      in a diatonic V context is more musically meaningful than a perfect
+  //      fit in an exotic symmetric scale that implies no functional resolution.
+  //
+  //   2. Diatonic group before all others — only diatonic scales imply a tonic
+  //      to resolve to. Octatonic, hexatonic, and pentatonic scales can contain
+  //      a dominant chord by coincidence (e.g. Messiaen Mode 4 swallows 7-note
+  //      chords easily due to its 8-note density) but carry no harmonic function.
+  //      Diatonic contexts are always more meaningful than exotic exact matches.
+  //
+  //   3. Match quality — within the same group, exact matches before fuzzy.
+  //
+  //   4. Scale commonality — more common scales (major > nat_minor > ...)
+  //      surface before rare ones within the same group.
+  //
+  //   5. Tension — within same commonality band, higher tension listed first.
+
   const isDominantQuality = chordIntervals
     ? (deriveChordQuality(chordIntervals) === 'dominant')
     : false;
 
+  // Group priority: diatonic beats everything; pentatonic/hexatonic/octatonic are equal.
+  function groupPriority(group) {
+    return group === 'diatonic' ? 1 : 0;
+  }
+
   contexts.sort((a, b) => {
-    // Tier 1: if chord is dominant quality, dominant-function contexts always first
+    // Tier 1: dominant-function contexts always first for dominant-quality chords
     if (isDominantQuality) {
       const aIsDom = a.harmonicFunction === 'dominant' ? 1 : 0;
       const bIsDom = b.harmonicFunction === 'dominant' ? 1 : 0;
       if (bIsDom !== aIsDom) return bIsDom - aIsDom;
     }
-    // Tier 2: scale commonality
+
+    // Tier 2: diatonic group beats non-diatonic (pentatonic / hexatonic / octatonic)
+    const gDiff = groupPriority(b.scaleGroup) - groupPriority(a.scaleGroup);
+    if (gDiff !== 0) return gDiff;
+
+    // Tier 3: exact matches before fuzzy matches (within same group)
+    const mDiff = b.matchQuality - a.matchQuality;
+    if (mDiff !== 0) return mDiff;
+
+    // Tier 4: scale commonality
     const cDiff = scaleCommonality(b.scaleSymbol) - scaleCommonality(a.scaleSymbol);
     if (cDiff !== 0) return cDiff;
-    // Tier 3: tension
+
+    // Tier 5: tension
     return b.tension - a.tension;
   });
 
