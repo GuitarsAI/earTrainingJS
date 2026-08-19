@@ -665,8 +665,48 @@ For each file, complete all six steps in order:
 | # | File | Priority notes |
 |---|---|---|
 | 29 | `js/app.js` | Central orchestrator — document `switchMode()`, `setAppDifficulty()`, `setAppMode()`, boot sequence, theme init |
-| 30 | `index.html` | Professional HTML comments only; document load order in a comment block |
+| 30 | `index.html` | ✅ Production pass complete — see blocker note below |
 | 31–33 | `css/base.css`, `css/components.css`, `css/mobile.css` | Section headers, token documentation |
+
+#### `index.html` — Production Pass Status
+
+**✅ Complete (one outstanding item before v1.0.0 build)**
+
+Verified:
+- Professional file header comment block with purpose, load order rationale, dependency list, accessibility notes, author, copyright, license ✅
+- No inline scripts; no inline styles beyond `display:none` state overrides ✅
+- All SEO meta tags: `<meta name="description">`, `<meta name="author">`, `<meta name="keywords">`, `<meta name="theme-color">` ✅
+- Open Graph tags complete (`og:type`, `og:title`, `og:description`, `og:image`, `og:url`) ✅
+- Twitter card tags complete ✅
+- `<link rel="canonical">` present ✅
+- `<link rel="apple-touch-icon">` present ✅
+- All icon-only buttons carry `aria-label` (`aboutBtn`, `helpBtn`, `themeToggle`, `themeToggleMobile`, `playBtn`, `newSessionBtn`) ✅
+- Score pills carry `aria-label` ✅
+- Chip groups carry `role="group"` and `aria-label` ✅
+- `#statusMsg` carries `aria-live="polite"` ✅
+- `#ansDropdownList` carries `role="listbox"` ✅
+- `#ansDropdownTrigger` carries `role="button"`, `tabindex="0"`, `aria-haspopup="listbox"`, `aria-expanded="false"` ✅
+- Script load order follows 7-layer dependency graph; each layer has an explanatory comment block ✅
+- Footer badges use self-hosted SVGs at `assets/badges/` — no CDN calls ✅
+- No Google Fonts `<link>` tags present (fonts loaded via `css/base.css` `@font-face`) ✅
+- No unpkg or CDN `<script>` tags present (VexFlow and soundfont-player self-hosted) ✅
+- Closing footer comment with copyright present ✅
+
+**⚠️ Outstanding blocker — About view badges (line ~447–458):**
+
+The `#aboutView` section contains four `<img src="https://img.shields.io/...">` badge tags that make live CDN calls to `shields.io` at runtime. This violates the self-hosting requirement.
+
+**Fix before v1.0.0 build:** Replace these four `<img>` tags with self-hosted SVGs, reusing the same files already present at `assets/badges/`:
+
+```html
+<!-- Replace shields.io CDN badges in #aboutView with: -->
+<img src="assets/badges/badge-youtube.svg" alt="The Sound Travels on YouTube">
+<img src="assets/badges/badge-linkedin-renato.svg" alt="Renato Fera on LinkedIn">
+<img src="assets/badges/badge-linkedin-tst.svg" alt="The Sound Travels on LinkedIn">
+<img src="assets/badges/badge-linkedin-brics.svg" alt="BRICS+ Audio on LinkedIn">
+```
+
+The parent `<a>` wrapper elements and their `href`, `target`, `rel`, and `aria-label` attributes are already correct — only the `<img src>` needs updating.
 
 ---
 
