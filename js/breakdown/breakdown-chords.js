@@ -1,8 +1,13 @@
 // ─── breakdown-chords.js ──────────────────────────────────────────────────────
 // Chords branch of the breakdown panel (polychords, UST, slash, regular chords).
+//
+// Owns all voice leading rendering and resolution logic:
+//   RESOLUTION_TARGETS, VL_INTERVAL_NAMES, vlRoleLabel(), buildResolutionMidi(),
+//   getResolutionInfo(), computeVoiceLeading(), makeVoiceLeadingRow()
+//
 // Depends on shared helpers/globals defined in breakdown.js:
 //   makeNameHeader, makeBDRow, makeCSGroup, makeChordScalesRow,
-//   makeVoiceLeadingRow, joinSep, intervalAbbr, semitonesToNumeral,
+//   joinSep, intervalAbbr, semitonesToNumeral,
 //   qualityFullName, makePill, SEMITONE_TO_ROMAN, INTERVAL_ABBR,
 //   spelledRoot, spelledNote, pcInterval,
 //   VOICING_MODES, TRITONE_AS_D5, EIGHT_AS_A5, NINE_AS_D7,
@@ -13,8 +18,836 @@
 //   dictInversionIndex, getPolyChordLabel, getUSTLabel, getSlashResolvedName,
 //   getChordRootName, polyQualitySuffix, polyQualityFull, switchMode,
 //   dictSymbol, setAppMode
+// Cross-cutting resolve state (resolutionActive, selectedResolution, playResolution, etc.)
+// lives in breakdown.js — those functions are used by audio and notation paths too.
 // Called from showBreakdown() in breakdown.js.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// RESOLUTION_TARGETS — fallback table used before analyseChord() (voiceLeading.js) is wired.
+// Each entry: { offset: semitones UP from chord root to resolution root, quality, label }
+//
+// Theory notes:
+//   Dominant chords (7, 9, 13, alt…) → resolve UP a P4 (= down a P5) to tonic (I).
+//     G7 → C  : offset 5  ✓
+//   Diminished triad / dim7 → leading-tone resolution: root rises m2 to tonic.
+//     Bdim → C : offset 1  ✓  (B is the leading tone of C)
+//   Half-dim (m7♭5) → ii∅ of minor: resolves to V7 of that minor key (P4 up).
+//     Bm7♭5 → E7 : offset 5 → dom7  ✓
+//   Minor 7th chords → function as ii7; strongest motion is to V7 (P4 up = ii→V).
+//     Dm7 → G7 : offset 5 → dom7  ✓
+//   Minor major 7th → tonic chord of harmonic/melodic minor; stable, departs to iv or bVII.
+//     CmMaj7 → Fm : offset 5 → min  ✓
+//   Major triads → stable tonic; most common next move is to IV (subdominant departure).
+//     C → F : offset 5  (departure, not resolution — but this is the legacy fallback)
+//   Minor triads → stable; common motion is to iv or to bVII (no single universal answer).
+//     Cm → Fm : offset 5 → min  (subdominant departure)
+//   Augmented (V+, V7+) → function as dominant; resolve P4 up to I.
+//     Gaug → C : offset 5  ✓
+//   Sus chords → resolve by dropping the 4th or 2nd to the 3rd — same root.
+//     Gsus4 → G : offset 0  ✓
+//   Maj7, maj9, maj11, maj13 → tonic or subdominant; depart to IV.
+//     CΔ7 → FΔ7 : offset 5  (departure)
+
+const RESOLUTION_TARGETS = {
+  // ── Major triads — tonic; depart to subdominant ───────────────────────────────
+  'maj':        { offset: 5,  quality: 'maj',  label: '→ IV' },
+  'maj6':       { offset: 5,  quality: 'maj',  label: '→ IV' },
+  'maj6_9':     { offset: 5,  quality: 'maj',  label: '→ IV' },
+  'add9':       { offset: 5,  quality: 'maj',  label: '→ IV' },
+  '6':          { offset: 5,  quality: 'maj',  label: '→ IV' },
+
+  // ── Major 7th / extensions — tonic; depart to IVΔ7 ──────────────────────────
+  'maj7':       { offset: 5,  quality: 'maj7', label: '→ IVΔ7' },
+  'maj7_9':     { offset: 5,  quality: 'maj7', label: '→ IVΔ7' },
+  'maj7_9_s11': { offset: 5,  quality: 'maj7', label: '→ IVΔ7' },
+  'maj9':       { offset: 5,  quality: 'maj7', label: '→ IVΔ7' },
+  'maj11':      { offset: 5,  quality: 'maj7', label: '→ IVΔ7' },
+  'maj13':      { offset: 5,  quality: 'maj7', label: '→ IVΔ7' },
+
+  // ── Minor triads — subdominant departure ─────────────────────────────────────
+  'm':          { offset: 5,  quality: 'min',  label: '→ iv' },
+  'madd9':      { offset: 5,  quality: 'min',  label: '→ iv' },
+
+  // ── Minor 7th / extensions — ii7 function → V7 (P4 up) ──────────────────────
+  'm7':         { offset: 5,  quality: 'dom7', label: '→ V7' },
+  'm7_9':       { offset: 5,  quality: 'dom7', label: '→ V7' },
+  'm7_11':      { offset: 5,  quality: 'dom7', label: '→ V7' },
+  'm6':         { offset: 5,  quality: 'dom7', label: '→ V7' },
+  'm9':         { offset: 5,  quality: 'dom7', label: '→ V7' },
+  'm11':        { offset: 5,  quality: 'dom7', label: '→ V7' },
+  'm13':        { offset: 5,  quality: 'dom7', label: '→ V7' },
+
+  // ── Minor major 7th — tonic of harmonic/melodic minor; departs to iv ─────────
+  'mMaj7':      { offset: 5,  quality: 'min',  label: '→ iv' },
+
+  // ── Dominant 7th and all extensions — resolve UP P4 to I (authentic cadence) ─
+  '7':          { offset: 5,  quality: 'maj',  label: '→ I' },
+  '7_9':        { offset: 5,  quality: 'maj',  label: '→ I' },
+  '7_b9':       { offset: 5,  quality: 'maj',  label: '→ I' },
+  '7_s9':       { offset: 5,  quality: 'maj',  label: '→ I' },
+  '7_13':       { offset: 5,  quality: 'maj',  label: '→ I' },
+  '7_9_13':     { offset: 5,  quality: 'maj',  label: '→ I' },
+  '7sus4':      { offset: 5,  quality: 'maj',  label: '→ I' },
+  '9':          { offset: 5,  quality: 'maj',  label: '→ I' },
+  'b9':         { offset: 5,  quality: 'maj',  label: '→ I' },
+  's9':         { offset: 5,  quality: 'maj',  label: '→ I' },
+  '13':         { offset: 5,  quality: 'maj',  label: '→ I' },
+
+  // ── Augmented — dominant function; resolve UP P4 to I ────────────────────────
+  'aug':        { offset: 5,  quality: 'maj',  label: '→ I' },
+  'augMaj7':    { offset: 5,  quality: 'maj',  label: '→ I' },
+  'aug7':       { offset: 5,  quality: 'maj',  label: '→ I' },
+  'aug9':       { offset: 5,  quality: 'maj',  label: '→ I' },
+
+  // ── Diminished triad — leading-tone chord; root rises m2 to tonic ────────────
+  'dim':        { offset: 1,  quality: 'maj',  label: '→ I (m2↑)' },
+
+  // ── Diminished 7th — leading-tone chord; root rises m2 to tonic ──────────────
+  // (each of the four enharmonic roots implies a different V7♭9, but the
+  //  primary resolution from the notated root is m2 up to the implied tonic)
+  'o7':         { offset: 1,  quality: 'maj',  label: '→ I (m2↑)' },
+
+  // ── Half-diminished (m7♭5) — ii∅ of minor; resolves to V7 (P4 up) ────────────
+  'm7b5':       { offset: 5,  quality: 'dom7', label: '→ V7' },
+
+  // ── Suspended — resolve to same root major (4th drops to 3rd, or 2nd rises) ──
+  'sus4':       { offset: 0,  quality: 'maj',  label: '→ I (sus resolves)' },
+  'sus2':       { offset: 0,  quality: 'maj',  label: '→ I (sus resolves)' },
+
+  // ── Power chord — no 3rd, no resolution implied; nearest move is I ────────────
+  'power':      { offset: 0,  quality: 'maj',  label: '→ I' },
+};
+
+// Interval names for voice leading labels (ascending)
+const VL_INTERVAL_NAMES = {
+  0: 'common tone', 1: 'm2', 2: 'M2', 3: 'm3', 4: 'M3',
+  5: 'P4', 6: 'TT', 7: 'P5', 8: 'm6', 9: 'M6', 10: 'm7', 11: 'M7', 12: 'P8',
+};
+
+// Role labels for voice leading: what is the role of the SOURCE note in the chord?
+// Returns a short label based on how many semitones above the (harmonic) root the note is.
+function vlRoleLabel(semiFromRoot) {
+  const s = ((semiFromRoot % 12) + 12) % 12;
+  const roles = {
+    0: 'root', 1: '♭9', 2: '9th', 3: '♭3/♯9', 4: '3rd',
+    5: '4th/11th', 6: '♯11/♭5', 7: '5th', 8: '♯5/♭13', 9: '6th/13th',
+    10: '♭7th', 11: 'maj7th',
+  };
+  return roles[s] || '';
+}
+
+// Build resolution MIDI notes for a given target quality and root midi
+function buildResolutionMidi(targetRootMidi, quality) {
+  const intervals = {
+    'maj':  [0, 4, 7],
+    'min':  [0, 3, 7],
+    'dom7': [0, 4, 7, 10],
+    'maj7': [0, 4, 7, 11],
+    'm7':   [0, 3, 7, 10],
+  }[quality] || [0, 4, 7];
+  return intervals.map(i => targetRootMidi + i);
+}
+
+// Get resolution info for current chord state.
+// Returns { targetRootMidi, targetMidi[], targetName, targetQuality, label } or null.
+// targetQuality is passed directly to computeVoiceLeading() — no string parsing needed.
+function getResolutionInfo() {
+  if (currentMode !== 'chords') return null;
+
+  // Helper: build display suffix from quality string (consistent with app notation)
+  function qualSuffix(q) {
+    if (q === 'dom7') return '7';
+    if (q === 'maj7') return 'Maj7';
+    if (q === 'm7')   return 'm7';
+    if (q === 'min')  return 'm';
+    return '';
+  }
+
+  // ── User-selected resolution override (from Voice Leading breakdown panel) ───
+  // Only applies to normal chords — poly/ust/slash use their own fixed logic below.
+  if (selectedResolution && currentChord?.family !== 'poly' &&
+      currentChord?.family !== 'ust' && currentChord?.family !== 'slash') {
+    const qualMap = { major: 'maj', minor: 'min', dominant: 'dom7', maj7: 'maj7', m7: 'm7', dim: 'dim', aug: 'aug' };
+    const targetQuality = qualMap[selectedResolution.targetQuality] || selectedResolution.targetQuality;
+    const srcMidi = currentChordRootMidi || 60;
+    let targetRootMidi = (Math.floor(srcMidi / 12) * 12) + selectedResolution.targetRootPc;
+    if (targetRootMidi < srcMidi - 6) targetRootMidi += 12;
+    if (targetRootMidi > srcMidi + 6) targetRootMidi -= 12;
+    const targetMidi = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: selectedResolution.label || '→' };
+  }
+
+  // ── POLYCHORD: resolve as lower root → IV (P4 up) ───────────────────────────
+  if (currentChord?.family === 'poly' && currentPolyLowerRootMidi !== null) {
+    const targetRootMidi  = currentPolyLowerRootMidi + 5;
+    const targetQuality   = 'maj';
+    const targetMidi      = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName      = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV of lower root' };
+  }
+
+  // ── UST: resolve as implied chord ────────────────────────────────────────────
+  if (currentChord?.family === 'ust' && currentUSTRootMidi !== null) {
+    const shellQ = currentChord.shellQuality || 'dom7';
+    let offset, targetQuality, label;
+    if      (shellQ === 'dom7') { offset = 5; targetQuality = 'maj';  label = '→ I'; }
+    else if (shellQ === 'min')  { offset = 5; targetQuality = 'dom7'; label = '→ V7'; }
+    else                        { offset = 5; targetQuality = 'maj7'; label = '→ IVMaj7'; }
+    const targetRootMidi = currentUSTRootMidi + offset;
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label };
+  }
+
+  // ── SLASH CHORD: resolve upper chord → IV ────────────────────────────────────
+  if (currentChord?.family === 'slash' && currentUpperRootMidi !== null) {
+    const targetRootMidi = currentUpperRootMidi + 5;
+    const targetQuality  = 'maj';
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV of upper root' };
+  }
+
+  // ── NORMAL CHORD ─────────────────────────────────────────────────────────────
+  if (!currentChord || !currentChordRootMidi) return null;
+
+  // Read from cache if available (Pass 1: analyseChord() wired in)
+  if (currentVoiceLeadingAnalysis) {
+    const { contexts, isAmbiguous } = currentVoiceLeadingAnalysis;
+
+    if (!isAmbiguous && contexts && contexts.length) {
+      const primaryCtx = contexts[0];
+
+      // Use first true resolution; fall back to first departure for tonic chords.
+      const primaryRes = (primaryCtx.resolutions && primaryCtx.resolutions.length)
+        ? primaryCtx.resolutions[0]
+        : (primaryCtx.departures && primaryCtx.departures.length)
+          ? primaryCtx.departures[0]
+          : null;
+
+      if (primaryRes) {
+        const qualMap = { major: 'maj', minor: 'min', dominant: 'dom7', maj7: 'maj7', m7: 'm7' };
+        const targetQuality  = qualMap[primaryRes.targetQuality] || 'maj';
+        const srcMidi        = currentChordRootMidi || 60;
+        const targetRootPc   = primaryRes.targetRootPc;
+        let targetRootMidi   = (Math.floor(srcMidi / 12) * 12) + targetRootPc;
+        if (targetRootMidi < srcMidi - 6) targetRootMidi += 12;
+        if (targetRootMidi > srcMidi + 6) targetRootMidi -= 12;
+        // Use pre-computed voice leading moves (minimal motion, correct register)
+        // rather than buildResolutionMidi which blindly stacks intervals from the root.
+        const targetMidi = (primaryRes.voiceLeading && primaryRes.voiceLeading.length)
+          ? primaryRes.voiceLeading.map(m => m.toMidi)
+          : buildResolutionMidi(targetRootMidi, targetQuality);
+        const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
+        const label          = primaryRes.cadenceName || primaryRes.resolutionType || '→';
+        const targetSymbol   = primaryRes.targetSymbol || null;
+        return { targetRootMidi, targetMidi, targetName, targetQuality, targetSymbol, label };
+      }
+    }
+
+    // Ambiguous or no context found — P4 up fallback
+    const targetRootMidi = currentChordRootMidi + 5;
+    const targetQuality  = 'maj';
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV' };
+  }
+
+  // ── Fallback: RESOLUTION_TARGETS (used before analyseChord() is wired) ───────
+  const sym = currentChord.invIndex !== undefined ? currentChord.baseChord.symbol : currentChord.symbol;
+  const tgt = RESOLUTION_TARGETS[sym];
+  if (!tgt) {
+    const targetRootMidi = currentChordRootMidi + 5;
+    const targetQuality  = 'maj';
+    const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+    const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12);
+    return { targetRootMidi, targetMidi, targetName, targetQuality, label: '→ IV' };
+  }
+  const targetRootMidi = currentChordRootMidi + tgt.offset;
+  const targetQuality  = tgt.quality;
+  const targetMidi     = buildResolutionMidi(targetRootMidi, targetQuality);
+  const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
+  return { targetRootMidi, targetMidi, targetName, targetQuality, label: tgt.label };
+}
+
+// Compute voice leading: for each source note, find its resolution target.
+// Uses computeVoiceLeadingRules() from voiceLeading.js when a context is
+// available; falls back to proximity loop otherwise.
+// Returns array of { fromName, toName, dir, absSemi, intervalName, role, isCommonTone }
+function computeVoiceLeading(sourceMidi, targetMidi) {
+  // Shared root/symbol helpers
+  function getVLRoot() {
+    let rootMidi = currentChordRootMidi;
+    if (currentChord?.family === 'poly'  && currentPolyLowerRootMidi) rootMidi = currentPolyLowerRootMidi;
+    if (currentChord?.family === 'ust'   && currentUSTRootMidi)       rootMidi = currentUSTRootMidi;
+    if (currentChord?.family === 'slash' && currentUpperRootMidi)     rootMidi = currentUpperRootMidi;
+    return rootMidi;
+  }
+  function getVLSym() {
+    return currentChord?.invIndex !== undefined
+      ? currentChord.baseChord.symbol
+      : (currentChord?.symbol || '');
+  }
+
+  // ── Rule-based engine (requires voiceLeading.js + cached analysis) ───────────
+  const info = getResolutionInfo();
+  const ctx  = currentVoiceLeadingAnalysis?.contexts?.[0] || null;
+
+  if (typeof computeVoiceLeadingRules === 'function' && info && ctx) {
+    const targetRootPc = (info.targetRootMidi % 12 + 12) % 12;
+    // Pass targetSymbol (e.g. 'Maj7', 'm7', '7') — computeVoiceLeadingRules() looks
+    // this up in CHORD_SYMBOL_INTERVALS. Falls back to 'Maj7' if not present (e.g.
+    // legacy RESOLUTION_TARGETS path where targetSymbol is not set).
+    const targetSymbol = info.targetSymbol || 'Maj7';
+
+    const moves   = computeVoiceLeadingRules(sourceMidi, targetRootPc, targetSymbol, ctx);
+    const rootMidi = getVLRoot();
+    const rootPc   = (rootMidi % 12 + 12) % 12;
+    const sym      = getVLSym();
+
+    return moves.map(m => {
+      const semiFromRoot = ((m.fromMidi - rootMidi) % 12 + 12) % 12;
+      const role         = vlRoleLabel(semiFromRoot);
+      const fromName     = spelledNote(semiFromRoot, rootPc, sym);
+      const toSemi       = ((m.toMidi - rootMidi) % 12 + 12) % 12;
+      const toName       = spelledNote(toSemi, rootPc, sym);
+      const dir          = m.direction === 'up' ? '↑' : m.direction === 'down' ? '↓' : '—';
+      const intervalName = VL_INTERVAL_NAMES[m.semitones] || (m.semitones + 'st');
+      return { fromName, toName, dir, absSemi: m.semitones, intervalName, role, isCommonTone: m.semitones === 0 };
+    });
+  }
+
+  // ── Proximity fallback ────────────────────────────────────────────────────────
+  const rootMidi = getVLRoot();
+  const rootPc   = (rootMidi % 12 + 12) % 12;
+  const sym      = getVLSym();
+  const src      = [...sourceMidi].sort((a, b) => a - b);
+  const tgt      = [...targetMidi].sort((a, b) => a - b);
+
+  return src.map(s => {
+    let best = null, bestDist = Infinity;
+    for (const t of tgt) {
+      for (const offset of [0, 12, -12, 24, -24]) {
+        const cand = t + offset;
+        const dist = Math.abs(cand - s);
+        if (dist < bestDist) { bestDist = dist; best = cand; }
+      }
+    }
+    const delta        = best - s;
+    const dir          = delta === 0 ? '—' : delta > 0 ? '↑' : '↓';
+    const absSemi      = Math.abs(delta);
+    const intervalName = VL_INTERVAL_NAMES[absSemi] || (absSemi + 'st');
+    const semiFromRoot = ((s - rootMidi) % 12 + 12) % 12;
+    const role         = vlRoleLabel(semiFromRoot);
+    const fromName     = spelledNote(semiFromRoot, rootPc, sym);
+    const toSemi       = ((best - rootMidi) % 12 + 12) % 12;
+    const toName       = spelledNote(toSemi, rootPc, sym);
+    return { fromName, toName, dir, absSemi, intervalName, role, isCommonTone: delta === 0 };
+  });
+}
+
+// ── POINT 37 Pass 2: Multi-context voice leading row ─────────────────────────
+//
+// When currentVoiceLeadingAnalysis is populated, renders one collapsible
+// cs-section per harmonic context, each with:
+//   Header: roman · scale name · function label · tension dots
+//   Body:   one sub-section per resolution target with a vl-table
+//
+// Falls back to the original single-resolution display for ambiguous families
+// (aug, sus, poly) where isAmbiguous=true or cache is null.
+//
+function makeVoiceLeadingRow(panel) {
+
+  // ── Helper: build a vl-table from engine move objects ────────────────────────
+  // moves: array of { fromMidi, toMidi, semitones, direction }
+  function buildVLTable(moves, rootMidi, rootPc, sym) {
+    const tbl = document.createElement('table');
+    tbl.className = 'vl-table';
+    moves.forEach(move => {
+      const semiFromRoot   = ((move.fromMidi - rootMidi) % 12 + 12) % 12;
+      const toSemiFromRoot = ((move.toMidi   - rootMidi) % 12 + 12) % 12;
+      const fromName  = spelledNote(semiFromRoot,   rootPc, sym);
+      const toName    = spelledNote(toSemiFromRoot, rootPc, sym);
+      const role      = vlRoleLabel(semiFromRoot);
+      const isCommon  = move.semitones === 0;
+      const dir       = move.direction === 'up' ? '↑' : move.direction === 'down' ? '↓' : '—';
+      const intName   = VL_INTERVAL_NAMES[move.semitones] || (move.semitones + 'st');
+      const tr = document.createElement('tr');
+      const tdFrom = document.createElement('td'); tdFrom.textContent = fromName + ' →';
+      const tdTo   = document.createElement('td'); tdTo.textContent   = toName;
+      const tdInt  = document.createElement('td'); tdInt.textContent  = isCommon ? '' : (dir + ' ' + intName);
+      const tdRole = document.createElement('td'); tdRole.textContent = role;
+      tr.appendChild(tdFrom); tr.appendChild(tdTo);
+      tr.appendChild(tdInt);  tr.appendChild(tdRole);
+      tbl.appendChild(tr);
+    });
+    return tbl;
+  }
+
+  // ── Helper: tension dots ●●●○○ (max 5) ───────────────────────────────────────
+  function tensionDots(tension) {
+    const filled = Math.round(tension * 5);
+    return '●'.repeat(filled) + '○'.repeat(5 - filled);
+  }
+
+  // ── Helper: engine quality → display suffix ───────────────────────────────────
+  function engineQualToSuffix(q) {
+    return { major: '', minor: 'm', dominant: '7', maj7: 'Maj7', m7: 'm7', dim: '°', aug: '+' }[q] || '';
+  }
+
+  // ── Helper: engine quality → buildResolutionMidi key ─────────────────────────
+  function engineQualToBuildKey(q) {
+    return { major: 'maj', minor: 'min', dominant: 'dom7', maj7: 'maj7', m7: 'm7' }[q] || 'maj';
+  }
+
+  // ── Helper: human-readable function label ─────────────────────────────────────
+  function fnLabel(fn) {
+    return { tonic: 'tonic', predominant: 'predominant',
+             subdominant: 'subdominant', dominant: 'dominant' }[fn] || fn;
+  }
+
+  // ── Helper: resolution type → display label ───────────────────────────────────
+  function resTypeLabel(t) {
+    return {
+      authentic:        'Authentic cadence',
+      authentic_minor:  'Authentic cadence (minor)',
+      deceptive:        'Deceptive cadence',
+      plagal:           'Plagal cadence',
+      to_dominant:      'Move to dominant',
+      half_cadence:     'Half cadence',
+      leading_tone:     'Leading-tone resolution',
+      direct:           'Direct resolution',
+      departure:        'Departure',
+      tritone_sub:      'Tritone substitution',
+      related_ii:       'Related ii7',
+    }[t] || t;
+  }
+
+  // Source midi for this chord family
+  const sourceMidi = (() => {
+    if (currentChord?.family === 'poly')  return [...currentPolyLowerMidi, ...currentPolyUpperMidi];
+    if (currentChord?.family === 'ust')   return [...currentMidiNotes];
+    if (currentChord?.family === 'slash') return [currentSlashBassMidi, ...currentMidiNotes];
+    return [...currentMidiNotes];
+  })();
+
+  // Root midi / pc / sym for note spelling
+  const rootMidi = (() => {
+    if (currentChord?.family === 'poly'  && currentPolyLowerRootMidi) return currentPolyLowerRootMidi;
+    if (currentChord?.family === 'ust'   && currentUSTRootMidi)       return currentUSTRootMidi;
+    if (currentChord?.family === 'slash' && currentUpperRootMidi)     return currentUpperRootMidi;
+    return currentChordRootMidi || 60;
+  })();
+  const rootPc = (rootMidi % 12 + 12) % 12;
+  const sym    = currentChord?.invIndex !== undefined
+    ? currentChord.baseChord.symbol
+    : (currentChord?.symbol || 'maj');
+
+  // ── PASS 2: rich multi-context display ───────────────────────────────────────
+  const cache = currentVoiceLeadingAnalysis;
+
+  if (cache && !cache.isAmbiguous && cache.contexts && cache.contexts.length) {
+
+    if (isMobile()) {
+      // ── Mobile: full-width — plain label above, contexts stack below ──────────
+      const mobileWrap = document.createElement('div');
+      mobileWrap.className = 'cs-mobile-wrap';
+      const resLabel = document.createElement('span');
+      resLabel.className = 'vl-resolves-label-mobile';
+      resLabel.textContent = 'Resolves to';
+      mobileWrap.appendChild(resLabel);
+      cache.contexts.forEach((ctx, ctxIdx) => {
+        const scaleRootName = spelledRoot(ctx.scaleRootPc);
+        const isDeparture   = ctx.harmonicFunction === 'tonic';
+        const ctxSec = document.createElement('div');
+        ctxSec.className = 'cs-section';
+        ctxSec.style.margin = '0.25rem 0';
+        const ctxHdr = document.createElement('div');
+        ctxHdr.className = 'cs-header';
+        const romanEl = document.createElement('span');
+        romanEl.style.cssText = 'color:var(--accent);font-weight:700;margin-right:0.4rem;min-width:2rem;display:inline-block;';
+        romanEl.textContent = ctx.roman;
+        const scaleEl = document.createElement('span');
+        scaleEl.style.cssText = 'flex:1;font-size:0.85rem;';
+        scaleEl.textContent = scaleRootName + ' ' + ctx.scaleName;
+        const fnEl = document.createElement('span');
+        fnEl.style.cssText = 'font-size:0.75rem;color:var(--accent-text);margin-right:0.4rem;';
+        fnEl.textContent = fnLabel(ctx.harmonicFunction);
+        const dotsEl = document.createElement('span');
+        dotsEl.style.cssText = 'font-size:0.7rem;letter-spacing:-1px;color:var(--accent);margin-right:0.35rem;';
+        dotsEl.textContent = tensionDots(ctx.tension);
+        const ctxArrow = document.createElement('span');
+        ctxArrow.className = 'cs-arrow';
+        ctxArrow.textContent = ctxIdx === 0 ? '▾' : '▸';
+        ctxHdr.appendChild(romanEl); ctxHdr.appendChild(scaleEl);
+        ctxHdr.appendChild(fnEl); ctxHdr.appendChild(dotsEl); ctxHdr.appendChild(ctxArrow);
+        const ctxBody = document.createElement('div');
+        ctxBody.className = ctxIdx === 0 ? 'cs-body open' : 'cs-body';
+        ctxBody.style.padding = '0.25rem 0.625rem 0.4rem';
+        ctxHdr.addEventListener('click', () => {
+          const isOpen = ctxBody.classList.toggle('open');
+          ctxArrow.textContent = isOpen ? '▾' : '▸';
+        });
+        if (isDeparture) {
+          const note = document.createElement('div');
+          note.style.cssText = 'font-size:0.8rem;color:var(--accent-text);margin-bottom:0.3rem;padding:0.2rem 0;';
+          note.textContent = 'Stable tonic — no resolution needed. Departure paths:';
+          ctxBody.appendChild(note);
+        }
+
+        // Helper to render a list of entries (resolutions or departures) as
+        // selectable collapsible sub-sections with a voice-leading table.
+        function renderEntryList(entries, sectionLabel, firstOpen) {
+          if (!entries || !entries.length) return;
+          if (sectionLabel) {
+            const lbl = document.createElement('div');
+            lbl.style.cssText = 'font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent-text);padding:0.3rem 0 0.1rem;';
+            lbl.textContent = sectionLabel;
+            ctxBody.appendChild(lbl);
+          }
+          entries.forEach((res, resIdx) => {
+            const isFirst = firstOpen && resIdx === 0;
+            const targetRootName = spelledRoot(res.targetRootPc);
+            const targetLabel    = targetRootName + engineQualToSuffix(res.targetQuality);
+            const resSec = document.createElement('div');
+            resSec.className = 'cs-section';
+            resSec.style.margin = '0.2rem 0';
+            const resHdr = document.createElement('div');
+            resHdr.className = 'cs-header';
+            resHdr.style.paddingLeft = '0.5rem';
+            resHdr.title = 'Select as resolution target';
+            resHdr.style.cursor = 'pointer';
+            const resNameEl = document.createElement('span');
+            resNameEl.style.cssText = 'font-weight:600;margin-right:0.5rem;';
+            resNameEl.textContent = '→ ' + targetLabel;
+            const cadEl = document.createElement('span');
+            cadEl.style.cssText = 'flex:1;font-size:0.78rem;color:var(--accent-text);';
+            cadEl.textContent = resTypeLabel(res.resolutionType);
+            const resArrow = document.createElement('span');
+            resArrow.className = 'cs-arrow';
+            resArrow.textContent = isFirst ? '▾' : '▸';
+            resHdr.appendChild(resNameEl); resHdr.appendChild(cadEl);
+            resHdr.appendChild(resArrow);
+            const resBody = document.createElement('div');
+            resBody.className = isFirst ? 'cs-body open' : 'cs-body';
+            resBody.style.padding = '0.25rem 0.625rem';
+            resHdr.addEventListener('click', () => {
+              const isOpen = resBody.classList.toggle('open');
+              resArrow.textContent = isOpen ? '▾' : '▸';
+            });
+            resHdr.addEventListener('click', () => {
+              const p = resHdr.closest('#breakdownPanel, #breakdownPanelBody');
+              if (p) p.querySelectorAll('.vl-selected').forEach(el => el.classList.remove('vl-selected'));
+              resHdr.classList.add('vl-selected');
+              selectedResolution = { targetRootPc: res.targetRootPc, targetQuality: res.targetQuality, label: resTypeLabel(res.resolutionType) };
+              resolutionRootMidi = null;
+              resolutionActive = false;
+              updateResolveBtn();
+            });
+            if (res.voiceLeading && res.voiceLeading.length) {
+              resBody.appendChild(buildVLTable(res.voiceLeading, rootMidi, rootPc, sym));
+            } else {
+              const buildKey = engineQualToBuildKey(res.targetQuality);
+              let tgtRootMidi = (Math.floor(rootMidi / 12) * 12) + res.targetRootPc;
+              if (tgtRootMidi < rootMidi - 6) tgtRootMidi += 12;
+              if (tgtRootMidi > rootMidi + 6) tgtRootMidi -= 12;
+              const targetMidi = buildResolutionMidi(tgtRootMidi, buildKey);
+              const oldVl = computeVoiceLeading(sourceMidi, targetMidi);
+              const sorted = [...sourceMidi].sort((a, b) => a - b);
+              const moves = oldVl.map((v, i) => {
+                const fMidi = sorted[i] ?? rootMidi;
+                const semi = v.absSemi ?? 0;
+                const dir = v.dir === '↑' ? 'up' : v.dir === '↓' ? 'down' : 'none';
+                const toPc = targetMidi.reduce((best, t) => Math.abs(t - fMidi) < Math.abs(best - fMidi) ? t : best, targetMidi[0]);
+                return { fromMidi: fMidi, toMidi: toPc, semitones: semi, direction: dir };
+              });
+              resBody.appendChild(buildVLTable(moves, rootMidi, rootPc, sym));
+            }
+            resSec.appendChild(resHdr); resSec.appendChild(resBody);
+            ctxBody.appendChild(resSec);
+          });
+        } // end renderEntryList
+
+        // ── Render resolutions (first entry auto-expanded in first context) ──────
+        renderEntryList(ctx.resolutions, isDeparture ? null : null, ctxIdx === 0);
+
+        // ── Render departures (tonic chords only) ────────────────────────────────
+        renderEntryList(ctx.departures, ctx.departures && ctx.departures.length ? 'Departure paths' : null, ctxIdx === 0 && !(ctx.resolutions && ctx.resolutions.length));
+
+        // ── Render substitutions (no voice-leading table — chord label only) ─────
+        if (ctx.substitutions && ctx.substitutions.length) {
+          const subLbl = document.createElement('div');
+          subLbl.style.cssText = 'font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent-text);padding:0.3rem 0 0.1rem;';
+          subLbl.textContent = 'Substitutions';
+          ctxBody.appendChild(subLbl);
+          ctx.substitutions.forEach(sub => {
+            const subRow = document.createElement('div');
+            subRow.style.cssText = 'display:flex;align-items:center;padding:0.15rem 0.5rem;font-size:0.82rem;gap:0.5rem;';
+            const nameEl = document.createElement('span');
+            nameEl.style.fontWeight = '600';
+            nameEl.textContent = spelledRoot(sub.targetRootPc) + engineQualToSuffix(sub.targetQuality);
+            const descEl = document.createElement('span');
+            descEl.style.cssText = 'flex:1;color:var(--accent-text);font-size:0.78rem;';
+            descEl.textContent = resTypeLabel(sub.resolutionType);
+            subRow.appendChild(nameEl); subRow.appendChild(descEl);
+            ctxBody.appendChild(subRow);
+          });
+        }
+
+        ctxSec.appendChild(ctxHdr); ctxSec.appendChild(ctxBody);
+        mobileWrap.appendChild(ctxSec);
+      });
+      panel.appendChild(mobileWrap);
+      return;
+    }
+
+    // ── Desktop: original layout — label | collapsible side by side ───────────
+    const rowWrap = document.createElement('div');
+    rowWrap.className = 'breakdown-row';
+    rowWrap.style.alignItems = 'flex-start';
+
+    const keyEl = document.createElement('span');
+    keyEl.className = 'breakdown-key';
+    keyEl.style.paddingTop = '0.25rem';
+    keyEl.textContent = 'Resolves to';
+    rowWrap.appendChild(keyEl);
+
+    const valEl = document.createElement('span');
+    valEl.className = 'breakdown-val';
+    valEl.style.flex = '1';
+
+    cache.contexts.forEach((ctx, ctxIdx) => {
+      const scaleRootName = spelledRoot(ctx.scaleRootPc);
+      const isDeparture   = ctx.harmonicFunction === 'tonic';
+
+      // ── Context collapsible ─────────────────────────────────────────────────
+      const ctxSec = document.createElement('div');
+      ctxSec.className = 'cs-section';
+      ctxSec.style.margin = '0.25rem 0';
+
+      const ctxHdr = document.createElement('div');
+      ctxHdr.className = 'cs-header';
+
+      const romanEl = document.createElement('span');
+      romanEl.style.cssText = 'color:var(--accent);font-weight:700;margin-right:0.4rem;min-width:2rem;display:inline-block;';
+      romanEl.textContent = ctx.roman;
+
+      const scaleEl = document.createElement('span');
+      scaleEl.style.cssText = 'flex:1;font-size:0.85rem;';
+      scaleEl.textContent = scaleRootName + ' ' + ctx.scaleName;
+
+      const fnEl = document.createElement('span');
+      fnEl.style.cssText = 'font-size:0.75rem;color:var(--accent-text);margin-right:0.4rem;';
+      fnEl.textContent = fnLabel(ctx.harmonicFunction);
+
+      const dotsEl = document.createElement('span');
+      dotsEl.style.cssText = 'font-size:0.7rem;letter-spacing:-1px;color:var(--accent);margin-right:0.35rem;';
+      dotsEl.textContent = tensionDots(ctx.tension);
+
+      const ctxArrow = document.createElement('span');
+      ctxArrow.className = 'cs-arrow';
+      ctxArrow.textContent = ctxIdx === 0 ? '▾' : '▸';
+
+      ctxHdr.appendChild(romanEl);
+      ctxHdr.appendChild(scaleEl);
+      ctxHdr.appendChild(fnEl);
+      ctxHdr.appendChild(dotsEl);
+      ctxHdr.appendChild(ctxArrow);
+
+      const ctxBody = document.createElement('div');
+      ctxBody.className = ctxIdx === 0 ? 'cs-body open' : 'cs-body';
+      ctxBody.style.padding = '0.25rem 0.625rem 0.4rem';
+
+      ctxHdr.addEventListener('click', () => {
+        const isOpen = ctxBody.classList.toggle('open');
+        ctxArrow.textContent = isOpen ? '▾' : '▸';
+      });
+
+      // Stable tonic note
+      if (isDeparture) {
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:0.8rem;color:var(--accent-text);margin-bottom:0.3rem;padding:0.2rem 0;';
+        note.textContent = 'Stable tonic — no resolution needed. Departure paths:';
+        ctxBody.appendChild(note);
+      }
+
+      // ── Helper: render one list of entries (resolutions or departures) ──────────
+      // Each entry becomes a selectable collapsible sub-section with a VL table.
+      function renderDesktopEntryList(entries, sectionLabel, firstOpen) {
+        if (!entries || !entries.length) return;
+        if (sectionLabel) {
+          const lbl = document.createElement('div');
+          lbl.style.cssText = 'font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent-text);padding:0.3rem 0 0.1rem;';
+          lbl.textContent = sectionLabel;
+          ctxBody.appendChild(lbl);
+        }
+        entries.forEach((res, resIdx) => {
+          const isFirst        = firstOpen && resIdx === 0;
+          const targetRootName = spelledRoot(res.targetRootPc);
+          const targetLabel    = targetRootName + engineQualToSuffix(res.targetQuality);
+
+          const resSec = document.createElement('div');
+          resSec.className = 'cs-section';
+          resSec.style.margin = '0.2rem 0';
+
+          const resHdr = document.createElement('div');
+          resHdr.className = 'cs-header';
+          resHdr.style.paddingLeft = '0.5rem';
+          resHdr.title = 'Select as resolution target';
+          resHdr.style.cursor = 'pointer';
+
+          const resNameEl = document.createElement('span');
+          resNameEl.style.cssText = 'font-weight:600;margin-right:0.5rem;';
+          resNameEl.textContent = '→ ' + targetLabel;
+
+          const cadEl = document.createElement('span');
+          cadEl.style.cssText = 'flex:1;font-size:0.78rem;color:var(--accent-text);';
+          cadEl.textContent = resTypeLabel(res.resolutionType);
+
+          const resArrow = document.createElement('span');
+          resArrow.className = 'cs-arrow';
+          resArrow.textContent = isFirst ? '▾' : '▸';
+
+          resHdr.appendChild(resNameEl);
+          resHdr.appendChild(cadEl);
+          resHdr.appendChild(resArrow);
+
+          const resBody = document.createElement('div');
+          resBody.className = isFirst ? 'cs-body open' : 'cs-body';
+          resBody.style.padding = '0.25rem 0.625rem';
+
+          resHdr.addEventListener('click', () => {
+            const isOpen = resBody.classList.toggle('open');
+            resArrow.textContent = isOpen ? '▾' : '▸';
+          });
+
+          resHdr.addEventListener('click', () => {
+            const p = resHdr.closest('#breakdownPanel, #breakdownPanelBody');
+            if (p) p.querySelectorAll('.vl-selected').forEach(el => el.classList.remove('vl-selected'));
+            resHdr.classList.add('vl-selected');
+            selectedResolution = {
+              targetRootPc:  res.targetRootPc,
+              targetQuality: res.targetQuality,
+              label:         resTypeLabel(res.resolutionType),
+            };
+            resolutionRootMidi = null;
+            resolutionActive = false;
+            updateResolveBtn();
+          });
+
+          // Voice leading table — pre-computed by analyseChord()
+          if (res.voiceLeading && res.voiceLeading.length) {
+            resBody.appendChild(buildVLTable(res.voiceLeading, rootMidi, rootPc, sym));
+          } else {
+            // On-demand fallback — fires only if voiceLeading wasn't pre-computed
+            const buildKey   = engineQualToBuildKey(res.targetQuality);
+            let tgtRootMidi  = (Math.floor(rootMidi / 12) * 12) + res.targetRootPc;
+            if (tgtRootMidi < rootMidi - 6) tgtRootMidi += 12;
+            if (tgtRootMidi > rootMidi + 6) tgtRootMidi -= 12;
+            const targetMidi = buildResolutionMidi(tgtRootMidi, buildKey);
+            const oldVl      = computeVoiceLeading(sourceMidi, targetMidi);
+            const sorted     = [...sourceMidi].sort((a, b) => a - b);
+            const moves      = oldVl.map((v, i) => {
+              const fMidi = sorted[i] ?? rootMidi;
+              const semi  = v.absSemi ?? 0;
+              const dir   = v.dir === '↑' ? 'up' : v.dir === '↓' ? 'down' : 'none';
+              const toPc  = targetMidi.reduce((best, t) =>
+                Math.abs(t - fMidi) < Math.abs(best - fMidi) ? t : best, targetMidi[0]);
+              return { fromMidi: fMidi, toMidi: toPc, semitones: semi, direction: dir };
+            });
+            resBody.appendChild(buildVLTable(moves, rootMidi, rootPc, sym));
+          }
+
+          resSec.appendChild(resHdr);
+          resSec.appendChild(resBody);
+          ctxBody.appendChild(resSec);
+        });
+      } // end renderDesktopEntryList
+
+      // ── Render true resolutions (V→I first, strongest first) ─────────────────
+      renderDesktopEntryList(ctx.resolutions, null, ctxIdx === 0);
+
+      // ── Render departure paths (tonic chords only) ────────────────────────────
+      renderDesktopEntryList(
+        ctx.departures,
+        ctx.departures && ctx.departures.length ? 'Departure paths' : null,
+        ctxIdx === 0 && !(ctx.resolutions && ctx.resolutions.length)
+      );
+
+      // ── Render substitutions (label only — no voice-leading table) ────────────
+      if (ctx.substitutions && ctx.substitutions.length) {
+        const subLbl = document.createElement('div');
+        subLbl.style.cssText = 'font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent-text);padding:0.3rem 0 0.1rem;';
+        subLbl.textContent = 'Substitutions';
+        ctxBody.appendChild(subLbl);
+        ctx.substitutions.forEach(sub => {
+          const subRow = document.createElement('div');
+          subRow.style.cssText = 'display:flex;align-items:center;padding:0.15rem 0.5rem;font-size:0.82rem;gap:0.5rem;';
+          const nameEl = document.createElement('span');
+          nameEl.style.fontWeight = '600';
+          nameEl.textContent = spelledRoot(sub.targetRootPc) + engineQualToSuffix(sub.targetQuality);
+          const descEl = document.createElement('span');
+          descEl.style.cssText = 'flex:1;color:var(--accent-text);font-size:0.78rem;';
+          descEl.textContent = resTypeLabel(sub.resolutionType);
+          subRow.appendChild(nameEl); subRow.appendChild(descEl);
+          ctxBody.appendChild(subRow);
+        });
+      }
+
+      ctxSec.appendChild(ctxHdr);
+      ctxSec.appendChild(ctxBody);
+      valEl.appendChild(ctxSec);
+    });
+
+    rowWrap.appendChild(valEl);
+    panel.appendChild(rowWrap);
+    return;
+  }
+
+  // ── FALLBACK: single-resolution (ambiguous family / cache unavailable) ────────
+  const info = getResolutionInfo();
+  if (!info) return;
+
+  const vl = computeVoiceLeading(sourceMidi, info.targetMidi);
+
+  const rowWrap = document.createElement('div');
+  rowWrap.className = 'breakdown-row';
+
+  const keyEl = document.createElement('span');
+  keyEl.className = 'breakdown-key';
+  keyEl.textContent = 'Resolves to';
+  rowWrap.appendChild(keyEl);
+
+  const valEl = document.createElement('span');
+  valEl.className = 'breakdown-val';
+  valEl.style.flex = '1';
+
+  const nameEl = document.createElement('div');
+  nameEl.style.fontWeight = '600';
+  nameEl.style.marginBottom = '0.3rem';
+  nameEl.textContent = info.targetName + '  ' + info.label;
+  valEl.appendChild(nameEl);
+
+  const tbl = document.createElement('table');
+  tbl.className = 'vl-table';
+  vl.forEach(v => {
+    const tr = document.createElement('tr');
+    const tdFrom = document.createElement('td'); tdFrom.textContent = v.fromName + ' →';
+    const tdTo   = document.createElement('td'); tdTo.textContent   = v.toName;
+    const tdInt  = document.createElement('td'); tdInt.textContent  = v.isCommonTone ? '' : (v.dir + ' ' + v.intervalName);
+    const tdRole = document.createElement('td'); tdRole.textContent = v.role;
+    tr.appendChild(tdFrom); tr.appendChild(tdTo);
+    tr.appendChild(tdInt);  tr.appendChild(tdRole);
+    tbl.appendChild(tr);
+  });
+  valEl.appendChild(tbl);
+
+  rowWrap.appendChild(valEl);
+  panel.appendChild(rowWrap);
+}
+
+
 
 // Riemannian neo-tonal relations for a major or minor triad
 // Returns { R, L, P, N } — each an object { name, chord } where chord is e.g. "Am"
