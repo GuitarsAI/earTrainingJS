@@ -596,7 +596,8 @@ function getResolutionInfo() {
           : buildResolutionMidi(targetRootMidi, targetQuality);
         const targetName     = spelledRoot((targetRootMidi % 12 + 12) % 12) + qualSuffix(targetQuality);
         const label          = primaryRes.cadenceName || primaryRes.resolutionType || '→';
-        return { targetRootMidi, targetMidi, targetName, targetQuality, label };
+        const targetSymbol   = primaryRes.targetSymbol || null;
+        return { targetRootMidi, targetMidi, targetName, targetQuality, targetSymbol, label };
       }
     }
 
@@ -650,12 +651,12 @@ function computeVoiceLeading(sourceMidi, targetMidi) {
 
   if (typeof computeVoiceLeadingRules === 'function' && info && ctx) {
     const targetRootPc = (info.targetRootMidi % 12 + 12) % 12;
-    // info.targetQuality is already in the right format for computeVoiceLeadingRules
-    // which expects 'major'|'minor'|'dominant'|'maj7'|'m7'
-    const qualMap = { maj: 'major', min: 'minor', dom7: 'dominant', maj7: 'maj7', m7: 'm7' };
-    const targetQuality = qualMap[info.targetQuality] || 'major';
+    // Pass targetSymbol (e.g. 'Maj7', 'm7', '7') — computeVoiceLeadingRules() looks
+    // this up in CHORD_SYMBOL_INTERVALS. Falls back to 'Maj7' if not present (e.g.
+    // legacy RESOLUTION_TARGETS path where targetSymbol is not set).
+    const targetSymbol = info.targetSymbol || 'Maj7';
 
-    const moves   = computeVoiceLeadingRules(sourceMidi, targetRootPc, targetQuality, ctx);
+    const moves   = computeVoiceLeadingRules(sourceMidi, targetRootPc, targetSymbol, ctx);
     const rootMidi = getVLRoot();
     const rootPc   = (rootMidi % 12 + 12) % 12;
     const sym      = getVLSym();
