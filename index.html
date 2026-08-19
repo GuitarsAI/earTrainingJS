@@ -1,297 +1,631 @@
+<!--
+  =============================================================================
+  index.html
+  The Sound Travels Ear Training
+  =============================================================================
+
+  PURPOSE
+  -------
+  Root HTML document and application shell for The Sound Travels Ear Training.
+  This file defines the complete DOM structure — sticky header, settings panels,
+  play area, notation panel, breakdown panel, answer controls, session stats,
+  Help view, About view, and footer. All behaviour and rendering is handled by
+  the JavaScript layers loaded at the bottom of <body>.
+
+  This file contains no inline scripts and no inline styles beyond display-state
+  overrides (style="display:none") that JavaScript controls at runtime.
+
+  LOAD ORDER RATIONALE
+  --------------------
+  Scripts are loaded at the bottom of <body> in strict dependency order:
+
+    1. Vendor libraries (VexFlow, soundfont-player) — no dependencies
+    2. Data layer — pure data objects; no DOM, no state references
+    3. State & defaults — depends on data layer constants
+    4. Engine layer — depends on state; audio depends on soundfont-player;
+                      notation depends on VexFlow
+    5. Breakdown layer — depends on engine and data
+    6. UI layer — depends on state, engine, and data
+    7. Modes layer — depends on all of the above
+    8. app.js — central orchestrator; must load last
+
+  EXTERNAL DEPENDENCIES (self-hosted — no runtime CDN calls)
+  -----------------------------------------------------------
+  Fonts       : Inter (400, 500, 600) + Playfair Display (600, 700)
+                Defined via @font-face in css/base.css
+                Source files at assets/fonts/
+  VexFlow     : Music notation rendering library (MIT)
+                Self-hosted at js/vendor/vexflow.min.js
+  soundfont-player : WebAudio soundfont loader (MIT)
+                Self-hosted at js/vendor/soundfont-player.min.js
+  Piano samples    : FluidR3_GM acoustic_grand_piano (MIT)
+                Self-hosted at assets/soundfonts/FluidR3_GM/acoustic_grand_piano/
+
+  ACCESSIBILITY
+  -------------
+  - All icon-only buttons carry aria-label attributes
+  - Score pills carry aria-label descriptions for screen readers
+  - Chip groups carry role="group" and aria-label
+  - #statusMsg carries aria-live="polite" for screen-reader announcements
+  - Answer dropdown (#ansDropdownList) carries role="listbox";
+    individual option items are rendered dynamically by js/ui/controls.js,
+    which must set role="option" and aria-selected on each item
+
+  AUTHOR      : Renato Fera P.
+  COPYRIGHT   : The Sound Travels 2026
+  LICENSE     : MIT
+  =============================================================================
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="assets/logo.png" type="image/png">
-<title>The Sound Travels Ear Training</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/mobile.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary meta ──────────────────────────────────────────────────────── -->
+  <!-- Description shown in search engine results and link previews -->
+  <meta name="description" content="Free ear training app for musicians — intervals, chords, scales, and progressions. By The Sound Travels.">
+  <meta name="author" content="Renato Fera P. — The Sound Travels">
+  <meta name="keywords" content="ear training, music theory, intervals, chords, scales, progressions, solfege">
+  <!-- Theme colour for browser chrome on Android and PWA contexts -->
+  <meta name="theme-color" content="#1a9e8f">
+
+  <!-- ── Open Graph ────────────────────────────────────────────────────────── -->
+  <!-- Controls how the page previews when shared on LinkedIn, WhatsApp, etc. -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Sound Travels Ear Training">
+  <meta property="og:description" content="Free ear training for musicians — intervals, chords, scales, and progressions.">
+  <meta property="og:image" content="https://guitarsai.github.io/earTrainingJS/assets/og-image.png">
+  <meta property="og:url" content="https://guitarsai.github.io/earTrainingJS/">
+
+  <!-- ── Twitter / X card ──────────────────────────────────────────────────── -->
+  <!-- summary_large_image displays og:image as a full-width card banner -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Sound Travels Ear Training">
+  <meta name="twitter:description" content="Free ear training for musicians.">
+  <meta name="twitter:image" content="https://guitarsai.github.io/earTrainingJS/assets/og-image.png">
+
+  <!-- ── Canonical & icons ─────────────────────────────────────────────────── -->
+  <!-- Canonical prevents duplicate-content indexing if the page is mirrored -->
+  <link rel="canonical" href="https://guitarsai.github.io/earTrainingJS/">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <!-- apple-touch-icon is used when the app is saved to an iOS home screen -->
+  <link rel="apple-touch-icon" href="assets/logo.png">
+
+  <title>The Sound Travels Ear Training</title>
+
+  <!-- ── Stylesheets ───────────────────────────────────────────────────────── -->
+  <!--
+    base.css      : CSS custom properties (design tokens), resets, typography,
+                    @font-face declarations for self-hosted Inter and Playfair Display
+    components.css : All component styles — header, panels, buttons, chips,
+                    play area, notation, breakdown, stats, footer
+    mobile.css    : Responsive overrides for narrow viewports
+  -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
-<div id="stickyShell">
-  <div id="stickyInner">
-  <!-- 21b: Line 1 — branding row -->
-  <div class="header">
-    <div class="header-left">
-      <img class="site-logo" src="assets/logo.png" alt="The Sound Travels logo">
-      <div class="title">The Sound Travels Ear Training</div>
-    </div>
-    <!-- About + help + theme toggle on the right side of branding row -->
-    <div style="display:flex; align-items:center; gap:0.375rem; flex-shrink:0;">
-      <button class="about-btn" id="aboutBtn" aria-label="About The Sound Travels">ℹ</button>
-      <button class="about-btn" id="helpBtn" aria-label="Help">?</button>
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">☀️</button>
-    </div>
-  </div>
-  <!-- 21b: Line 2 — session controls -->
-  <div class="score-bar">
-    <div class="score-pill" id="streakPill">Streak <span id="streak">0</span></div>
-    <div class="score-pill" id="scorePill"><span id="correct">0</span> / <span id="total">0</span></div>
-    <button class="new-session-btn" id="newSessionBtn" aria-label="Start a new session">New Session</button>
-    <button class="theme-toggle" id="themeToggleMobile" aria-label="Toggle dark/light mode">🌙</button>
-    <div class="qd-toggle" id="qdToggle">
-      <button class="qd-btn" id="qdQuiz">Quiz</button>
-      <button class="qd-btn active" id="qdDict">Dictionary</button>
-    </div>
-  </div>
 
-  <!-- POINT 5 / POINT 7: top-level mode tabs -->
-  <div class="mode-tabs" id="modeTabs">
-    <button class="mode-tab active" data-mode="intervals">Intervals</button>
-    <button class="mode-tab" data-mode="chords">Chords</button>
-    <button class="mode-tab" data-mode="scales">Scales</button>
-    <button class="mode-tab" data-mode="progressions">Progressions</button>
-  </div><!-- /.mode-tabs -->
-  </div><!-- /#stickyInner -->
-</div><!-- /#stickyShell -->
+  <!-- ── Sticky shell ──────────────────────────────────────────────────────── -->
+  <!--
+    #stickyShell / #stickyInner remain fixed at the top of the viewport
+    while the main content area scrolls beneath them. Contains three rows:
+      Row 1 — Branding (logo, app title, About button, Help button, theme toggle)
+      Row 2 — Session controls (streak, score, New Session, Quiz/Dictionary toggle)
+      Row 3 — Mode tabs (Intervals, Chords, Scales, Progressions)
+  -->
+  <div id="stickyShell">
+    <div id="stickyInner">
 
-<div id="app">
-
-  <!-- POINT 19: Collapsible Settings panel — houses all chip controls -->
-  <div class="settings-panel" id="settingsPanel" style="margin-top:0.75rem">
-    <div class="settings-panel-header" id="settingsPanelHeader">
-      <span class="settings-panel-title">Settings</span>
-      <span class="settings-panel-arrow" id="settingsPanelArrow">▸</span>
-    </div>
-    <div class="settings-panel-body" id="settingsPanelBody">
-      <!-- POINT 50: Basic / Advanced mode toggle -->
-      <div class="settings-section" id="difficultySection">
-        <div class="settings-section-label">Mode</div>
-        <div class="settings-chips" id="difficultyChips">
-          <button class="style-chip active" id="diffChipBasic"    onclick="setAppDifficulty('basic')">Basic</button>
-          <button class="style-chip"        id="diffChipAdvanced" onclick="setAppDifficulty('advanced')">Advanced</button>
+      <!-- Row 1: Branding row — logo, title, and utility buttons -->
+      <div class="header">
+        <div class="header-left">
+          <img class="site-logo" src="assets/logo.png" alt="The Sound Travels logo">
+          <div class="title">The Sound Travels Ear Training</div>
         </div>
-      </div>
-      <!-- POINT 41: Voicing chips moved to chord pool panel (renderChordPoolPanel) -->
-      <!-- Chord playback style chips (shown in chord mode, POINT 6) -->
-      <div class="settings-section" id="chordStyleSection" style="display:none">
-        <div class="settings-section-label">Playback style</div>
-        <div class="settings-chips chord-style-row" id="chordStyleRow"></div>
-      </div>
-      <!-- Interval style chips (shown in interval mode, POINT 5) -->
-      <div class="settings-section" id="intervalStyleSection">
-        <div class="settings-section-label">Interval style</div>
-        <div class="settings-chips interval-style-row" id="intervalStyleRow"></div>
-      </div>
-      <!-- Scale direction chips (shown in scale mode, POINT 7) -->
-      <div class="settings-section" id="scaleDirSection" style="display:none">
-        <div class="settings-section-label">Scale direction</div>
-        <div class="settings-chips scale-dir-row" id="scaleDirRow"></div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-section-label">Octave register</div>
-        <div class="register-chips" id="octaveChips"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Root selection — collapsible panel -->
-  <div class="pool-panel" id="rootPanel">
-    <div class="pool-panel-header" id="rootPanelHeader">
-      <span class="pool-panel-title">Root note</span>
-      <span class="pool-panel-arrow" id="rootPanelArrow">▸</span>
-    </div>
-    <div class="pool-panel-body" id="rootPanelBody">
-      <div class="register-chips" id="rootChips" style="margin-bottom:0.5rem"></div>
-      <!-- POINT 8: Root note toggle (easy/hard) -->
-      <div class="root-toggle-row" id="rootToggleRow">
-        <label>
-          <input type="checkbox" id="showRootChk" checked>
-          Show root note
-        </label>
-        <span id="rootBadge" class="root-badge"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- POINT 10: Training pool panel (shown per mode) -->
-  <div class="pool-panel" id="poolPanel"></div>
-
-  <div class="play-area" id="playArea">
-    <div class="play-label" id="playLabel">Play interval (together)</div>
-    <button class="play-btn" id="playBtn" disabled aria-label="Play">&#9833;</button>
-    <div class="chord-hint" id="chordHint">Loading piano samples&#8230;</div>
-  </div>
-
-  <!-- Notation — collapsible wrapper -->
-  <div class="pool-panel" id="notationPanel" style="display:none; background:#fff;">
-    <div class="pool-panel-header" id="notationPanelHeader" style="background:#fff; border-radius:14px 14px 0 0;">
-      <span class="pool-panel-title" style="color:#1a1a18;">Notation</span>
-      <span class="pool-panel-arrow" id="notationPanelArrow">▾</span>
-    </div>
-    <div class="pool-panel-body open" id="notationPanelBody">
-      <div class="notation-area" id="notationArea" style="margin-bottom:0; border:none; border-radius:0; padding-top:0.25rem;">
-        <div class="notation-chord-name" id="notationChordName"></div>
-        <div class="keysig-chip-row" id="keysigChipRow" style="display:none">
-          <button class="keysig-chip"        id="keysigChipC"   onclick="setKeySig('C')">C</button>
-          <button class="keysig-chip active" id="keysigChipKey" onclick="setKeySig('key')">Key</button>
-        </div>
-        <div class="keysig-chip-row" id="inversionChipRow" style="display:none"></div>
-        <div class="notation-scroll">
-          <svg id="notation-svg"></svg>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- POINT 14: Post-answer breakdown — collapsible wrapper -->
-  <div class="pool-panel" id="breakdownWrapper" style="display:none;">
-    <div class="pool-panel-header" id="breakdownPanelHeader">
-      <span class="pool-panel-title">Breakdown</span>
-      <span class="pool-panel-arrow" id="breakdownPanelArrow">▾</span>
-    </div>
-    <div class="pool-panel-body" id="breakdownPanelBody">
-      <div class="breakdown-panel" id="breakdownPanel"></div>
-    </div>
-  </div>
-
-  <div class="status-msg" id="statusMsg"></div>
-  <!-- POINT 11: Custom dropdown answer -->
-  <div class="answer-dropdown-wrap" id="answerDropdownWrap" style="display:none">
-    <div class="ans-dropdown-trigger" id="ansDropdownTrigger" role="button" tabindex="0">Select your answer…</div>
-    <div class="ans-dropdown-list" id="ansDropdownList"></div>
-  </div>
-  <div class="controls" id="controls"></div>
-
-  <!-- POINT 8: Session stats panel -->
-  <button class="stats-toggle" id="statsToggle" style="margin-top:0.75rem">▸ Session stats</button>
-  <div class="stats-panel" id="statsPanel">
-    <div class="stats-title">
-      Accuracy by type
-      <button id="resetStatsBtn">Reset</button>
-    </div>
-    <table class="stats-table" id="statsTable">
-      <thead><tr><th>Type</th><th>Correct</th><th>Total</th><th>%</th></tr></thead>
-      <tbody id="statsBody"></tbody>
-    </table>
-  </div>
-
-  <!-- POINT 11: Keyboard shortcut hint (1-4 removed; dropdown replaces buttons) -->
-  <div class="kbd-hint">Space = play &nbsp;·&nbsp; Enter = next</div>
-
-  <!-- Help view — shown when ? is clicked, hidden otherwise -->
-  <div id="helpView" style="display:none"></div>
-
-  <!-- About view — shown when ⓘ is clicked, hidden otherwise -->
-  <div id="aboutView" style="display:none">
-    <div class="about-section">
-
-      <!-- Credits -->
-      <div class="about-card">
-        <div class="about-card-title">About</div>
-        <p class="about-card-text">
-          <strong>The Sound Travels Ear Training</strong> is a free, open ear training tool
-          built with love for musicians at every level. Created by <strong>Renato Fera</strong>.
-        </p>
-        <div class="about-badges">
-          <a href="https://www.youtube.com/@the-sound-travels" target="_blank" rel="noopener noreferrer">
-            <img src="https://img.shields.io/badge/The%20Sound%20Travels-FF0000?style=flat&logo=youtube&logoColor=white" alt="YouTube">
-          </a>
-          <a href="https://www.linkedin.com/in/renato-profeta/" target="_blank" rel="noopener noreferrer">
-            <img src="https://img.shields.io/badge/Renato%20Fera-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn">
-          </a>
-          <a href="https://www.linkedin.com/company/the-sound-travels/" target="_blank" rel="noopener noreferrer">
-            <img src="https://img.shields.io/badge/The%20Sound%20Travels-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="The Sound Travels LinkedIn">
-          </a>
-          <a href="https://www.linkedin.com/company/brics-audio-acoustics-music-technology" target="_blank" rel="noopener noreferrer">
-            <img src="https://img.shields.io/badge/BRICS%2B%20Audio-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="BRICS+ Audio LinkedIn">
-          </a>
+        <!-- Utility buttons: About, Help, and desktop theme toggle -->
+        <div style="display:flex; align-items:center; gap:0.375rem; flex-shrink:0;">
+          <button class="about-btn" id="aboutBtn" aria-label="About The Sound Travels">ℹ</button>
+          <button class="about-btn" id="helpBtn"  aria-label="Help">?</button>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">☀️</button>
         </div>
       </div>
 
-      <!-- YouTube embed placeholder -->
-      <div class="about-card">
-        <div class="about-card-title">Watch</div>
-        <div class="about-youtube-placeholder">
-          <span>📺 YouTube video embed coming soon</span>
+      <!-- Row 2: Session controls — score, streak, session reset, mode switch -->
+      <div class="score-bar">
+        <!-- Streak pill: displays the current consecutive-correct-answer streak -->
+        <div class="score-pill" id="streakPill" aria-label="Current streak">
+          Streak <span id="streak">0</span>
+        </div>
+        <!-- Score pill: displays correct answers out of total attempts this session -->
+        <div class="score-pill" id="scorePill" aria-label="Session score: correct answers out of total">
+          <span id="correct">0</span> / <span id="total">0</span>
+        </div>
+        <button class="new-session-btn" id="newSessionBtn" aria-label="Start a new session">New Session</button>
+        <!-- Mobile-only theme toggle (the desktop toggle is in Row 1) -->
+        <button class="theme-toggle" id="themeToggleMobile" aria-label="Toggle dark/light mode">🌙</button>
+        <!-- Quiz / Dictionary toggle: switches between active quiz mode and reference dictionary -->
+        <div class="qd-toggle" id="qdToggle" role="group" aria-label="Quiz or Dictionary mode">
+          <button class="qd-btn" id="qdQuiz">Quiz</button>
+          <button class="qd-btn active" id="qdDict">Dictionary</button>
         </div>
       </div>
 
-      <!-- Sponsor / donate -->
-      <div class="about-card">
-        <div class="about-card-title">Support this project</div>
-        <p class="about-card-text">If this tool helps your musical journey, consider buying me a coffee ☕</p>
-        <a href="#" class="about-sponsor-btn" target="_blank" rel="noopener noreferrer">☕ Sponsor / Donate</a>
-        <div class="about-qr-placeholder">
-          <span>QR code coming soon</span>
-        </div>
+      <!-- Row 3: Top-level mode tabs — switches the active training mode -->
+      <div class="mode-tabs" id="modeTabs" role="group" aria-label="Training mode">
+        <button class="mode-tab active" data-mode="intervals">Intervals</button>
+        <button class="mode-tab" data-mode="chords">Chords</button>
+        <button class="mode-tab" data-mode="scales">Scales</button>
+        <button class="mode-tab" data-mode="progressions">Progressions</button>
       </div>
 
+    </div><!-- /#stickyInner -->
+  </div><!-- /#stickyShell -->
+
+
+  <!-- ── Main application area ─────────────────────────────────────────────── -->
+  <div id="app">
+
+    <!-- ── Settings panel ──────────────────────────────────────────────────── -->
+    <!--
+      Collapsible panel housing all playback and behaviour chip controls.
+      Visibility of child sections (chord style, interval style, scale direction)
+      is toggled by the mode-switching logic in app.js and the individual mode
+      files. The Basic / Advanced toggle controls which pool items are shown
+      across all four modes.
+    -->
+    <div class="settings-panel" id="settingsPanel" style="margin-top:0.75rem">
+      <div class="settings-panel-header" id="settingsPanelHeader">
+        <span class="settings-panel-title">Settings</span>
+        <span class="settings-panel-arrow" id="settingsPanelArrow">▸</span>
+      </div>
+      <div class="settings-panel-body" id="settingsPanelBody">
+
+        <!-- Basic / Advanced difficulty toggle -->
+        <!--
+          Controls which items appear in the training pool across all modes.
+          Basic hides advanced voicings, compound intervals, and complex scales.
+          Managed by setAppDifficulty() in app.js.
+        -->
+        <div class="settings-section" id="difficultySection">
+          <div class="settings-section-label">Mode</div>
+          <div class="settings-chips" id="difficultyChips" role="group" aria-label="Difficulty mode">
+            <button class="style-chip active" id="diffChipBasic"    onclick="setAppDifficulty('basic')">Basic</button>
+            <button class="style-chip"        id="diffChipAdvanced" onclick="setAppDifficulty('advanced')">Advanced</button>
+          </div>
+        </div>
+
+        <!-- Chord playback style chips — visible in Chords mode only -->
+        <!--
+          Lets the user choose how chords are played: simultaneously (block),
+          ascending arpeggio, or descending arpeggio. Populated by chords-mode.js.
+        -->
+        <div class="settings-section" id="chordStyleSection" style="display:none">
+          <div class="settings-section-label">Playback style</div>
+          <div class="settings-chips chord-style-row" id="chordStyleRow" role="group" aria-label="Chord playback style"></div>
+        </div>
+
+        <!-- Interval playback style chips — visible in Intervals mode only -->
+        <!--
+          Lets the user choose how intervals are played: simultaneously (harmonic),
+          ascending, or descending. Populated by intervals-mode.js.
+        -->
+        <div class="settings-section" id="intervalStyleSection">
+          <div class="settings-section-label">Interval style</div>
+          <div class="settings-chips interval-style-row" id="intervalStyleRow" role="group" aria-label="Interval playback style"></div>
+        </div>
+
+        <!-- Scale direction chips — visible in Scales mode only -->
+        <!--
+          Lets the user choose the direction scales are played: ascending,
+          descending, or random. Populated by scales-mode.js.
+        -->
+        <div class="settings-section" id="scaleDirSection" style="display:none">
+          <div class="settings-section-label">Scale direction</div>
+          <div class="settings-chips scale-dir-row" id="scaleDirRow" role="group" aria-label="Scale direction"></div>
+        </div>
+
+        <!-- Octave register chips — visible in all modes -->
+        <!--
+          Controls which octave range the root note is picked from.
+          Populated by app.js on boot. Multiple registers can be active simultaneously.
+        -->
+        <div class="settings-section">
+          <div class="settings-section-label">Octave register</div>
+          <div class="register-chips" id="octaveChips" role="group" aria-label="Octave register"></div>
+        </div>
+
+      </div><!-- /#settingsPanelBody -->
+    </div><!-- /#settingsPanel -->
+
+
+    <!-- ── Root note panel ─────────────────────────────────────────────────── -->
+    <!--
+      Collapsible panel for root note selection and the Show Root Note toggle.
+      Root chips are populated by app.js on boot from the chromatic pitch set.
+      The Show Root Note checkbox controls whether the root is revealed before
+      the user answers — unchecking it increases quiz difficulty.
+    -->
+    <div class="pool-panel" id="rootPanel">
+      <div class="pool-panel-header" id="rootPanelHeader">
+        <span class="pool-panel-title">Root note</span>
+        <span class="pool-panel-arrow" id="rootPanelArrow">▸</span>
+      </div>
+      <div class="pool-panel-body" id="rootPanelBody">
+        <div class="register-chips" id="rootChips" role="group" aria-label="Root note selection" style="margin-bottom:0.5rem"></div>
+        <!-- Show root toggle and root badge -->
+        <div class="root-toggle-row" id="rootToggleRow">
+          <label>
+            <input type="checkbox" id="showRootChk" checked>
+            Show root note
+          </label>
+          <span id="rootBadge" class="root-badge"></span>
+        </div>
+      </div>
+    </div><!-- /#rootPanel -->
+
+
+    <!-- ── Training pool panel ─────────────────────────────────────────────── -->
+    <!--
+      Collapsible panel whose content is fully replaced each time the active
+      mode changes. Each mode file renders its own pool UI into this container
+      via renderPoolPanel() in js/ui/pool.js. In Chords mode this also includes
+      the voicing group chips.
+    -->
+    <div class="pool-panel" id="poolPanel"></div>
+
+
+    <!-- ── Play area ───────────────────────────────────────────────────────── -->
+    <!--
+      Contains the play button, the dynamic label describing what will be played
+      (e.g. "Play interval (together)"), and the loading/hint text area.
+      The play button is disabled until the audio engine has finished loading
+      the soundfont samples. Space bar is also bound to trigger playback.
+    -->
+    <div class="play-area" id="playArea">
+      <div class="play-label" id="playLabel">Play interval (together)</div>
+      <button class="play-btn" id="playBtn" disabled aria-label="Play">&#9833;</button>
+      <div class="chord-hint" id="chordHint">Loading piano samples&#8230;</div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <footer class="app-footer">
-    <div class="app-footer-badges">
-      <a href="https://www.youtube.com/@the-sound-travels" target="_blank" rel="noopener noreferrer" aria-label="The Sound Travels on YouTube">
-        <img src="https://img.shields.io/badge/The%20Sound%20Travels-FF0000?style=flat&logo=youtube&logoColor=white" alt="The Sound Travels YouTube">
-      </a>
-      <a href="https://www.linkedin.com/in/renato-profeta/" target="_blank" rel="noopener noreferrer" aria-label="Renato Fera on LinkedIn">
-        <img src="https://img.shields.io/badge/Renato%20Fera-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="Renato Fera LinkedIn">
-      </a>
-      <a href="https://www.linkedin.com/company/the-sound-travels/" target="_blank" rel="noopener noreferrer" aria-label="The Sound Travels on LinkedIn">
-        <img src="https://img.shields.io/badge/The%20Sound%20Travels-0A66C2?style=fla&logo=linkedin&logoColor=white" alt="The Sound Travels LinkedIn">
-      </a>
-      <a href="https://www.linkedin.com/company/brics-audio-acoustics-music-technology" target="_blank" rel="noopener noreferrer" aria-label="BRICS+ Audio on LinkedIn">
-        <img src="https://img.shields.io/badge/BRICS%2B%20Audio-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="BRICS+ Audio LinkedIn">
-      </a>
+
+    <!-- ── Notation panel ──────────────────────────────────────────────────── -->
+    <!--
+      Collapsible panel containing the VexFlow SVG notation display.
+      Hidden by default; shown post-answer in Quiz mode, and always visible
+      in Dictionary mode. Contains:
+        - Chord / scale / interval name label
+        - Key signature chips (C / Key) — shown in Chords and Scales modes
+        - Inversion chips — shown in Chords mode when chord has inversions
+        - The SVG element that VexFlow renders into (#notation-svg)
+    -->
+    <div class="pool-panel" id="notationPanel" style="display:none; background:#fff;">
+      <div class="pool-panel-header" id="notationPanelHeader" style="background:#fff; border-radius:14px 14px 0 0;">
+        <span class="pool-panel-title" style="color:#1a1a18;">Notation</span>
+        <span class="pool-panel-arrow" id="notationPanelArrow">▾</span>
+      </div>
+      <div class="pool-panel-body open" id="notationPanelBody">
+        <div class="notation-area" id="notationArea" style="margin-bottom:0; border:none; border-radius:0; padding-top:0.25rem;">
+          <!-- Chord / interval / scale name displayed above the staff -->
+          <div class="notation-chord-name" id="notationChordName"></div>
+          <!-- Key signature chips: C = render in C major; Key = render in the active root key -->
+          <div class="keysig-chip-row" id="keysigChipRow" style="display:none">
+            <button class="keysig-chip"        id="keysigChipC"   onclick="setKeySig('C')">C</button>
+            <button class="keysig-chip active" id="keysigChipKey" onclick="setKeySig('key')">Key</button>
+          </div>
+          <!-- Inversion chips: populated dynamically by chords-mode.js -->
+          <div class="keysig-chip-row" id="inversionChipRow" style="display:none"></div>
+          <!-- VexFlow renders the staff and notes into this SVG element -->
+          <div class="notation-scroll">
+            <svg id="notation-svg"></svg>
+          </div>
+        </div>
+      </div>
+    </div><!-- /#notationPanel -->
+
+
+    <!-- ── Breakdown panel ─────────────────────────────────────────────────── -->
+    <!--
+      Collapsible panel shown post-answer in Quiz mode containing a detailed
+      analysis of the played item. Content is rendered by the breakdown layer:
+        - Intervals  : js/breakdown/breakdown-intervals.js
+        - Chords     : js/breakdown/breakdown-chords.js (includes voice leading
+                       and chord scales analysis)
+        - Scales     : js/breakdown/breakdown-scales.js
+        - Progressions : js/breakdown/breakdown-progressions.js
+      The outer wrapper is hidden until an answer is submitted.
+    -->
+    <div class="pool-panel" id="breakdownWrapper" style="display:none;">
+      <div class="pool-panel-header" id="breakdownPanelHeader">
+        <span class="pool-panel-title">Breakdown</span>
+        <span class="pool-panel-arrow" id="breakdownPanelArrow">▾</span>
+      </div>
+      <div class="pool-panel-body" id="breakdownPanelBody">
+        <div class="breakdown-panel" id="breakdownPanel"></div>
+      </div>
+    </div><!-- /#breakdownWrapper -->
+
+
+    <!-- ── Status message ──────────────────────────────────────────────────── -->
+    <!--
+      Displays feedback text after the user submits an answer (e.g. "Correct!"
+      or "That was a minor third"). aria-live="polite" causes screen readers to
+      announce the updated text without interrupting the current reading context.
+    -->
+    <div class="status-msg" id="statusMsg" aria-live="polite"></div>
+
+
+    <!-- ── Answer dropdown ─────────────────────────────────────────────────── -->
+    <!--
+      Custom accessible dropdown for answer submission in Quiz mode.
+      The trigger element displays the currently selected answer (or placeholder).
+      The list element is populated dynamically by js/ui/controls.js, which must
+      set role="option" and aria-selected="true/false" on each rendered item.
+      Keyboard navigation (ArrowUp, ArrowDown, Enter, Escape) is handled in
+      js/ui/controls.js.
+    -->
+    <div class="answer-dropdown-wrap" id="answerDropdownWrap" style="display:none">
+      <div class="ans-dropdown-trigger"
+           id="ansDropdownTrigger"
+           role="button"
+           tabindex="0"
+           aria-haspopup="listbox"
+           aria-expanded="false">Select your answer…</div>
+      <div class="ans-dropdown-list"
+           id="ansDropdownList"
+           role="listbox"
+           aria-label="Answer options"></div>
     </div>
-    <div class="app-footer-copy">The Sound Travels 2026</div>
-  </footer>
-</div>
 
-<!-- Third-party libraries -->
-<script src="https://unpkg.com/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
-<script src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"></script>
 
-<!-- Data layer -->
-<script src="js/data/spelling.js"></script>
-<script src="js/data/keysig.js"></script>
-<script src="js/data/chords.js"></script>
-<script src="js/data/intervals.js"></script>
-<script src="js/data/scales.js"></script>
-<script src="js/data/progressions.js"></script>
-<script src="js/data/help-content.js"></script>
+    <!-- ── Answer controls ─────────────────────────────────────────────────── -->
+    <!--
+      Container for the Submit and Next buttons, rendered dynamically by
+      js/ui/controls.js. Empty on load; populated when a quiz round begins.
+    -->
+    <div class="controls" id="controls"></div>
 
-<!-- State — defaults must follow intervals.js (selectedIntervals refs INTERVALS) -->
-<script src="js/engine/state.js"></script>
-<script src="js/engine/defaults.js"></script>
 
-<!-- Engine -->
-<script src="js/engine/helpers.js"></script>
-<script src="js/engine/voicings.js"></script>
-<script src="js/engine/audio.js"></script>
-<script src="js/engine/notation.js"></script>
+    <!-- ── Session stats panel ─────────────────────────────────────────────── -->
+    <!--
+      Collapsible panel showing per-type accuracy for the current session.
+      The table body (#statsBody) is updated by js/ui/stats.js after every
+      answer. The Reset button clears stats for the current session only.
+    -->
+    <button class="stats-toggle" id="statsToggle" style="margin-top:0.75rem">▸ Session stats</button>
+    <div class="stats-panel" id="statsPanel">
+      <div class="stats-title">
+        Accuracy by type
+        <button id="resetStatsBtn">Reset</button>
+      </div>
+      <table class="stats-table" id="statsTable">
+        <thead>
+          <tr><th>Type</th><th>Correct</th><th>Total</th><th>%</th></tr>
+        </thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+    </div>
 
-<!-- Breakdown -->
-<script src="js/engine/voiceLeading.js"></script>
-<script src="js/breakdown/breakdown.js"></script>
-<script src="js/breakdown/breakdown-intervals.js"></script>
-<script src="js/breakdown/breakdown-chords.js"></script>
-<script src="js/breakdown/breakdown-scales.js"></script>
-<script src="js/breakdown/breakdown-progressions.js"></script>
 
-<!-- UI -->
-<script src="js/ui/stats.js"></script>
-<script src="js/ui/controls.js"></script>
-<script src="js/ui/pool.js"></script>
+    <!-- ── Keyboard shortcut hint ───────────────────────────────────────────── -->
+    <!-- Persistent hint bar at the bottom of the quiz area -->
+    <div class="kbd-hint">Space = play &nbsp;·&nbsp; Enter = next</div>
 
-<!-- Modes -->
-<script src="js/modes/chords-mode.js"></script>
-<script src="js/modes/intervals-mode.js"></script>
-<script src="js/modes/scales-mode.js"></script>
-<script src="js/modes/progressions-mode.js"></script>
-<script src="js/modes/help-mode.js"></script>
-<script src="js/modes/about-mode.js"></script>
 
-<!-- App boot — last, depends on everything above -->
-<script src="js/app.js"></script>
+    <!-- ── Help view ───────────────────────────────────────────────────────── -->
+    <!--
+      Full-panel Help view, hidden by default. Shown when the Help (?) button
+      is clicked; hides all training panels while open. Content is rendered
+      once on first open by renderHelpView() in js/modes/help-mode.js, which
+      builds the searchable accordion from the HELP_SECTIONS data structure
+      defined in js/data/help-content.js.
+    -->
+    <div id="helpView" style="display:none"></div>
 
+
+    <!-- ── About view ──────────────────────────────────────────────────────── -->
+    <!--
+      Full-panel About view, hidden by default. Shown when the About (ℹ) button
+      is clicked; mutually exclusive with the Help view. Contains project
+      credits, a YouTube embed placeholder, and a sponsor/donate section.
+      Open/close logic is handled by js/modes/about-mode.js.
+    -->
+    <div id="aboutView" style="display:none">
+      <div class="about-section">
+
+        <!-- Credits card -->
+        <div class="about-card">
+          <div class="about-card-title">About</div>
+          <p class="about-card-text">
+            <strong>The Sound Travels Ear Training</strong> is a free, open ear training tool
+            built with love for musicians at every level. Created by <strong>Renato Fera</strong>.
+          </p>
+          <div class="about-badges">
+            <a href="https://www.youtube.com/@the-sound-travels" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/badge/The%20Sound%20Travels-FF0000?style=flat&logo=youtube&logoColor=white" alt="The Sound Travels on YouTube">
+            </a>
+            <a href="https://www.linkedin.com/in/renato-profeta/" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/badge/Renato%20Fera-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="Renato Fera on LinkedIn">
+            </a>
+            <a href="https://www.linkedin.com/company/the-sound-travels/" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/badge/The%20Sound%20Travels-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="The Sound Travels on LinkedIn">
+            </a>
+            <a href="https://www.linkedin.com/company/brics-audio-acoustics-music-technology" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/badge/BRICS%2B%20Audio-0A66C2?style=flat&logo=linkedin&logoColor=white" alt="BRICS+ Audio on LinkedIn">
+            </a>
+          </div>
+        </div>
+
+        <!-- YouTube embed placeholder -->
+        <div class="about-card">
+          <div class="about-card-title">Watch</div>
+          <div class="about-youtube-placeholder">
+            <span>📺 YouTube video embed coming soon</span>
+          </div>
+        </div>
+
+        <!-- Sponsor / donate card -->
+        <div class="about-card">
+          <div class="about-card-title">Support this project</div>
+          <p class="about-card-text">If this tool helps your musical journey, consider buying me a coffee ☕</p>
+          <a href="#" class="about-sponsor-btn" target="_blank" rel="noopener noreferrer">☕ Sponsor / Donate</a>
+          <div class="about-qr-placeholder">
+            <span>QR code coming soon</span>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /#aboutView -->
+
+
+    <!-- ── Footer ──────────────────────────────────────────────────────────── -->
+    <footer class="app-footer">
+      <div class="app-footer-badges">
+        <!-- Self-hosted SVG badges — no runtime CDN dependency -->
+        <a href="https://www.youtube.com/@the-sound-travels" target="_blank" rel="noopener noreferrer" aria-label="The Sound Travels on YouTube">
+          <img src="assets/badges/badge-youtube.svg" alt="The Sound Travels YouTube">
+        </a>
+        <a href="https://www.linkedin.com/in/renato-profeta/" target="_blank" rel="noopener noreferrer" aria-label="Renato Fera on LinkedIn">
+          <img src="assets/badges/badge-linkedin-renato.svg" alt="Renato Fera LinkedIn">
+        </a>
+        <a href="https://www.linkedin.com/company/the-sound-travels/" target="_blank" rel="noopener noreferrer" aria-label="The Sound Travels on LinkedIn">
+          <img src="assets/badges/badge-linkedin-tst.svg" alt="The Sound Travels LinkedIn">
+        </a>
+        <a href="https://www.linkedin.com/company/brics-audio-acoustics-music-technology" target="_blank" rel="noopener noreferrer" aria-label="BRICS+ Audio on LinkedIn">
+          <img src="assets/badges/badge-linkedin-brics.svg" alt="BRICS+ Audio LinkedIn">
+        </a>
+      </div>
+      <div class="app-footer-copy">The Sound Travels 2026</div>
+    </footer>
+
+  </div><!-- /#app -->
+
+
+  <!-- ======================================================================
+    SCRIPT LOAD ORDER
+    All scripts are at the bottom of <body> to avoid blocking page render.
+    Load order is strict — each layer depends on everything above it.
+  ====================================================================== -->
+
+  <!-- ── Layer 0: Vendor libraries ─────────────────────────────────────────── -->
+  <!--
+    soundfont-player : WebAudio-based soundfont instrument loader.
+                       Must load before js/engine/audio.js.
+    vexflow          : Music notation rendering library.
+                       Must load before js/engine/notation.js.
+  -->
+  <script src="js/vendor/soundfont-player.min.js"></script>
+  <script src="js/vendor/vexflow.min.js"></script>
+
+  <!-- ── Layer 1: Data layer ───────────────────────────────────────────────── -->
+  <!--
+    Pure data objects — no DOM access, no state references.
+    spelling.js     : Enharmonic spelling tables and lookup maps
+    keysig.js       : Key signature definitions and accidental arrays
+    chords.js       : Full chord definition set (symbol, name, intervals, voicing metadata)
+    intervals.js    : Interval definitions (label, semitones, compound flag)
+    scales.js       : Scale definitions (group, degrees, direction support)
+    progressions.js : Chord progression definitions (symbol, chords, group)
+    help-content.js : HELP_SECTIONS data structure consumed by help-mode.js
+  -->
+  <script src="js/data/spelling.js"></script>
+  <script src="js/data/keysig.js"></script>
+  <script src="js/data/chords.js"></script>
+  <script src="js/data/intervals.js"></script>
+  <script src="js/data/scales.js"></script>
+  <script src="js/data/progressions.js"></script>
+  <script src="js/data/help-content.js"></script>
+
+  <!-- ── Layer 2: State & defaults ─────────────────────────────────────────── -->
+  <!--
+    Must follow the data layer — state.js and defaults.js reference constants
+    defined in intervals.js, chords.js, scales.js, and progressions.js.
+    state.js    : All mutable application state variables
+    defaults.js : Initial default selections for each mode on first load
+  -->
+  <script src="js/engine/state.js"></script>
+  <script src="js/engine/defaults.js"></script>
+
+  <!-- ── Layer 3: Engine layer ─────────────────────────────────────────────── -->
+  <!--
+    Core audio, notation, and musical logic. Depends on state and data layers.
+    helpers.js     : Pure utility functions (random selection, MIDI arithmetic)
+    voicings.js    : Voicing algorithm engine — 6 groups, 62 voicing symbols
+    audio.js       : AudioContext initialisation and soundfont-player integration;
+                     loads piano samples from assets/soundfonts/FluidR3_GM/
+    notation.js    : VexFlow rendering — staves, notes, accidentals, key signatures
+    voiceLeading.js: Pass 1 / Pass 2 voice leading resolution engine
+  -->
+  <script src="js/engine/helpers.js"></script>
+  <script src="js/engine/voicings.js"></script>
+  <script src="js/engine/audio.js"></script>
+  <script src="js/engine/notation.js"></script>
+  <script src="js/engine/voiceLeading.js"></script>
+
+  <!-- ── Layer 4: Breakdown layer ──────────────────────────────────────────── -->
+  <!--
+    Post-answer analysis panels. Each file handles one mode's breakdown UI.
+    breakdown.js              : Shared utilities (isMobile, showBreakdown router)
+    breakdown-intervals.js    : Interval analysis rows
+    breakdown-chords.js       : Chord analysis rows, voice leading display,
+                                chord scales (harmonic field) analysis
+    breakdown-scales.js       : Scale analysis rows
+    breakdown-progressions.js : Progression analysis rows
+  -->
+  <script src="js/breakdown/breakdown.js"></script>
+  <script src="js/breakdown/breakdown-intervals.js"></script>
+  <script src="js/breakdown/breakdown-chords.js"></script>
+  <script src="js/breakdown/breakdown-scales.js"></script>
+  <script src="js/breakdown/breakdown-progressions.js"></script>
+
+  <!-- ── Layer 5: UI layer ─────────────────────────────────────────────────── -->
+  <!--
+    DOM rendering helpers shared across modes.
+    stats.js    : Session stats table updates (accuracy by type)
+    controls.js : Answer dropdown rendering, keyboard navigation, submit/next
+                  buttons, and correct/incorrect visual feedback.
+                  NOTE: controls.js is responsible for setting role="option"
+                  and aria-selected on each dynamically rendered dropdown item.
+    pool.js     : Training pool panel rendering for all four modes;
+                  Basic/Advanced filter logic; voicing group chips
+  -->
+  <script src="js/ui/stats.js"></script>
+  <script src="js/ui/controls.js"></script>
+  <script src="js/ui/pool.js"></script>
+
+  <!-- ── Layer 6: Mode files ───────────────────────────────────────────────── -->
+  <!--
+    One file per training mode — each manages its own quiz loop, playback,
+    settings chips, and notation calls.
+    chords-mode.js      : Chords quiz and dictionary flow
+    intervals-mode.js   : Intervals quiz and dictionary flow
+    scales-mode.js      : Scales quiz and dictionary flow
+    progressions-mode.js: Progressions quiz and dictionary flow (largest mode file)
+    help-mode.js        : Help panel open/close, search/filter, and accordion render
+    about-mode.js       : About panel open/close
+  -->
+  <script src="js/modes/chords-mode.js"></script>
+  <script src="js/modes/intervals-mode.js"></script>
+  <script src="js/modes/scales-mode.js"></script>
+  <script src="js/modes/progressions-mode.js"></script>
+  <script src="js/modes/help-mode.js"></script>
+  <script src="js/modes/about-mode.js"></script>
+
+  <!-- ── Layer 7: App boot ─────────────────────────────────────────────────── -->
+  <!--
+    app.js is the central orchestrator and must load last.
+    Responsibilities: switchMode(), setAppDifficulty(), setAppMode(),
+    theme initialisation from localStorage, octave and root chip setup,
+    and the initial boot sequence that activates the default mode.
+  -->
+  <script src="js/app.js"></script>
+
+  <!-- ============================================================
+    The Sound Travels Ear Training
+    Created by Renato Fera P. — The Sound Travels — 2026
+  ============================================================ -->
 
 </body>
 </html>
