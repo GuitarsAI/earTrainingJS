@@ -813,7 +813,7 @@ function makeVoiceLeadingRow(panel) {
       mobileWrap.appendChild(resLabel);
       cache.contexts.forEach((ctx, ctxIdx) => {
         const scaleRootName = spelledRoot(ctx.scaleRootPc);
-        const isDeparture   = ctx.harmonicFunction === 'tonic' && ctx.tension < 0.2;
+        const isDeparture   = ctx.harmonicFunction === 'tonic';
         const ctxSec = document.createElement('div');
         ctxSec.className = 'cs-section';
         ctxSec.style.margin = '0.25rem 0';
@@ -973,7 +973,7 @@ function makeVoiceLeadingRow(panel) {
 
     cache.contexts.forEach((ctx, ctxIdx) => {
       const scaleRootName = spelledRoot(ctx.scaleRootPc);
-      const isDeparture   = ctx.harmonicFunction === 'tonic' && ctx.tension < 0.2;
+      const isDeparture   = ctx.harmonicFunction === 'tonic';
 
       // ── Context collapsible ─────────────────────────────────────────────────
       const ctxSec = document.createElement('div');

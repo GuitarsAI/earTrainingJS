@@ -63,6 +63,27 @@ const AMBIGUOUS_FAMILIES = new Set(['aug', 'augmented', 'sus', 'suspended', 'pol
 const DOMINANT_CORE_INTERVALS = [0, 4, 10]; // root, M3, m7
 
 
+// ─── 1b. CHORD_SYMBOL_INTERVALS — startup index ──────────────────────────────
+//
+// Flat symbol → intervals lookup built entirely from CHORD_TYPES.
+// Built once at startup. No manual table. Auto-updates when CHORD_TYPES gains entries.
+// Intervals are normalised mod 12, deduplicated, sorted ascending.
+//
+// Used by resolveTargetIntervals() to map a targetSymbol (e.g. 'Maj7', 'm7', '7')
+// to the pitch-class interval array needed by generateCandidates().
+const CHORD_SYMBOL_INTERVALS = (() => {
+  const map = {};
+  for (const family of Object.values(CHORD_TYPES)) {
+    for (const entry of family) {
+      if (entry.symbol && entry.intervals) {
+        map[entry.symbol] = [...new Set(entry.intervals.map(i => i % 12))].sort((a, b) => a - b);
+      }
+    }
+  }
+  return map;
+})();
+
+
 // ─── 2. HELPERS ──────────────────────────────────────────────────────────────
 
 // Build a Set of pitch classes for a scale given its root and interval array.
@@ -399,11 +420,12 @@ function deriveResolutionTargets(context, chordRootPc) {
 
   // ── TONIC — stable chord, no tension to resolve ──────────────────────────────
   // Provide departure paths only. No resolutions, no substitutions.
-  if (harmonicFunction === 'tonic' && context.tension < 0.2) {
+  if (harmonicFunction === 'tonic') {
 
     // Most common departure: I → IV (subdominant motion)
     departures.push({
       targetRootPc:   (scaleRootPc + 5) % 12,
+      targetSymbol:   'Maj7',
       targetQuality:  'major',
       resolutionType: 'departure',
       cadenceName:    'I → IV',
@@ -413,6 +435,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // I → V (move toward dominant)
     departures.push({
       targetRootPc:   (scaleRootPc + 7) % 12,
+      targetSymbol:   '7',
       targetQuality:  'dominant',
       resolutionType: 'departure',
       cadenceName:    'I → V',
@@ -422,6 +445,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // I → ii (predominant departure)
     departures.push({
       targetRootPc:   (scaleRootPc + 2) % 12,
+      targetSymbol:   'm7',
       targetQuality:  'minor',
       resolutionType: 'departure',
       cadenceName:    'I → ii',
@@ -431,6 +455,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // I → vi (tonic prolongation / relative minor departure)
     departures.push({
       targetRootPc:   (scaleRootPc + 9) % 12,
+      targetSymbol:   'm7',
       targetQuality:  'minor',
       resolutionType: 'departure',
       cadenceName:    'I → vi',
@@ -454,6 +479,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // 1. Authentic cadence — V7 → I (major tonic)
     resolutions.push({
       targetRootPc:   tonicRootPc,
+      targetSymbol:   'Maj7',
       targetQuality:  'major',
       resolutionType: 'authentic',
       cadenceName:    'V → I',
@@ -464,6 +490,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // Always listed; the UI can filter by scale type if desired.
     resolutions.push({
       targetRootPc:   tonicRootPc,
+      targetSymbol:   'm7',
       targetQuality:  'minor',
       resolutionType: 'authentic_minor',
       cadenceName:    'V → i',
@@ -473,6 +500,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // 3. Deceptive cadence — V → vi
     resolutions.push({
       targetRootPc:   (tonicRootPc + 9) % 12,
+      targetSymbol:   'm7',
       targetQuality:  'minor',
       resolutionType: 'deceptive',
       cadenceName:    'V → vi',
@@ -486,6 +514,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     const ttSubRootPc = ((chordRootPc !== undefined ? chordRootPc : (scaleRootPc + 7)) + 6) % 12;
     substitutions.push({
       targetRootPc:   ttSubRootPc,
+      targetSymbol:   '7',
       targetQuality:  'dominant',
       resolutionType: 'tritone_sub',
       cadenceName:    'Tritone sub',
@@ -497,6 +526,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     const relatedIiRootPc = (context.scaleRootPc + 2) % 12; // ii of the tonic scale
     substitutions.push({
       targetRootPc:   relatedIiRootPc,
+      targetSymbol:   'm7',
       targetQuality:  'm7',
       resolutionType: 'related_ii',
       cadenceName:    'Related ii7',
@@ -514,6 +544,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // 1. To dominant (IV → V) — prepares authentic cadence
     resolutions.push({
       targetRootPc:   (tonicRootPc + 7) % 12,
+      targetSymbol:   '7',
       targetQuality:  'dominant',
       resolutionType: 'to_dominant',
       cadenceName:    'IV → V',
@@ -523,6 +554,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // 2. Plagal cadence (IV → I)
     resolutions.push({
       targetRootPc:   tonicRootPc,
+      targetSymbol:   'Maj7',
       targetQuality:  'major',
       resolutionType: 'plagal',
       cadenceName:    'IV → I',
@@ -540,6 +572,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // 1. ii → V (move to dominant — by far the strongest predominant motion)
     resolutions.push({
       targetRootPc:   (tonicRootPc + 7) % 12,
+      targetSymbol:   '7',
       targetQuality:  'dominant',
       resolutionType: 'to_dominant',
       cadenceName:    'ii → V',
@@ -549,6 +582,7 @@ function deriveResolutionTargets(context, chordRootPc) {
     // 2. ii → I (direct — weak, used in some cadential contexts)
     resolutions.push({
       targetRootPc:   tonicRootPc,
+      targetSymbol:   'Maj7',
       targetQuality:  'major',
       resolutionType: 'direct',
       cadenceName:    'ii → I',
@@ -561,150 +595,214 @@ function deriveResolutionTargets(context, chordRootPc) {
 
 
 // ─── 6. STEP 6 — VOICE LEADING COMPUTATION ───────────────────────────────────
-
-// Constraint satisfaction voice leading engine.
-// Replaces the proximity-only loop in the existing computeVoiceLeading().
 //
-// sourceMidi:    array of MIDI note numbers (the chord being resolved)
-// targetRootPc:  pitch class of the resolution target root (0–11)
-// targetQuality: 'major' | 'minor' | 'dominant' | 'maj7' | 'm7'
-// context:       context object from findDiatonicContexts() (for leading tone detection)
+// Globally optimal, cost-function-driven voice leading assignment.
+// Replaces the greedy named-note engine with a backtracking search that
+// minimises total semitone cost across all voices simultaneously.
 //
-// Returns: array of voice leading moves, one per source note:
-// { fromMidi, toMidi, fromPc, toPc, semitones, direction, reason }
-function computeVoiceLeadingRules(sourceMidi, targetRootPc, targetQuality, context) {
-  // Build target chord MIDI notes
-  const targetIntervals = qualityToIntervals(targetQuality);
-  const targetPcs = new Set(targetIntervals.map(i => (targetRootPc + i) % 12));
+// Design: the cost function IS the theory. Leading tone rises and seventh
+// falls not because rules say so, but because those moves have cost 1 —
+// the minimum possible. No note names are detected anywhere in this section.
 
-  // Tonic pitch class for this context (scale root)
-  const tonicPc = context ? context.scaleRootPc : targetRootPc;
+// LEAP_PENALTY: added to raw semitone distance for any move larger than M3 (4 st).
+// A P5 leap (7 st) costs 7 + 8 = 15 — more than five stepwise moves.
+// Bass leap penalty is halved to allow natural bass motion by 4th/5th.
+const LEAP_PENALTY = 8;
 
-  // Leading tone pc = 1 semitone below tonic
-  const leadingTonePc = (tonicPc - 1 + 12) % 12;
-
-  // Chordal 7th pc = 10 semitones above chord root (dominant 7th)
-  // Only meaningful when the source chord is a dominant 7th type
-  const chordalSeventhPc = (context
-    ? ((context.scaleRootPc + 7 + 10) % 12)  // 7th of V = scale root + P5 + m7
-    : null);
-
-  const assignments = [];
-  const usedTargetPcs = new Set();
-
-  // Sort source notes low to high for consistent processing
-  const sorted = [...sourceMidi].sort((a, b) => a - b);
-
-  for (const midi of sorted) {
-    const pc = ((midi % 12) + 12) % 12;
-    const move = resolveNote(
-      midi, pc, targetRootPc, targetPcs, targetIntervals,
-      tonicPc, leadingTonePc, chordalSeventhPc, usedTargetPcs
-    );
-    assignments.push(move);
-    if (move.toPc !== null) usedTargetPcs.add(move.toPc);
-  }
-
-  return assignments;
+// ── 6.1 resolveTargetIntervals() ─────────────────────────────────────────────
+//
+// Look up interval array for a CHORD_TYPES symbol string.
+// Falls back to [0,4,7] only for unknown symbols (programming error upstream).
+//
+// targetSymbol: a CHORD_TYPES symbol string, e.g. 'Maj7', 'm7', '7'
+// Returns: array of pitch-class intervals mod 12, sorted ascending, deduplicated.
+function resolveTargetIntervals(targetSymbol) {
+  return CHORD_SYMBOL_INTERVALS[targetSymbol] || [0, 4, 7];
 }
 
-// Resolve a single note using the rule priority engine.
-function resolveNote(
-  midi, pc, targetRootPc, targetPcs, targetIntervals,
-  tonicPc, leadingTonePc, chordalSeventhPc, usedTargetPcs
-) {
-  // ── Rule 1: Leading tone — must rise to tonic ──────────────────────────────
-  if (pc === leadingTonePc) {
-    const toMidi = midi + 1; // up by m2
-    return makeMove(midi, toMidi, 'leading_tone_up');
+// ── 6.2 generateCandidates() ─────────────────────────────────────────────────
+//
+// For each target pitch class, enumerate every reachable MIDI note within
+// ±12 semitones of the source range. This guarantees the nearest instance
+// of every target PC is always available to every source voice.
+//
+// targetRootPc:    pitch class 0–11
+// targetIntervals: array from resolveTargetIntervals()
+// sourceMidi:      array of source MIDI note numbers
+//
+// Returns: array of { midi, pc, intervalIndex }
+function generateCandidates(targetRootPc, targetIntervals, sourceMidi) {
+  const lo = Math.min(...sourceMidi) - 12;
+  const hi = Math.max(...sourceMidi) + 12;
+  const candidates = [];
+
+  targetIntervals.forEach((interval, intervalIndex) => {
+    const pc        = (targetRootPc + interval) % 12;
+    const remainder = ((pc - lo) % 12 + 12) % 12;
+    const first     = lo + remainder;
+    for (let midi = first; midi <= hi; midi += 12) {
+      candidates.push({ midi, pc, intervalIndex });
+    }
+  });
+
+  return candidates;
+}
+
+// ── 6.3 moveCost() ───────────────────────────────────────────────────────────
+//
+// Cost of moving a voice by `delta` semitones.
+// delta:  absolute semitone distance (0 = common tone, 1 = m2, …)
+// isBass: true for the lowest source voice — halves the leap penalty
+//
+// Returns a non-negative cost integer.
+function moveCost(delta, isBass) {
+  if (delta === 0) return 0;                         // common tone — free
+  if (delta <= 4)  return delta;                     // step or third — cost = distance
+  return delta + (isBass ? LEAP_PENALTY / 2 : LEAP_PENALTY);  // leap — add penalty
+}
+
+// ── 6.4 assignByMinCost() ────────────────────────────────────────────────────
+//
+// Global minimum-cost assignment via backtracking search.
+// Assigns each source voice to a candidate such that:
+//   - No two voices share the same MIDI note (no exact unison doubling)
+//   - Total cost across all voices is minimised globally
+//
+// For N ≤ 7 voices, exhaustive search with branch pruning is trivially fast.
+//
+// sourceMidi:  array of MIDI note numbers, sorted ascending (bass first)
+// candidates:  array from generateCandidates()
+//
+// Returns: array of { fromMidi, toMidi } in the same order as sourceMidi (sorted)
+function assignByMinCost(sourceMidi, candidates) {
+  const sorted = [...sourceMidi].sort((a, b) => a - b);
+  const n      = sorted.length;
+
+  let bestAssignment = null;
+  let bestTotalCost  = Infinity;
+
+  function search(voiceIdx, assignment, usedMidi, currentCost) {
+    // Prune: abandon branch if already at or above best known cost
+    if (currentCost >= bestTotalCost) return;
+
+    if (voiceIdx === n) {
+      bestTotalCost  = currentCost;
+      bestAssignment = assignment.slice();
+      return;
+    }
+
+    const src    = sorted[voiceIdx];
+    const isBass = voiceIdx === 0;
+
+    // Sort candidates cheapest-first for this voice — maximises pruning efficiency
+    const sortedCands = candidates
+      .filter(c => !usedMidi.has(c.midi))
+      .sort((a, b) =>
+        moveCost(Math.abs(a.midi - src), isBass) -
+        moveCost(Math.abs(b.midi - src), isBass)
+      );
+
+    for (const cand of sortedCands) {
+      const cost = moveCost(Math.abs(cand.midi - src), isBass);
+      usedMidi.add(cand.midi);
+      assignment.push({ fromMidi: src, toMidi: cand.midi });
+      search(voiceIdx + 1, assignment, usedMidi, currentCost + cost);
+      assignment.pop();
+      usedMidi.delete(cand.midi);
+    }
   }
 
-  // ── Rule 2: Chordal 7th — must fall by m2 ─────────────────────────────────
-  if (chordalSeventhPc !== null && pc === chordalSeventhPc) {
-    const toMidi = midi - 1; // down by m2
-    return makeMove(midi, toMidi, 'chordal_seventh_down');
+  search(0, [], new Set(), 0);
+
+  // Fallback: if no assignment found (shouldn't happen with a ±12 window),
+  // each voice stays on its current pitch. Indicates a candidate generation error.
+  if (!bestAssignment) {
+    return sorted.map(midi => ({ fromMidi: midi, toMidi: midi }));
   }
 
-  // ── Rule 3: Tritone partner — resolve inward ───────────────────────────────
-  // (handled implicitly: leading tone + chordal 7th ARE the tritone pair in V7)
+  return bestAssignment;
+}
 
-  // ── Rule 4: Common tone — stay if pc exists in target ──────────────────────
-  if (targetPcs.has(pc) && !usedTargetPcs.has(pc)) {
-    return makeMove(midi, midi, 'common_tone');
-  }
+// ── 6.5 repairVoiceCrossing() ────────────────────────────────────────────────
+//
+// Post-processing: swap target notes of adjacent voice pairs when a crossing
+// exists AND the swap strictly reduces total cost.
+//
+// Uses strict < (not <=) in the swap guard to guarantee termination:
+// each accepted swap strictly reduces total cost, so the loop converges
+// in at most O(N²) passes with no risk of cycling.
+//
+// assignments: array of { fromMidi, toMidi } sorted by fromMidi ascending
+// Returns the same array with crossings resolved in-place.
+function repairVoiceCrossing(assignments) {
+  assignments.sort((a, b) => a.fromMidi - b.fromMidi);
 
-  // ── Rule 5: Stepwise — find nearest target pc by half steps ───────────────
-  // Prefer motion that completes the target chord without doubling the 3rd.
-  const thirdPc = (targetRootPc + targetIntervals[1]) % 12;
-  let bestMidi = null, bestDist = Infinity, bestReason = 'stepwise_preference';
-
-  for (const interval of targetIntervals) {
-    const candidatePc = (targetRootPc + interval) % 12;
-
-    // Soft constraint: avoid doubling the 3rd if it's already used
-    if (candidatePc === thirdPc && usedTargetPcs.has(thirdPc)) continue;
-
-    // Try nearest octave of this candidate
-    for (const octaveOffset of [0, 12, -12]) {
-      // Find the MIDI pitch for this pc nearest to our source midi
-      let candidateMidi = midi + octaveOffset + ((candidatePc - pc + 12) % 12);
-      // Also try the semitone below (so we get both up and down)
-      const altMidi = candidateMidi - 12;
-
-      for (const cand of [candidateMidi, altMidi]) {
-        const dist = Math.abs(cand - midi);
-        if (dist < bestDist && dist <= 7) { // max leap of a P5
-          bestDist = dist;
-          bestMidi = cand;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < assignments.length - 1; i++) {
+      const a = assignments[i];
+      const b = assignments[i + 1];
+      if (a.toMidi > b.toMidi) {
+        const isBassA = i === 0;
+        const isBassB = false; // i+1 is never the bass
+        const costBefore = moveCost(Math.abs(a.toMidi - a.fromMidi), isBassA)
+                         + moveCost(Math.abs(b.toMidi - b.fromMidi), isBassB);
+        const costAfter  = moveCost(Math.abs(b.toMidi - a.fromMidi), isBassA)
+                         + moveCost(Math.abs(a.toMidi - b.fromMidi), isBassB);
+        if (costAfter < costBefore) {
+          [assignments[i].toMidi, assignments[i + 1].toMidi] =
+            [assignments[i + 1].toMidi, assignments[i].toMidi];
+          changed = true;
         }
       }
     }
   }
-
-  if (bestMidi === null) {
-    // Absolute fallback — nearest note in target by raw distance
-    bestMidi = nearestTargetNote(midi, targetRootPc, targetIntervals);
-    bestReason = 'nearest_fallback';
-  }
-
-  return makeMove(midi, bestMidi, bestReason);
+  return assignments;
 }
 
-// Build a voice leading move object.
-function makeMove(fromMidi, toMidi, reason) {
-  const fromPc = ((fromMidi % 12) + 12) % 12;
-  const toPc   = ((toMidi  % 12) + 12) % 12;
-  const delta  = toMidi - fromMidi;
-  const direction = delta === 0 ? 'none' : delta > 0 ? 'up' : 'down';
-  return { fromMidi, toMidi, fromPc, toPc, semitones: Math.abs(delta), direction, reason };
+// ── 6.6 buildMoves() ─────────────────────────────────────────────────────────
+//
+// Convert final assignments to the UI move objects expected by breakdown.js.
+//
+// assignments: array of { fromMidi, toMidi }
+// Returns: array of { fromMidi, toMidi, fromPc, toPc, semitones, direction, reason }
+function buildMoves(assignments) {
+  return assignments.map(({ fromMidi, toMidi }) => {
+    const delta = toMidi - fromMidi;
+    return {
+      fromMidi,
+      toMidi,
+      fromPc:    ((fromMidi % 12) + 12) % 12,
+      toPc:      ((toMidi   % 12) + 12) % 12,
+      semitones: Math.abs(delta),
+      direction: delta === 0 ? 'none' : delta > 0 ? 'up' : 'down',
+      reason:    delta === 0 ? 'common_tone' : 'stepwise',
+    };
+  });
 }
 
-// Last-resort nearest note finder.
-function nearestTargetNote(sourceMidi, targetRootPc, targetIntervals) {
-  let best = null, bestDist = Infinity;
-  for (const interval of targetIntervals) {
-    for (const octave of [-1, 0, 1]) {
-      const cand = targetRootPc + interval + (octave * 12) +
-                   Math.floor(sourceMidi / 12) * 12 - 12;
-      const dist = Math.abs(cand - sourceMidi);
-      if (dist < bestDist) { bestDist = dist; best = cand; }
-    }
-  }
-  return best;
-}
-
-// Map quality string to interval array (semitones from root).
-function qualityToIntervals(quality) {
-  const map = {
-    major:    [0, 4, 7],
-    minor:    [0, 3, 7],
-    dominant: [0, 4, 7, 10],
-    maj7:     [0, 4, 7, 11],
-    m7:       [0, 3, 7, 10],
-    dim:      [0, 3, 6],
-    aug:      [0, 4, 8],
-  };
-  return map[quality] || [0, 4, 7];
+// ── 6.7 computeVoiceLeadingRules() — public API ───────────────────────────────
+//
+// Orchestrates the five-stage pipeline:
+//   1. Resolve target intervals from CHORD_SYMBOL_INTERVALS
+//   2. Generate all reachable candidate MIDI notes
+//   3. Global minimum-cost assignment (backtracking search)
+//   4. Voice crossing repair
+//   5. Build UI move objects
+//
+// sourceMidi:   array of MIDI note numbers (the sounding chord)
+// targetRootPc: pitch class 0–11 of the resolution target root
+// targetSymbol: CHORD_TYPES symbol string (e.g. 'Maj7', 'm7', '7')
+// context:      context object — accepted for signature compatibility, not used
+//
+// Returns: array of { fromMidi, toMidi, fromPc, toPc, semitones, direction, reason }
+function computeVoiceLeadingRules(sourceMidi, targetRootPc, targetSymbol, context) {
+  const targetIntervals = resolveTargetIntervals(targetSymbol);
+  const candidates      = generateCandidates(targetRootPc, targetIntervals, sourceMidi);
+  const raw             = assignByMinCost(sourceMidi, candidates);
+  const repaired        = repairVoiceCrossing(raw);
+  return buildMoves(repaired);
 }
 
 
@@ -747,14 +845,14 @@ function analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi
     if (sourceMidi && sourceMidi.length) {
       for (const res of ctx.resolutions) {
         res.voiceLeading = computeVoiceLeadingRules(
-          sourceMidi, res.targetRootPc, res.targetQuality, ctx
+          sourceMidi, res.targetRootPc, res.targetSymbol, ctx
         );
       }
 
       // Pre-compute voice leading for departure paths too
       for (const dep of ctx.departures) {
         dep.voiceLeading = computeVoiceLeadingRules(
-          sourceMidi, dep.targetRootPc, dep.targetQuality, ctx
+          sourceMidi, dep.targetRootPc, dep.targetSymbol, ctx
         );
       }
 
