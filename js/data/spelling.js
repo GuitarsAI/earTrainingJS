@@ -1,44 +1,76 @@
-// ─── Data ─────────────────────────────────────────────────────────────────────
+/**
+ * @file spelling.js
+ * @description Interval-based enharmonic spelling engine. Converts pitch-class
+ *   and MIDI data into correctly spelled note names and VexFlow key strings,
+ *   using the interval distance from the chord or scale root to determine the
+ *   letter name rather than the raw pitch class.
+ *
+ * Fundamental rule: the INTERVAL from the root determines the letter name.
+ *   A major 3rd above D♯ must be F## — not G — because it occupies the 3rd
+ *   degree. A diminished 7th above B must be A♭ — not G♯ — because it is the
+ *   7th degree. When a double accidental results, the enharmonic equivalent is
+ *   appended in parentheses (e.g. "F##\u00a0(G)") so the user sees both the
+ *   theoretically correct spelling and the practical sounding pitch.
+ *
+ * Public API:
+ *   spelledNote(intervalSemitones, rootPc, symbol)
+ *     → display string, e.g. "F##\u00a0(G)" | "B♭" | "E"
+ *   spelledRoot(rootPc)
+ *     → display string for the root note itself
+ *   midiToVexKeySpelled(midi, intervalSemitones, rootPc, symbol)
+ *     → VexFlow key string, e.g. "fbb/4" | "g##/3"
+ *   vexAccidental(vexKey)
+ *     → VexFlow accidental token string or null
+ *   pcInterval(targetPc, rootPc)
+ *     → semitone distance from rootPc to targetPc (0–11)
+ *
+ * Dependencies: pinnedRootSpelling (state.js) — controls flat/sharp preference
+ *   when the root is not a natural note and no key signature context is available.
+ *
+ * @module Spelling
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
 
+/** Chromatic pitch-class names using sharps (index = pitch class 0–11). */
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
-// ─── POINT 13: Enharmonic spelling engine (interval-based rewrite) ───────────
-//
-// The fundamental rule: the INTERVAL from the root determines the letter name.
-// A major 3rd above D# must be F## — not G — because it is the 3rd degree.
-// A diminished 7th above B must be Ab — not G# — because it is the 7th degree.
-// When a double sharp (##) or double flat (bb) results, we append the enharmonic
-// equivalent in parentheses, e.g. "F## (G)", so students see both the theoretically
-// correct spelling and the practical reading pitch.
-//
-// Architecture:
-//   spelledNote(intervalSemitones, rootPc)
-//     → returns display string, e.g. "F##\u00a0(G)" or "B♭" or "E"
-//   midiToVexKeySpelled(midi, intervalSemitones, rootPc)
-//     → returns VexFlow key string, e.g. "fbb/4" or "g##/3"
-//   vexAccidental(vexKey)
-//     → returns VexFlow accidental token or null
-//
-// The old spelledNote(pitchClass, symbol, rootPc) API is replaced everywhere
-// by spelledNote(intervalSemitones, rootPc). All call sites updated below.
+/**
+ * Pitch class of each natural letter name, indexed C=0 … B=6.
+ * Used to convert a letter index into its natural (no-accidental) pitch class,
+ * and to find the letter index of a natural root note.
+ * @type {number[]}
+ */
+const LETTER_PCS = [0, 2, 4, 5, 7, 9, 11];
 
-// The 7 letter names in chromatic order from C (pitch class 0)
-// Letter index: C=0, D=1, E=2, F=3, G=4, A=5, B=6
-const LETTER_PCS = [0, 2, 4, 5, 7, 9, 11]; // pitch class of each natural letter (C D E F G A B)
+/**
+ * The seven diatonic letter names in ascending order, indexed C=0 … B=6.
+ * Parallel to LETTER_PCS — LETTER_NAMES[i] is the name for LETTER_PCS[i].
+ * @type {string[]}
+ */
 const LETTER_NAMES = ['C','D','E','F','G','A','B'];
 
-// Interval number → letter steps above root (0-based, mod 7)
-// Unison=0, 2nd=1, 3rd=2, 4th=3, 5th=4, 6th=5, 7th=6, 8th/9th/etc wrap
-// We derive letter steps from the interval semitone count using standard diatonic mapping.
-// semitones → diatonic interval number (0-based letter steps):
-// 0=unison(0), 1=m2(1), 2=M2(1), 3=m3(2), 4=M3(2), 5=P4(3), 6=A4/d5(3or4),
-// 7=P5(4), 8=m6(5), 9=M6(5), 10=m7(6), 11=M7(6), 12=P8(0+octave)
-// Extended: 13=m9(1+oct), 14=M9(1+oct), 17=P11(3+oct), 18=A11(3+oct), 20=m13(5+oct), 21=M13(5+oct)
-//
-// We use the interval's "generic" size (2nd, 3rd, 4th…) to pick the letter,
-// then compute the accidental from the difference between that letter's natural
-// pitch class and the actual target pitch class.
-
+/**
+ * Maps a semitone count (0–11, normalised mod 12) to the number of diatonic
+ * letter steps above the root that interval represents.
+ *
+ * Letter steps are 0-based and mod 7 (unison=0, 2nd=1, 3rd=2 … 7th=6).
+ * This encodes the "generic" interval size — which letter name to land on —
+ * before any accidental adjustment. The accidental is then computed from the
+ * difference between that letter's natural pitch class and the actual target
+ * pitch class.
+ *
+ * Entries for ambiguous semitone counts (6, 8, 9) give the most common
+ * interpretation; context-sensitive overrides are applied in spelledNote()
+ * via TRITONE_AS_D5, EIGHT_AS_A5, and NINE_AS_D7.
+ *
+ * Extended intervals (m9=13, M9=14, P11=17, A11=18, m13=20, M13=21) are
+ * handled by spelledNote() normalising the semitone count mod 12 before
+ * lookup, so the octave displacement is managed separately.
+ *
+ * @type {Object.<number, number>}
+ */
 const SEMITONES_TO_LETTER_STEPS = {
   0: 0,   // unison / P8 / P15
   1: 1,   // m2 / A1
@@ -54,40 +86,86 @@ const SEMITONES_TO_LETTER_STEPS = {
   11: 6,  // M7
 };
 
-// For tritone (6 semitones): context determines A4 vs d5.
-// We expose a separate lookup for chord/scale symbols that use d5.
-// Everything else defaults to A4 (augmented 4th = letter steps 3).
-// Symbols that spell the tritone as a diminished 5th (letter steps 4):
+/**
+ * Chord and scale symbols in which a 6-semitone interval (tritone) should be
+ * spelled as a diminished 5th (d5, letter steps = 4) rather than the default
+ * augmented 4th (A4, letter steps = 3).
+ *
+ * The tritone is the only interval whose generic size is ambiguous without
+ * harmonic context: in a diminished chord or a scale with a flattened 5th
+ * degree, 6 semitones occupies the 5th position (d5); everywhere else it
+ * occupies the 4th position (A4, e.g. the ♯4 in Lydian mode).
+ *
+ * @type {Set<string>}
+ */
 const TRITONE_AS_D5 = new Set([
   'dim','m7b5','o7',           // diminished family — d5 in the chord
   'nat_minor','harm_minor','mel_minor', // minor scales — b5 degree is d5 context
   'locrian','phrygian','altered',       // modes with b5
 ]);
 
-// Per-symbol: does the tritone interval (6 semitones) spell as d5 (letter steps 4)?
+/**
+ * Returns true if the given chord/scale symbol spells a 6-semitone interval
+ * as a diminished 5th (d5) rather than an augmented 4th (A4).
+ *
+ * @param {string} symbol - Chord or scale symbol key (e.g. 'dim', 'o7', 'locrian').
+ * @returns {boolean} True if the tritone should be treated as d5 for this symbol.
+ */
 function tritoneIsDim5(symbol) {
   return TRITONE_AS_D5.has(symbol);
 }
 
-// For 8 semitones: context determines m6 (letter steps 5) vs A5 (letter steps 4).
-// Default is m6. Symbols where 8 semitones IS an augmented 5th:
+/**
+ * Chord and scale symbols in which an 8-semitone interval should be spelled as
+ * an augmented 5th (A5, letter steps = 4) rather than the default minor 6th
+ * (m6, letter steps = 5).
+ *
+ * In augmented chords and the whole-tone scale the raised fifth is a structural
+ * member of the chord/scale, not a colouristic 6th — so A5 is the correct
+ * generic interval and the letter must land on the 5th degree.
+ *
+ * @type {Set<string>}
+ */
 const EIGHT_AS_A5 = new Set([
   'aug', 'Maj7_s5',   // augmented chord family — the fifth IS augmented
   '7_s5',             // dominant 7 sharp 5
   'whole_tone',       // whole-tone scale: C D E F# G# A# — 8 semitones = G# = A5
 ]);
 
-// For 9 semitones: context determines M6 (letter steps 5) vs d7 (letter steps 6).
-// Default is M6. Symbols where 9 semitones IS a diminished 7th:
+/**
+ * Chord symbols in which a 9-semitone interval should be spelled as a
+ * diminished 7th (d7, letter steps = 6) rather than the default major 6th
+ * (M6, letter steps = 5).
+ *
+ * The fully diminished 7th chord (°7) contains a diminished 7th as its
+ * defining interval — the note must land on the 7th letter degree, not the 6th.
+ *
+ * @type {Set<string>}
+ */
 const NINE_AS_D7 = new Set([
   'o7',               // fully diminished 7th chord — the 7th IS diminished
 ]);
 
-// Compute the spelled note name for a note that is `intervalSemitones` above rootPc.
-// Returns a display string. Double accidentals get parenthetical enharmonic.
-// intervalSemitones: the raw semitone distance (can be > 12 for extensions)
-// rootPc: pitch class of the root (0–11)
-// symbol: chord/scale/interval symbol (for tritone context only)
+/**
+ * Computes the correctly spelled note name for a pitch that lies
+ * `intervalSemitones` above the given root pitch class.
+ *
+ * The letter name is determined by the interval's generic size (2nd, 3rd, 4th…),
+ * not by the raw pitch class. The accidental is the difference between that
+ * letter's natural pitch class and the actual target pitch class, expressed as
+ * ♭/♯/♭♭/♯♯. When a double accidental results, the enharmonic equivalent is
+ * appended in parentheses (e.g. "F##\u00a0(G)") for readability.
+ *
+ * Extended interval semitone counts (> 11) are normalised mod 12 before
+ * processing — octave displacement does not affect the letter or accidental.
+ *
+ * @param {number} intervalSemitones - Semitone distance from root to target
+ *   note. May exceed 12 for compound/extended intervals; normalised internally.
+ * @param {number} rootPc - Pitch class of the root note (0–11).
+ * @param {string} [symbol=''] - Chord or scale symbol key used to resolve
+ *   ambiguous interval spellings (tritone A4 vs d5, 8st A5 vs m6, 9st d7 vs M6).
+ * @returns {string} Display string, e.g. "F##\u00a0(G)" | "B♭" | "E" | "C♯".
+ */
 function spelledNote(intervalSemitones, rootPc, symbol) {
   const semitones = ((intervalSemitones % 12) + 12) % 12; // normalise to 0–11
   const rootPcN   = ((rootPc % 12) + 12) % 12;
@@ -104,20 +182,23 @@ function spelledNote(intervalSemitones, rootPc, symbol) {
     letterSteps = SEMITONES_TO_LETTER_STEPS[semitones];
   }
 
-  // Root letter index (0=C … 6=B)
+  // Resolve the root's letter index (0=C … 6=B).
+  // Natural roots (C D E F G A B) map directly via LETTER_PCS.
+  // Non-natural roots (C♯, D♭, …) are enharmonically ambiguous — the letter
+  // choice (e.g. C♯ vs D♭ as root) cascades into every downstream spelling,
+  // so we resolve it once here using pinnedRootSpelling when available, or the
+  // conventional key-signature preference (flat side) as a fallback.
   const rootLetterIdx = LETTER_PCS.findIndex(pc => pc === rootPcN);
-  // If root is not a natural note (e.g. root is C# = pc 1), find the correct letter
-  // by consulting the user's spelling preference (pinnedRootSpelling), or falling back
-  // to conventional key-signature rules when no root is pinned (Rnd mode).
   const rootLetterIdxResolved = (() => {
     if (rootLetterIdx !== -1) return rootLetterIdx; // natural root — no ambiguity
-    // flat map:  pc 1→D(1), 3→E(2), 6→G(4), 8→A(5), 10→B(6)
-    // sharp map: pc 1→C(0), 3→D(1), 6→F(3), 8→G(4), 10→A(5)
+
+    // flat map:  pc 1→D(1), 3→E(2), 6→G(4), 8→A(5), 10→B(6)  (Db Eb Gb Ab Bb)
+    // sharp map: pc 1→C(0), 3→D(1), 6→F(3), 8→G(4), 10→A(5)  (C# D# F# G# A#)
     const flatMap  = {1:1, 3:2, 6:4, 8:5, 10:6};
     const sharpMap = {1:0, 3:1, 6:3, 8:4, 10:5};
     if (pinnedRootSpelling === 'flat')  return flatMap[rootPcN]  ?? 0;
     if (pinnedRootSpelling === 'sharp') return sharpMap[rootPcN] ?? 0;
-    // Auto: conventional key-signature preference (Db Eb Gb Ab Bb = flat)
+    // Auto (Rnd mode): Db Eb Gb Ab Bb are the conventional flat-side roots
     const FLAT_ROOT_PCS = new Set([1,3,6,8,10]);
     return FLAT_ROOT_PCS.has(rootPcN) ? (flatMap[rootPcN] ?? 0) : (sharpMap[rootPcN] ?? 0);
   })();
@@ -132,17 +213,21 @@ function spelledNote(intervalSemitones, rootPc, symbol) {
   // Actual target pitch class
   const targetPc = (rootPcN + semitones) % 12;
 
-  // Difference: how many semitones to adjust from the natural letter
-  // We take the shortest path in range –2…+2 (double flat to double sharp)
+  // Compute the accidental: how many semitones the target pitch class deviates
+  // from the natural pitch class of the chosen letter.
+  // Negative = flat direction; positive = sharp direction.
+  // We clamp to ±2 (double flat / double sharp) — the outer bound of practical
+  // enharmonic spelling. Differences beyond ±2 produce '?' and signal a bug.
   let diff = targetPc - naturalPc;
-  // Wrap into –6…+6 to handle crossing the octave boundary
+  // Wrap into –6…+6 to correctly handle the octave seam (e.g. B natural = pc 11,
+  // target Cb = pc 0: raw diff = –11, wraps to +1 → correct sharp direction).
   if (diff > 6)  diff -= 12;
   if (diff < -6) diff += 12;
 
-  // Build accidental string
+  // ACC is indexed by (diff + 3) so that diff=0 lands on index 3 (no accidental).
+  // Unicode symbols: 𝄫 = double flat glyph, 𝄪 = double sharp glyph.
   const ACC = ['𝄫','♭♭','♭','','♯','♯♯','𝄪'];
-  //           diff: -3   -2   -1   0   +1   +2   +3  (we only support –2…+2)
-  const accIndex = diff + 3; // shift so diff=0 → index 3
+  const accIndex = diff + 3;
   const accStr = (diff >= -2 && diff <= 2) ? ACC[accIndex] : '?';
 
   const displayName = targetLetterName + accStr;
@@ -158,14 +243,34 @@ function spelledNote(intervalSemitones, rootPc, symbol) {
   return displayName + enharmonicStr;
 }
 
-// Simple sharp/flat name arrays for enharmonic parentheticals only
-// (used only when a double accidental occurs)
+/**
+ * Simple sharp-spelling name for each pitch class (0–11).
+ * Used only to produce the enharmonic parenthetical when a double accidental
+ * occurs (e.g. "F##\u00a0(G)"). Not used for primary spelling — use
+ * spelledNote() for that.
+ * @type {string[]}
+ */
 const SHARP_NAMES_BASIC = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+
+/**
+ * Simple flat-spelling name for each pitch class (0–11).
+ * Used only to produce the enharmonic parenthetical when a double accidental
+ * occurs (e.g. "B♭♭\u00a0(A)"). Not used for primary spelling — use
+ * spelledNote() for that.
+ * @type {string[]}
+ */
 const FLAT_NAMES_BASIC  = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
 
-// Convenience: spell the ROOT note itself (interval = 0 from itself)
-// rootPc: pitch class. Respects pinnedRootSpelling when set; otherwise uses
-// conventional key-signature preference (flat keys: Db Eb Gb Ab Bb).
+/**
+ * Returns the display name of the root note itself (interval = unison).
+ *
+ * Natural pitch classes (0,2,4,5,7,9,11) always return the natural name.
+ * Enharmonic pitch classes (1,3,6,8,10) respect `pinnedRootSpelling` when set;
+ * otherwise the conventional flat-side preference applies (D♭ E♭ G♭ A♭ B♭).
+ *
+ * @param {number} rootPc - Pitch class of the root note (0–11).
+ * @returns {string} Display name, e.g. "C♯" | "D♭" | "F" | "B♭".
+ */
 function spelledRoot(rootPc) {
   const pc = ((rootPc % 12) + 12) % 12;
   if (pinnedRootSpelling === 'flat')  return FLAT_NAMES_BASIC[pc];
@@ -175,11 +280,22 @@ function spelledRoot(rootPc) {
   return FLAT_ROOT_PCS.has(pc) ? FLAT_NAMES_BASIC[pc] : SHARP_NAMES_BASIC[pc];
 }
 
-// Context-aware VexFlow key string (e.g. "fbb/4", "g##/3", "bb/3")
-// midi: MIDI note number
-// intervalSemitones: semitone distance from root to this note
-// rootPc: root pitch class
-// symbol: chord/scale symbol (for tritone context)
+/**
+ * Converts a MIDI note number to a VexFlow-compatible key string with correct
+ * enharmonic spelling for the given harmonic context.
+ *
+ * Spelling is derived from spelledNote() using the interval from the root, then
+ * translated to VexFlow's letter+accidental+octave format (e.g. "fbb/4").
+ * Octave is corrected for letters that cross the C/B boundary relative to the
+ * raw MIDI pitch class (e.g. Cb sounds like B but VexFlow places it one octave
+ * higher on the staff; B## sounds like C# but belongs one octave lower).
+ *
+ * @param {number} midi - MIDI note number (0–127).
+ * @param {number} intervalSemitones - Semitone distance from root to this note.
+ * @param {number} rootPc - Pitch class of the root note (0–11).
+ * @param {string} [symbol=''] - Chord or scale symbol for tritone/A5/d7 context.
+ * @returns {string} VexFlow key string, e.g. "fbb/4" | "g##/3" | "bb/3" | "c#/5".
+ */
 function midiToVexKeySpelled(midi, intervalSemitones, rootPc, symbol) {
   let oct = Math.floor(midi / 12) - 1;
   // Get the display name (without enharmonic parenthetical)
@@ -210,7 +326,22 @@ function midiToVexKeySpelled(midi, intervalSemitones, rootPc, symbol) {
   return letter + vexAcc + '/' + oct;
 }
 
-// Accidental token for VexFlow StaveNote from a vex key string
+/**
+ * Extracts the VexFlow accidental token from a key string for use with
+ * `StaveNote.addModifier(new Accidental(...))`.
+ *
+ * VexFlow requires explicit accidental objects even for notes covered by the
+ * key signature when the notation engine has been told to force them. This
+ * function parses the letter+accidental portion of the key string and returns
+ * the token VexFlow expects, or null if the note is natural.
+ *
+ * The 'bb' (double flat) check requires length > 2 to distinguish the token
+ * "bb" (B-flat) from "bbb/4" (B double-flat) — the leading letter 'b' is
+ * part of the note name, not the accidental.
+ *
+ * @param {string} vexKey - VexFlow key string, e.g. "f#/4" | "eb/3" | "c##/5".
+ * @returns {string|null} Accidental token ('##' | 'bb' | '#' | 'b') or null if natural.
+ */
 function vexAccidental(vexKey) {
   const n = vexKey.split('/')[0];
   if (n.endsWith('##')) return '##';
@@ -220,11 +351,24 @@ function vexAccidental(vexKey) {
   return null;
 }
 
-// ─── Interval-semitone helpers for call sites ─────────────────────────────────
-// All old spelledNote(pitchClass, symbol, rootPc) calls are replaced with
-// spelledNote(intervalSemitones, rootPc, symbol) where intervalSemitones is
-// computed as (targetPc - rootPc + 12) % 12 at each call site.
-// Helper to compute semitone interval from rootPc to a pitch class:
+/**
+ * Computes the ascending semitone interval from `rootPc` to `targetPc`,
+ * always returning a value in the range 0–11.
+ *
+ * Used at call sites to convert a pair of pitch classes into the
+ * `intervalSemitones` argument required by spelledNote() and
+ * midiToVexKeySpelled(). The double-modulo pattern handles negative differences
+ * (e.g. root=9, target=2 → (2-9+12)%12 = 5 semitones ascending).
+ *
+ * @param {number} targetPc - Pitch class of the target note (0–11).
+ * @param {number} rootPc - Pitch class of the root note (0–11).
+ * @returns {number} Ascending semitone distance (0–11).
+ */
 function pcInterval(targetPc, rootPc) {
   return ((targetPc - rootPc) % 12 + 12) % 12;
 }
+
+// =============================================================================
+// The Sound Travels Ear Training — spelling.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================

@@ -1,6 +1,41 @@
-// ─── Key signature helpers (scale mode) ───────────────────────────────────────
+/**
+ * @file keysig.js
+ * @description Key signature helpers: chip toggling, VexFlow key string
+ *   resolution, best-fit key inference for complex chords, and key-signature
+ *   coverage tracking used by the notation engine to suppress redundant
+ *   accidentals on notes already covered by the active key signature.
+ *
+ * Coverage model: a key signature covers specific LETTER+ACCIDENTAL
+ *   combinations, not raw pitch classes. E♭ major covers the letter E with a
+ *   flat — it does NOT cover D♯ even though D♯ and E♭ share pitch class 3.
+ *   Coverage is therefore tracked as a Set of VexFlow letter strings
+ *   (e.g. {'bb','eb','ab','db','gb'}) and matched by letter identity, not
+ *   pitch class.
+ *
+ * Dependencies:
+ *   pinnedRootSpelling (state.js) — resolves enharmonic key ambiguity.
+ *   currentMode, currentProgression, progAnswered, answered, appMode (state.js)
+ *   showProgressionNotation(), showCurrentView(), showNotation(),
+ *   showBreakdown() — rendering functions called after chip state changes.
+ *
+ * @module KeySig
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
 
-// Toggle the C / Key chip and re-render notation
+/**
+ * Handles a Key/C chip tap: updates the per-mode key-signature display
+ * preference in state and re-renders the current notation and breakdown.
+ *
+ * Each mode stores its keySigMode independently so switching modes does not
+ * reset the chip selection. Progressions mode re-renders mini staves directly;
+ * chords mode uses the view dispatcher to correctly handle both the main chord
+ * view and the resolution view.
+ *
+ * @param {'C'|'key'} mode - 'key' renders the staff with a key signature;
+ *   'C' shows all accidentals explicitly with no key signature.
+ */
 function setKeySig(mode) {
   if (currentMode === 'scales')          scaleKeySigMode    = mode;
   else if (currentMode === 'chords')     chordKeySigMode    = mode;
@@ -22,25 +57,74 @@ function setKeySig(mode) {
   }
 }
 
-// VexFlow key signature strings for each pitch class + quality.
-// Enharmonic pairs at pcs 1,3,6,8,10 — chosen by pinnedRootSpelling when set.
-// Default (no pinned root): conventional preference (flat side for those 5 pcs).
+/**
+ * VexFlow major key signature strings indexed by pitch class (0–11), flat side.
+ * Enharmonic pitch classes (1,3,6,8,10) use the flat-preferred spelling:
+ * Db, Eb, Gb, Ab, Bb. Used when pinnedRootSpelling is 'flat' or unset.
+ * @type {string[]}
+ */
 const VEX_KEY_MAJOR_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+
+/**
+ * VexFlow major key signature strings indexed by pitch class (0–11), sharp side.
+ * Enharmonic pitch classes use the sharp-preferred spelling: C#, D#, F#, G#, A#.
+ * Used when pinnedRootSpelling is 'sharp'.
+ * @type {string[]}
+ */
 const VEX_KEY_MAJOR_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+/**
+ * VexFlow minor key signature strings indexed by pitch class (0–11), flat side.
+ * @type {string[]}
+ */
 const VEX_KEY_MINOR_FLAT  = ['Am','Bbm','Bm','Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m'];
+
+/**
+ * VexFlow minor key signature strings indexed by pitch class (0–11), sharp side.
+ * @type {string[]}
+ */
 const VEX_KEY_MINOR_SHARP = ['Am','A#m','Bm','Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m'];
 
+/**
+ * Returns the VexFlow major key signature string for the given pitch class,
+ * respecting pinnedRootSpelling. Defaults to the flat side for enharmonic pcs.
+ *
+ * @param {number} pc - Pitch class (0–11).
+ * @returns {string} VexFlow key string, e.g. 'Eb' | 'D#' | 'G'.
+ */
 function vexKeyMajor(pc) {
   if (pinnedRootSpelling === 'sharp') return VEX_KEY_MAJOR_SHARP[pc];
   if (pinnedRootSpelling === 'flat')  return VEX_KEY_MAJOR_FLAT[pc];
   return VEX_KEY_MAJOR_FLAT[pc]; // conventional default = flat side
 }
+
+/**
+ * Returns the VexFlow minor key signature string for the given pitch class,
+ * respecting pinnedRootSpelling. Defaults to the flat side for enharmonic pcs.
+ *
+ * @param {number} pc - Pitch class (0–11).
+ * @returns {string} VexFlow key string, e.g. 'Ebm' | 'D#m' | 'Gm'.
+ */
 function vexKeyMinor(pc) {
   if (pinnedRootSpelling === 'sharp') return VEX_KEY_MINOR_SHARP[pc];
   if (pinnedRootSpelling === 'flat')  return VEX_KEY_MINOR_FLAT[pc];
   return VEX_KEY_MINOR_FLAT[pc]; // conventional default
 }
 
+/**
+ * Returns the VexFlow key signature string implied by a scale's parent key at
+ * the given root pitch class, or null if the scale has no parent key.
+ *
+ * Modal scales are notated in their parent key's key signature rather than the
+ * mode root's "key", because the parent key defines the actual accidentals in
+ * use. For example, D Dorian is notated with C major's key signature (no sharps
+ * or flats), not D major's (two sharps).
+ *
+ * @param {{ parentKey?: { offset: number, quality: 'major'|'minor' } }} scale
+ *   - Scale data object; parentKey.offset is semitones from mode root to parent root.
+ * @param {number} rootPc - Pitch class of the mode's root note (0–11).
+ * @returns {string|null} VexFlow key string (e.g. 'C', 'Bb', 'F#m') or null.
+ */
 function getScaleParentKeyStr(scale, rootPc) {
   if (!scale.parentKey) return null;
   const { offset, quality } = scale.parentKey;
@@ -48,16 +132,38 @@ function getScaleParentKeyStr(scale, rootPc) {
   return quality === 'minor' ? vexKeyMinor(parentPc) : vexKeyMajor(parentPc);
 }
 
-// POINT 32b: Return a VexFlow key sig string implied by a chord symbol + root pitch class.
+/**
+ * Returns the VexFlow key signature string implied by a chord symbol and root
+ * pitch class. Minor-quality chords use a minor key signature; all others use
+ * a major key signature rooted on the chord's root.
+ *
+ * Used by the notation engine to place an appropriate key signature behind a
+ * chord so that chord tones covered by the key are displayed without individual
+ * accidentals.
+ *
+ * @param {string} sym - Chord symbol key (e.g. 'm7', 'Maj7', 'dim').
+ * @param {number} rootPc - Pitch class of the chord root (0–11).
+ * @returns {string} VexFlow key string, e.g. 'Am' | 'C' | 'Bb'.
+ */
 function getChordKeyStr(sym, rootPc) {
   const minorFamilies = ['m', 'm7', 'mM7', 'm6', 'm9', 'm11', 'm13', 'hdim', 'hdim7', 'dim', 'dim7'];
   const quality = minorFamilies.includes(sym) ? 'minor' : 'major';
   return quality === 'minor' ? vexKeyMinor(rootPc) : vexKeyMajor(rootPc);
 }
 
-// Best-fit key: find the major or minor key whose scale contains the most pitch classes
-// from the given midi notes. Ties broken by fewest accidentals (proximity to C major).
-// Used for polychords, UST, and slash chords where a single root key isn't obvious.
+/**
+ * Infers the best-fit VexFlow key signature string for a set of MIDI notes by
+ * finding the major or minor key whose scale shares the most pitch classes with
+ * the chord. Ties are broken by fewest accidentals (proximity to C major /
+ * A minor), minimising clutter on the staff.
+ *
+ * Used for polychords, Upper Structure Triads, and slash chords, where there is
+ * no single unambiguous root key — the notation engine needs a key signature
+ * that reduces accidentals without imposing an incorrect harmonic reading.
+ *
+ * @param {number[]} midiNotes - Array of MIDI note numbers in the chord.
+ * @returns {string} VexFlow key string for the best-fitting key, e.g. 'Bb' | 'F#m'.
+ */
 function getBestFitKeyStr(midiNotes) {
   const chordPcs = new Set(midiNotes.map(m => ((m % 12) + 12) % 12));
   const MAJOR_SCALE = [0,2,4,5,7,9,11];
@@ -82,37 +188,87 @@ function getBestFitKeyStr(midiNotes) {
   return bestMinor ? vexKeyMinor(bestKey) : vexKeyMajor(bestKey);
 }
 
-// POINT 32b: Return a VexFlow key sig string for an interval, based on the lower note's pitch class.
+/**
+ * Returns the VexFlow key signature string for an interval question, using the
+ * lower note's pitch class as the root. Intervals are always contextualised as
+ * major keys — there is no minor-quality distinction at the interval level.
+ *
+ * @param {number} rootPc - Pitch class of the lower (root) note (0–11).
+ * @returns {string} VexFlow major key string, e.g. 'G' | 'Bb' | 'F#'.
+ */
 function getIntervalKeyStr(rootPc) {
   return vexKeyMajor(rootPc);
 }
 
 // ── Key-signature coverage helpers ───────────────────────────────────────────
-//
-// A key signature covers specific LETTER+ACCIDENTAL combinations, not pitch
-// classes. E.g. Db major covers Bb Eb Ab Db Gb — meaning the letter B with a
-// flat, the letter E with a flat, etc. It does NOT cover D# even though D# and
-// Eb share pitch class 3. We therefore track coverage as a Set of vex letter
-// strings (e.g. 'bb', 'eb', 'ab', 'db', 'gb').
 
+/**
+ * Number of sharps in each major key's key signature.
+ * Keys not present here are flat keys (see MAJOR_FLATS_COUNT).
+ * @type {Object.<string, number>}
+ */
 const MAJOR_SHARPS_COUNT = { C:0, G:1, D:2, A:3, E:4, B:5, 'F#':6, 'C#':7 };
+
+/**
+ * Number of flats in each major key's key signature.
+ * C appears in both tables with count 0 — it is the neutral key.
+ * @type {Object.<string, number>}
+ */
 const MAJOR_FLATS_COUNT  = { C:0, F:1, Bb:2, Eb:3, Ab:4, Db:5, Gb:6, Cb:7 };
+
+/**
+ * Maps VexFlow minor key strings to their relative major key string.
+ * Used to look up accidental counts for minor keys via their relative major.
+ * @type {Object.<string, string>}
+ */
 const MINOR_TO_REL_MAJOR = {
   Am:'C', Bm:'D', Cm:'Eb', 'C#m':'E', Dm:'F', 'D#m':'F#', Em:'G',
   Fm:'Ab', 'F#m':'A', Gm:'Bb', 'G#m':'B', Bbm:'Db', Ebm:'Gb',
 };
 
-// Order of sharps/flats as letter names (no octave)
+/**
+ * The order in which sharps appear in key signatures, as VexFlow letter strings.
+ * F♯ is always first (one-sharp keys); B♯ is last (seven-sharp keys).
+ * @type {string[]}
+ */
 const SHARP_ORDER_LETTERS = ['f#','c#','g#','d#','a#','e#','b#'];
+
+/**
+ * The order in which flats appear in key signatures, as VexFlow letter strings.
+ * B♭ is always first (one-flat keys); F♭ is last (seven-flat keys).
+ * @type {string[]}
+ */
 const FLAT_ORDER_LETTERS  = ['bb','eb','ab','db','gb','cb','fb'];
 
+/**
+ * Resolves a VexFlow key string (major or minor) to its major key equivalent
+ * for accidental-count lookups. Minor keys are converted to their relative
+ * major; major keys are returned unchanged; null/undefined returns 'C'.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string, e.g. 'Bb' | 'F#m' | null.
+ * @returns {string} Major key string, e.g. 'Bb' | 'A' | 'C'.
+ * @private
+ */
 function _getMajorKey(vexKeyStr) {
   if (!vexKeyStr) return 'C';
   if (vexKeyStr.endsWith('m')) return MINOR_TO_REL_MAJOR[vexKeyStr] ?? 'C';
   return vexKeyStr;
 }
 
-// Returns a Set of vex letter strings covered by the key sig, e.g. {'bb','eb','ab','db','gb'}
+/**
+ * Returns the set of VexFlow letter strings covered by the given key signature.
+ *
+ * Each string in the returned Set is a letter+accidental combination that the
+ * key signature makes implicit — e.g. {'bb','eb','ab','db','gb'} for D♭ major.
+ * The notation engine uses this set to decide whether to suppress an accidental
+ * (if covered) or force it to appear (if not).
+ *
+ * Coverage is letter-based, not pitch-class based: 'eb' in the set means the
+ * letter E with a flat is covered, but 'D#' (same pitch class) is not.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string (e.g. 'Eb' | 'F#m' | null).
+ * @returns {Set<string>} Set of covered VexFlow letter strings, e.g. {'bb','eb'}.
+ */
 function keySigCoveredLetters(vexKeyStr) {
   if (!vexKeyStr) return new Set();
   const majorKey = _getMajorKey(vexKeyStr);
@@ -127,18 +283,46 @@ function keySigCoveredLetters(vexKeyStr) {
   return covered;
 }
 
-// Is this vex key string (e.g. 'eb/4', 'f#/5') covered by coveredLetters?
-// We strip the octave and match the letter+acc part.
+/**
+ * Returns true if the given VexFlow key string is covered by the provided
+ * coverage set, meaning the key signature already implies this accidental and
+ * it should not be drawn explicitly on the note.
+ *
+ * @param {string} vexKey - VexFlow key string including octave, e.g. 'eb/4' | 'f#/5'.
+ * @param {Set<string>} coveredLetters - Set returned by keySigCoveredLetters().
+ * @returns {boolean} True if the note's accidental is covered by the key signature.
+ */
 function isCoveredByKeySig(vexKey, coveredLetters) {
   const letterAcc = vexKey.split('/')[0]; // e.g. 'eb', 'f#', 'c'
   return coveredLetters.has(letterAcc);
 }
 
-// Re-spell a midi note enharmonically when the primary spelling is a double
-// accidental AND the enharmonic alternative is covered (or simpler) in this key.
-// Returns a new vex key string, or the original if no re-spell needed.
-// This handles cases like Ebb → D when Eb is in the key sig (the Ebb would have
-// been spelled from the interval engine but D is the correct practical reading).
+/**
+ * Re-spells a VexFlow key string enharmonically when the interval engine has
+ * produced a double accidental and a simpler spelling exists within the context
+ * of the active key signature.
+ *
+ * The function is conservative: it only acts on double accidentals (♭♭ or ##).
+ * Single accidentals and naturals are always returned unchanged. When a simpler
+ * spelling is found, it is chosen in the following priority order:
+ *
+ *   1. Cross-letter candidate covered by the key signature (e.g. E♭♭ → D when
+ *      D is in key — genuinely simpler and harmonically consistent).
+ *   2. Same-letter one-step strip, preserving staff position (e.g. E♭♭ → E♭).
+ *      This takes priority over a cross-letter natural to avoid staff collisions
+ *      when another note already occupies that letter's staff position.
+ *   3. Cross-letter natural (last resort — may create staff collisions).
+ *
+ * The notation engine sets forcedAcc=true for the resulting note so the
+ * remaining single accidental is always drawn explicitly.
+ *
+ * @param {number} midi - MIDI note number of the note being re-spelled.
+ * @param {string} vexKey - Current VexFlow key string, e.g. 'ebb/4'.
+ * @param {Set<string>} coveredLetters - Set returned by keySigCoveredLetters().
+ * @param {string} keySigStr - Active VexFlow key signature string (unused directly
+ *   but kept for potential future context expansion).
+ * @returns {string} Re-spelled VexFlow key string, or the original if no change needed.
+ */
 function respellForKeySig(midi, vexKey, coveredLetters, keySigStr) {
   const letterAcc = vexKey.split('/')[0];
   const oct = vexKey.split('/')[1];
@@ -195,7 +379,17 @@ function respellForKeySig(midi, vexKey, coveredLetters, keySigStr) {
   return candidates[0] ?? vexKey; // absolute last resort
 }
 
-// Legacy pitch-class based function (kept for callers that still use it)
+/**
+ * Returns the set of pitch classes covered by the given key signature.
+ *
+ * @deprecated Prefer keySigCoveredLetters() for new code. This pitch-class
+ *   based approach cannot distinguish enharmonic pairs (e.g. E♭ vs D♯) and
+ *   may suppress or force accidentals incorrectly on enharmonically spelled
+ *   notes. Retained for legacy callers only.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string or null.
+ * @returns {Set<number>} Set of covered pitch classes (0–11).
+ */
 function keySigCoveredPcs(vexKeyStr) {
   if (!vexKeyStr) return new Set();
   const SHARP_ORDER_PCS = [6, 1, 8, 3, 10, 5, 0];
@@ -212,7 +406,14 @@ function keySigCoveredPcs(vexKeyStr) {
   return covered;
 }
 
-// Count how many accidentals a key sig has (for canvas width padding)
+/**
+ * Returns the total number of accidental symbols in the given key signature.
+ * Used by the notation engine to calculate extra canvas width needed to
+ * accommodate the key signature glyphs at the start of the staff.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string, e.g. 'Eb' | 'F#m' | null.
+ * @returns {number} Number of accidentals in the key signature (0–7).
+ */
 function keySigAccidentalCount(vexKeyStr) {
   if (!vexKeyStr) return 0;
   const majorKey = _getMajorKey(vexKeyStr);
@@ -220,3 +421,8 @@ function keySigAccidentalCount(vexKeyStr) {
   if (MAJOR_FLATS_COUNT[majorKey]  !== undefined) return MAJOR_FLATS_COUNT[majorKey];
   return 0;
 }
+
+// =============================================================================
+// The Sound Travels Ear Training — keysig.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================

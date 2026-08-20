@@ -1,4 +1,52 @@
-/* ── POINT 19: Sticky header shell ── */
+/**
+ * @file components.css
+ * @description All component styles for the application shell and UI elements,
+ * organised in document render order. This file covers every visible component:
+ * the sticky header shell, branding row, score bar, mode tabs, training pool
+ * panels, chip system, play area, notation panel, answer dropdown, breakdown
+ * panel, session stats, voice leading table, progression mode slots, About view,
+ * and Help view. Design tokens (colours, spacing, shadows) are defined in
+ * base.css and consumed here via CSS custom properties.
+ *
+ * @section  1  Sticky header shell
+ * @section  2  Header row
+ * @section  3  Score bar & Quiz/Dictionary toggle
+ * @section  4  Theme toggle & About button
+ * @section  5  Mode tabs
+ * @section  6  Training pool panel
+ * @section  7  Chip system
+ * @section  8  Play area
+ * @section  9  Notation panel
+ * @section 10  Quiz status
+ * @section 11  Answer dropdown
+ * @section 12  Controls
+ * @section 13  Settings panel
+ * @section 14  Root note & register chips
+ * @section 15  Breakdown panel
+ * @section 16  Root toggle & stats panel
+ * @section 17  Voice leading
+ * @section 18  Progression mode
+ * @section 19  About view
+ * @section 20  Help view
+ *
+ * @author    Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license   MIT
+ */
+
+
+/* ── 1. Sticky header shell ──────────────────────────────────────────────── */
+/**
+ * @component Sticky header shell
+ * @description Fixed-position container that holds the entire header UI:
+ * branding row, score bar, and mode tabs. Stays pinned to the top of the
+ * viewport while the main content area scrolls beneath it. `#stickyInner`
+ * constrains the content width to 580px and centres it horizontally, matching
+ * the max-width of the main content column.
+ *
+ * @element #stickyShell  — outer fixed wrapper; full viewport width
+ * @element #stickyInner  — inner centred content column (max-width: 580px)
+ */
 #stickyShell {
   position: fixed; top: 0; left: 0; right: 0; z-index: 200;
   background: var(--bg); border-bottom: 1px solid var(--border);
@@ -6,24 +54,96 @@
 }
 #stickyInner { max-width: 580px; margin: 0 auto; padding: 0 1rem; }
 
-/* ── Header ── */
+
+/* ── 2. Header row ───────────────────────────────────────────────────────── */
+/**
+ * @component Header row
+ * @description The top branding row inside the sticky shell. Contains three
+ * groups laid out with space-between flexbox:
+ *   - `.header-left`    : logo image + app title, truncated with ellipsis on
+ *                         very narrow viewports via `min-width:0` + `flex:1`
+ *   - `.header-actions` : utility buttons (About, Help, desktop theme toggle);
+ *                         `flex-shrink:0` prevents these from being squeezed
+ *
+ * The site logo is inverted in dark mode via an attribute selector on
+ * `[data-theme="dark"]` set on `<html>` by JavaScript. This avoids a separate
+ * dark-mode asset and works for the monochrome logo used here.
+ *
+ * @element .header          — flex row; space-between
+ * @element .header-left     — logo + title group
+ * @element .header-actions  — utility button group
+ * @element .site-logo       — logo <img>; 36×36px
+ * @element .title           — app name; Playfair Display serif
+ */
 .header { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0; gap: 0.5rem; }
 .header-left { display: flex; align-items: center; gap: 0.625rem; min-width: 0; }
+.header-actions { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0; }
 .site-logo { height: 2.25rem; width: 2.25rem; object-fit: contain; display: block; flex-shrink: 0; }
+/* Invert the monochrome logo in dark mode so it reads as light-on-dark. */
 [data-theme="dark"] .site-logo { filter: invert(1) brightness(1.8); }
 .title { font-family: 'Playfair Display', Georgia, serif; font-size: 1.125rem; font-weight: 700; color: var(--text); letter-spacing: 0.01em; white-space: nowrap; flex: 1; min-width: 0; }
+
+
+/* ── 3. Score bar & Quiz/Dictionary toggle ───────────────────────────────── */
+/**
+ * @component Score bar
+ * @description The second row of the sticky header. Displays session progress
+ * (streak, score) and global mode controls (New Session, theme toggle on
+ * mobile, Quiz/Dictionary toggle). All elements are flex children that wrap
+ * gracefully on narrow viewports.
+ *
+ * `.score-pill` displays a single labelled stat. Each pill carries an
+ * `aria-label` read by screen readers as a more descriptive alternative to the
+ * raw numbers rendered inside `<span>` elements.
+ *
+ * @element .score-bar   — flex row containing all score and control elements
+ * @element .score-pill  — rounded pill displaying a single session stat
+ *
+ * @component Quiz/Dictionary toggle
+ * @description Segmented control that switches the app between Quiz mode
+ * (active ear training with answer submission) and Dictionary mode (reference
+ * browse with instant notation display). Implemented as a flex pair of
+ * `<button>` elements inside a shared rounded container. The `.active` modifier
+ * is applied by JavaScript to the currently selected button.
+ *
+ * @element .qd-toggle       — outer pill container; clips children to border-radius
+ * @element .qd-btn          — individual segment button
+ * @modifier .qd-btn.active  — selected segment; teal fill
+ */
 .score-bar { display: flex; gap: 0.5rem; align-items: center; padding: 0.25rem 0 0.4rem; }
-/* score-pill: min 44px tall for touch target */
 .score-pill { font-size: 0.8125rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 0.25rem 0.625rem; min-height: 2.75rem; display: flex; align-items: center; }
 .score-pill span { font-weight: 600; color: var(--text); }
 
-/* ── Quiz / Dictionary toggle ── */
 .qd-toggle { display: flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-left: auto; flex-shrink: 0; }
 .qd-btn { padding: 0.25rem 0.75rem; font-size: 0.8125rem; font-weight: 500; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background 0.15s, color 0.15s; min-height: 2.75rem; white-space: nowrap; }
 .qd-btn.active { background: var(--bg-chip-active); color: var(--accent-text); }
 .qd-btn:hover:not(.active) { background: var(--bg-hover); color: var(--text); }
 
-/* ── POINT 16: Theme toggle button — 44px touch target ── */
+
+/* ── 4. Theme toggle & About button ─────────────────────────────────────── */
+/**
+ * @component Theme toggle
+ * @description Circular icon button that switches between light and dark
+ * colour schemes. Two instances exist in the DOM: `#themeToggle` (desktop,
+ * visible in `.header-actions`) and `#themeToggleMobile` (visible only on
+ * narrow viewports via `mobile.css`). JavaScript writes `data-theme="dark"`
+ * to `<html>` and persists the preference in `localStorage`.
+ *
+ * `#themeToggleMobile` is hidden at desktop breakpoints here; `mobile.css`
+ * sets it to `display:inline-flex` at the narrow breakpoint.
+ *
+ * @element .theme-toggle          — 44×44px circular button
+ * @element #themeToggleMobile     — mobile-only instance; hidden at desktop
+ *
+ * @component About / Help button
+ * @description Circular icon buttons that open the About and Help full-panel
+ * views respectively. Both use the `.about-btn` class. The `.active` modifier
+ * is applied by JavaScript while the corresponding panel is open, giving the
+ * button a filled teal background as a visual indicator.
+ *
+ * @element  .about-btn           — 44×44px circular icon button
+ * @modifier .about-btn.active    — panel is open; solid teal fill
+ */
 .theme-toggle {
   width: 2.75rem; height: 2.75rem; border-radius: 50%;
   background: var(--bg-chip); border: 1px solid var(--border);
@@ -33,9 +153,9 @@
   flex-shrink: 0;
 }
 .theme-toggle:hover { background: var(--bg-hover); border-color: var(--border-active); }
-#themeToggleMobile { display: none; } /* hidden on desktop; shown in mobile block below */
+/* Hidden at desktop breakpoints; mobile.css overrides to display:inline-flex. */
+#themeToggleMobile { display: none; }
 
-/* ── About button — always visible, inline in header ── */
 .about-btn {
   width: 2.75rem; height: 2.75rem; border-radius: 50%;
   background: transparent;
@@ -60,13 +180,70 @@
   box-shadow: 0 0 0 4px rgba(74,158,142,0.18);
 }
 
-/* ── POINT 19: Mode tabs — live in sticky header ── */
+
+/* ── 5. Mode tabs ────────────────────────────────────────────────────────── */
+/**
+ * @component Mode tabs
+ * @description The third row of the sticky header. A full-width segmented tab
+ * bar that switches the active training mode: Intervals, Chords, Scales, or
+ * Progressions. Each tab is a `<button data-mode="...">` element; JavaScript
+ * reads `data-mode` on click and calls `switchMode()`. The `.active` modifier
+ * is moved by JavaScript to highlight the current tab with a teal underline.
+ *
+ * Tabs use `flex:1` so they always fill the full header width regardless of
+ * the number of tabs or viewport width.
+ *
+ * @element  .mode-tabs         — flex container; full width; top border separator
+ * @element  .mode-tab          — individual tab button
+ * @modifier .mode-tab.active   — current mode; teal bottom border + text colour
+ */
 .mode-tabs { display: flex; border-top: 1px solid var(--border); }
 .mode-tab { flex: 1; padding: 0.625rem 0.25rem; font-size: 0.9375rem; font-weight: 500; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background 0.15s, color 0.15s, border-bottom 0.15s; border-bottom: 2px solid transparent; min-height: 2.75rem; }
 .mode-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: transparent; }
 .mode-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text); }
 
-/* ── POINT 10: Training pool panel ── */
+
+/* ── 6. Training pool panel ──────────────────────────────────────────────── */
+/**
+ * @component Training pool panel
+ * @description Collapsible card panel used throughout the app for: root note
+ * selection (`#rootPanel`), the training item pool (`#poolPanel`), notation
+ * display (`#notationPanel`), and the post-answer breakdown (`#breakdownWrapper`).
+ * The panel header is a clickable toggle row; JavaScript adds/removes the
+ * `.open` modifier on `.pool-panel-body` to expand or collapse the content.
+ *
+ * Within the pool panel body, `.pool-section` groups related chips under a
+ * collapsible sub-header. `.pool-section-body.collapsed` hides the chip group;
+ * JavaScript toggles this class and animates the `.pool-section-chevron` via
+ * an inline `transform:rotate()` style.
+ *
+ * `.pool-inv-row` is a supplemental row at the bottom of the pool body used
+ * in Chords mode to host the "Include inversions" checkbox toggle.
+ *
+ * Structure:
+ *   .pool-panel
+ *     .pool-panel-header        — clickable toggle; arrow icon rotates on open
+ *       .pool-panel-title       — panel label
+ *       .pool-panel-meta        — optional item-count summary (e.g. "3 / 12")
+ *       .pool-panel-arrow       — ▸ / ▾ indicator
+ *     .pool-panel-body[.open]   — collapsible content
+ *       .pool-section           — named sub-group
+ *         .pool-section-header  — sub-group toggle row
+ *           .pool-section-title — sub-group label + chevron
+ *           .pool-section-actions — "All" / "None" quick-select buttons
+ *         .pool-section-body[.collapsed] — chip list; hidden when collapsed
+ *           .pool-chips         — flex wrap of .pool-chip buttons
+ *       .pool-inv-row           — inversions checkbox row (Chords mode only)
+ *
+ * @element  .pool-panel                — outer card; border-radius 14px
+ * @element  .pool-panel-header         — toggle row; hover background
+ * @element  .pool-panel-body           — hidden by default
+ * @modifier .pool-panel-body.open      — expanded; display:block
+ * @element  .pool-section-body         — chip list container
+ * @modifier .pool-section-body.collapsed — hidden chip list
+ * @element  .pool-chip                 — individual selectable item chip
+ * @modifier .pool-chip.active          — chip is selected; teal fill
+ */
 .pool-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 1rem; overflow: hidden; }
 .pool-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; cursor: pointer; user-select: none; min-height: 2.75rem; }
 .pool-panel-header:hover { background: var(--bg-hover); }
@@ -88,41 +265,95 @@
 .pool-chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .pool-section-body { overflow: hidden; }
 .pool-section-body.collapsed { display: none; }
-/* pool-chip: min 44px tall */
 .pool-chip { font-size: 0.875rem; padding: 0.5rem 0.75rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
 .pool-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
 .pool-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
 .pool-inv-row { display: flex; align-items: center; gap: 8px; margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid var(--border); font-size: 0.875rem; color: var(--text-muted); }
 .pool-inv-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; min-height: 2.75rem; }
 
-/* ── Chord playback style selector (POINT 6) ── */
-.chord-style-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
-.chord-style-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
-.chord-style-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
-.chord-style-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
 
-/* ── POINT 23: Voicing mode chips (chord mode only) ── */
-.voicing-mode-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
-.voicing-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
-.voicing-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
-.voicing-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+/* ── 7. Chip system ──────────────────────────────────────────────────────── */
+/**
+ * @component Chip system — shared option chip base
+ * @description Unified visual base for all mode-specific playback and
+ * direction selector chips rendered inside the Settings panel. A single
+ * `.option-chip` base class defines the shared shape, typography, and
+ * interaction states. Mode-specific class names are kept as aliases that
+ * share the same ruleset so that JavaScript in each mode file can reference
+ * semantically meaningful class names without requiring any style duplication.
+ *
+ * Aliases:
+ *   .chord-style-chip  — Chords mode: Block / Arpeggio Up / Arpeggio Down
+ *   .voicing-chip      — Chords mode: voicing group selector
+ *   .style-chip        — shared: Basic / Advanced difficulty; also Chords style
+ *   .scale-dir-chip    — Scales mode: Ascending / Descending / Random
+ *
+ * Row wrappers position the chip groups within the Settings panel body and
+ * provide consistent bottom margin separating them from adjacent sections.
+ *
+ * @element  .option-chip              — base chip; border-radius 20px pill
+ * @modifier .option-chip.active       — selected chip; teal fill
+ * @element  .chord-style-row          — flex row wrapper for chord style chips
+ * @element  .voicing-mode-row         — flex row wrapper for voicing chips
+ * @element  .interval-style-row       — flex row wrapper for interval style chips
+ * @element  .scale-dir-row            — flex row wrapper for scale direction chips
+ */
+.option-chip,
+.chord-style-chip,
+.voicing-chip,
+.style-chip,
+.scale-dir-chip {
+  font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted);
+  cursor: pointer; transition: all 0.15s; min-height: 2.75rem;
+  display: inline-flex; align-items: center;
+}
+.option-chip.active,
+.chord-style-chip.active,
+.voicing-chip.active,
+.style-chip.active,
+.scale-dir-chip.active {
+  background: var(--bg-chip-active); border-color: var(--border-active);
+  color: var(--accent-text); font-weight: 500;
+}
+.option-chip:hover:not(.active),
+.chord-style-chip:hover:not(.active),
+.voicing-chip:hover:not(.active),
+.style-chip:hover:not(.active),
+.scale-dir-chip:hover:not(.active) {
+  border-color: var(--text-faint); color: var(--text);
+}
 
-/* ── Interval playback style selector (POINT 5) ── */
+.chord-style-row    { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.voicing-mode-row   { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
 .interval-style-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
-.style-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
-.style-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
-.style-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+.scale-dir-row      { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
 
-/* ── Scale direction chips (POINT 7) ── */
-.scale-dir-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
-.scale-dir-chip { font-size: 0.875rem; padding: 0.5rem 0.875rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
-.scale-dir-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
-.scale-dir-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
 
-/* ── Play area ── */
+/* ── 8. Play area ────────────────────────────────────────────────────────── */
+/**
+ * @component Play area
+ * @description Centred card containing the primary play button and supporting
+ * UI: a label describing what will be played (e.g. "Play interval (together)")
+ * and a hint/status line used for loading feedback ("Loading piano samples…")
+ * and post-play chord root hints.
+ *
+ * The play button (`#playBtn`) is disabled until the soundfont samples have
+ * finished loading, at which point `audio.js` removes the `disabled` attribute.
+ * The Space bar is also bound to trigger playback by `app.js`.
+ *
+ * The `.playing` modifier is applied by JavaScript for the duration of
+ * audio playback, expanding the teal glow ring to give animated visual feedback.
+ *
+ * @element  .play-area          — centred card; text-align:center
+ * @element  .play-label         — uppercase descriptor above the button
+ * @element  .play-btn           — 80×80px circular play button
+ * @modifier .play-btn.playing   — expanded glow ring while audio plays
+ * @modifier .play-btn:disabled  — dimmed; cursor:default; no hover effect
+ * @element  .chord-hint         — hint text below the button
+ */
 .play-area { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; text-align: center; margin-bottom: 1rem; }
 .play-label { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 1rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
-/* ── POINT 19: Enlarged play button with teal glow ── */
 .play-btn {
   width: 5rem; height: 5rem; border-radius: 50%;
   background: var(--accent); border: none;
@@ -130,6 +361,7 @@
   justify-content: center; font-size: 2rem;
   transition: transform 0.1s, background 0.15s, box-shadow 0.2s;
   color: #fff;
+  /* box-shadow at zero spread on base state so the hover transition is smooth. */
   box-shadow: 0 0 0 0 rgba(74,158,142,0);
 }
 .play-btn:hover:not(:disabled) { background: var(--accent-dark); box-shadow: 0 0 0 8px rgba(74,158,142,0.18), 0 4px 16px rgba(74,158,142,0.3); }
@@ -138,8 +370,39 @@
 .play-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
 .chord-hint { margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-faint); min-height: 1.25rem; }
 
-/* ── Notation — always paper-white so VexFlow black ink is readable ── */
-/* POINT 20c: notation card fixed to #fff in both themes; VexFlow renders black ink */
+
+/* ── 9. Notation panel ───────────────────────────────────────────────────── */
+/**
+ * @component Notation panel
+ * @description Collapsible panel that renders VexFlow music notation. Hidden
+ * by default in Quiz mode; shown post-answer and always visible in Dictionary
+ * mode. The panel wrapper (`#notationPanel`) uses `.pool-panel` for its
+ * collapsible shell; `.notation-area` is the white card inside it that hosts
+ * the VexFlow SVG output.
+ *
+ * The notation card background is hardcoded to #ffffff in both light and dark
+ * themes. VexFlow renders black ink onto an HTML5 canvas/SVG element; the card
+ * must remain white to keep notation legible regardless of the active theme.
+ * All labels and chip colours within this component use hardcoded light-palette
+ * values for the same reason — they sit on a white surface, not on the themed
+ * background.
+ *
+ * `.notation-scroll` provides horizontal scroll for wide staves on mobile,
+ * using `-webkit-overflow-scrolling:touch` for momentum scrolling on iOS.
+ *
+ * Key signature chips (C / Key) let the user toggle between rendering the
+ * chord in C major (no accidentals) or in the active root key. They use
+ * hardcoded light-palette colours since the notation card is always white.
+ *
+ * @element  .notation-area            — always-white card; contains VexFlow output
+ * @element  .notation-scroll          — horizontal scroll wrapper for wide staves
+ * @element  #notation-svg             — SVG element VexFlow renders into
+ * @element  .notation-label           — uppercase descriptor above the staff
+ * @element  .notation-chord-name      — chord/scale/interval name display
+ * @element  .keysig-chip-row          — flex row of key signature chips
+ * @element  .keysig-chip              — C / Key toggle chip
+ * @modifier .keysig-chip.active       — currently selected key signature
+ */
 .notation-area {
   background: #ffffff; border: 1px solid var(--border); border-radius: 14px;
   padding: 1rem 1.5rem 0.5rem; margin-bottom: 1rem;
@@ -149,12 +412,12 @@
   overflow-x: auto; overflow-y: visible;
   width: 100%; -webkit-overflow-scrolling: touch;
 }
-#notation-svg        { display: block; margin: 0 auto; max-width: none; }
-/* Labels inside notation card are always dark (card is always white) */
+#notation-svg { display: block; margin: 0 auto; max-width: none; }
+/* Hardcoded light-palette values — these labels sit on the always-white notation card. */
 .notation-label      { font-size: 0.75rem; color: #777; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; margin-bottom: 4px; }
 .notation-chord-name { font-size: 1.125rem; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
 
-/* ── Key sig chip — always light since notation card is always #fff ── */
+/* Key signature chips also use hardcoded light values for the same reason. */
 .keysig-chip-row { display: flex; justify-content: center; gap: 0.375rem; margin: 0.25rem 0 0.5rem; }
 .keysig-chip {
   font-size: 0.75rem; font-weight: 500; padding: 0.2rem 0.65rem;
@@ -169,12 +432,61 @@
   border-color: #4a9e8e; font-weight: 600;
 }
 
-/* ── Quiz status ── */
+
+/* ── 10. Quiz status ─────────────────────────────────────────────────────── */
+/**
+ * @component Quiz status message
+ * @description Single-line feedback text displayed between the play area and
+ * the answer dropdown. Updated by JavaScript after each answer submission:
+ * correct answers apply `.good` (teal/green text), incorrect answers apply
+ * `.bad` (red text). The element carries `aria-live="polite"` in the HTML so
+ * screen readers announce the updated text without interrupting the current
+ * reading context.
+ *
+ * `min-height` preserves layout height even when the element is empty,
+ * preventing the answer controls from jumping vertically between states.
+ *
+ * @element  .status-msg       — feedback text; empty between rounds
+ * @modifier .status-msg.good  — correct answer; --correct colour
+ * @modifier .status-msg.bad   — wrong answer; --wrong colour
+ */
 .status-msg { font-size: 0.875rem; color: var(--text-muted); text-align: center; min-height: 1.375rem; margin-bottom: 0.75rem; }
 .status-msg.good { color: var(--correct); font-weight: 500; }
 .status-msg.bad  { color: var(--wrong);   font-weight: 500; }
 
-/* ── POINT 11: Custom answer dropdown ── */
+
+/* ── 11. Answer dropdown ─────────────────────────────────────────────────── */
+/**
+ * @component Answer dropdown
+ * @description Custom accessible dropdown for answer submission in Quiz mode.
+ * Built from `<div>` elements rather than `<select>` to allow full visual
+ * styling and custom keyboard navigation. The trigger element displays the
+ * currently selected answer (or placeholder text). The list is populated
+ * dynamically by `js/ui/controls.js`, which also sets `role="option"` and
+ * `aria-selected` on each rendered item.
+ *
+ * The `.open` modifier on both the trigger and the list synchronises their
+ * visual states: the trigger loses its bottom border-radius to visually merge
+ * with the list, and the list transitions from `display:none` to `display:block`.
+ *
+ * Correct/incorrect feedback colours are applied to both the trigger and the
+ * matching list item after answer submission, before the next round begins.
+ *
+ * Keyboard navigation (ArrowUp, ArrowDown, Enter, Escape) is handled entirely
+ * in `js/ui/controls.js`.
+ *
+ * @element  .answer-dropdown-wrap          — relative-positioned outer wrapper
+ * @element  .ans-dropdown-trigger          — visible trigger button
+ * @modifier .ans-dropdown-trigger.open     — list is open; top corners only
+ * @modifier .ans-dropdown-trigger.correct  — correct answer feedback; green
+ * @modifier .ans-dropdown-trigger.wrong    — wrong answer feedback; red
+ * @modifier .ans-dropdown-trigger.disabled — not interactive; cursor:default
+ * @element  .ans-dropdown-list             — absolutely positioned option list
+ * @modifier .ans-dropdown-list.open        — list is visible
+ * @element  .ans-dropdown-item             — individual option row
+ * @modifier .ans-dropdown-item.correct     — correct option highlight
+ * @modifier .ans-dropdown-item.wrong       — selected wrong option highlight
+ */
 .answer-dropdown-wrap { position: relative; margin-bottom: 1rem; }
 .ans-dropdown-trigger {
   width: 100%; padding: 0.75rem 2.25rem 0.75rem 0.875rem; background: var(--bg-card);
@@ -182,11 +494,13 @@
   color: var(--text-muted); cursor: pointer; text-align: left; position: relative;
   transition: border-color 0.15s; user-select: none; min-height: 2.75rem;
 }
+/* CSS-generated chevron arrow; right-aligned via absolute positioning. */
 .ans-dropdown-trigger::after {
   content: '▾'; position: absolute; right: 0.8125rem; top: 50%;
   transform: translateY(-50%); font-size: 0.75rem; color: var(--text-faint);
 }
 .ans-dropdown-trigger:hover:not(.disabled) { border-color: var(--text-faint); }
+/* Flatten bottom corners when open so the trigger and list appear as one unit. */
 .ans-dropdown-trigger.open { border-color: var(--accent); border-radius: 10px 10px 0 0; }
 .ans-dropdown-trigger.disabled { cursor: default; }
 .ans-dropdown-trigger.correct { background: var(--correct-bg); border-color: var(--correct-border); color: var(--correct); font-weight: 500; }
@@ -199,7 +513,6 @@
   z-index: 100; box-shadow: 0 6px 18px var(--shadow-md);
 }
 .ans-dropdown-list.open { display: block; }
-/* dropdown items: 44px min touch target */
 .ans-dropdown-item {
   padding: 0.75rem 0.875rem; font-size: 1rem; color: var(--text); cursor: pointer;
   border-bottom: 1px solid var(--border); transition: background 0.1s;
@@ -210,7 +523,27 @@
 .ans-dropdown-item.correct { background: var(--correct-bg); color: var(--correct); font-weight: 500; }
 .ans-dropdown-item.wrong   { background: var(--wrong-bg);   color: var(--wrong); }
 
-/* ── Controls ── */
+
+/* ── 12. Controls ────────────────────────────────────────────────────────── */
+/**
+ * @component Controls
+ * @description Flex row of action buttons rendered dynamically by
+ * `js/ui/controls.js` into `#controls`. The set of buttons changes depending
+ * on the current quiz state:
+ *   - Before answer: Submit button (`.primary`)
+ *   - After answer:  Next button (`.primary`), Slow button (`.slow`),
+ *                    Resolve button (`.resolve`, Chords mode only)
+ *
+ * `.ctrl-btn` is the base style. Modifier classes adjust colour and border
+ * to communicate semantic meaning: primary action (teal fill), slow playback
+ * (muted), and voice-leading resolution (teal outline).
+ *
+ * @element  .controls           — flex row; centred; wraps on narrow viewports
+ * @element  .ctrl-btn           — base action button
+ * @modifier .ctrl-btn.primary   — primary action; solid teal fill
+ * @modifier .ctrl-btn.slow      — secondary; muted colours; plays at half tempo
+ * @modifier .ctrl-btn.resolve   — voice leading resolve; teal outline
+ */
 .controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .ctrl-btn { padding: 0.625rem 1.375rem; background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; color: var(--text); cursor: pointer; transition: background 0.1s, border-color 0.15s; min-height: 2.75rem; }
 .ctrl-btn:hover { background: var(--bg-hover); border-color: var(--text-faint); }
@@ -224,7 +557,28 @@
 }
 .ctrl-btn.resolve:hover { background: var(--bg-chip-active); }
 
-/* ── POINT 19: Collapsible Settings panel ── */
+
+/* ── 13. Settings panel ──────────────────────────────────────────────────── */
+/**
+ * @component Settings panel
+ * @description Collapsible card panel (`#settingsPanel`) that houses all
+ * per-mode playback and behaviour controls. The panel header toggles the body
+ * via the `.open` modifier on `.settings-panel-body`. Inside, `.settings-section`
+ * groups related controls (e.g. difficulty, chord style, octave register) each
+ * under a labelled row.
+ *
+ * Visibility of individual sections within the panel body is controlled by
+ * JavaScript: chord style chips are hidden in non-Chords modes, scale direction
+ * chips are hidden in non-Scales modes, and so on.
+ *
+ * @element  .settings-panel              — outer collapsible card
+ * @element  .settings-panel-header       — clickable toggle row
+ * @element  .settings-panel-body         — hidden by default
+ * @modifier .settings-panel-body.open    — expanded; display:block
+ * @element  .settings-section            — labelled group of controls
+ * @element  .settings-section-label      — uppercase section label
+ * @element  .settings-chips              — flex row of chips within the section
+ */
 .settings-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 1rem; overflow: hidden; }
 .settings-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1rem; cursor: pointer; user-select: none; min-height: 2.75rem; }
 .settings-panel-header:hover { background: var(--bg-hover); }
@@ -237,17 +591,107 @@
 .settings-section-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
 .settings-chips { display: flex; gap: 5px; flex-wrap: wrap; }
 
-/* ── POINT 12: Root note & octave register chips ── */
+
+/* ── 14. Root note & register chips ──────────────────────────────────────── */
+/**
+ * @component Root note & register chips
+ * @description Two related chip sets rendered inside the Root note panel
+ * (`#rootPanel`) and the Settings panel respectively.
+ *
+ * Register chips (`#octaveChips`) select which octave range(s) the root note
+ * is drawn from. Multiple registers can be active simultaneously; JavaScript
+ * reads all `.reg-chip.active` elements to build the allowed MIDI range.
+ * `.register-row` groups chips under a labelled row (e.g. "Low", "Mid", "High").
+ *
+ * Root note chips (`#rootChips`) select which pitch classes are included in
+ * the random root selection pool. Rendered dynamically by `js/app.js` on boot
+ * from the full chromatic pitch set (C through B).
+ *
+ * @element  .register-row        — labelled row grouping register chips
+ * @element  .register-label      — row label ("Low" / "Mid" / "High")
+ * @element  .register-chips      — flex wrap of .reg-chip buttons
+ * @element  .reg-chip            — individual octave register selector chip
+ * @modifier .reg-chip.active     — register is included in root selection pool
+ */
 .register-row { display: flex; align-items: center; gap: 8px; margin-bottom: 0.4rem; }
 .register-row:last-child { margin-bottom: 0; }
 .register-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; min-width: 52px; }
 .register-chips { display: flex; gap: 5px; flex-wrap: wrap; }
-/* reg-chip: min 44px tall */
 .reg-chip { font-size: 0.75rem; padding: 0.375rem 0.5625rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text-muted); cursor: pointer; transition: all 0.15s; min-height: 2.75rem; display: inline-flex; align-items: center; }
 .reg-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 500; }
 .reg-chip:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
 
-/* ── POINT 14: Post-answer breakdown panel ── */
+
+/* ── 15. Breakdown panel ─────────────────────────────────────────────────── */
+/**
+ * @component Breakdown panel
+ * @description Post-answer analysis panel rendered inside `#breakdownWrapper`
+ * (a `.pool-panel` shell). Shown after the user submits an answer in Quiz mode.
+ * Content is generated by the breakdown layer (`js/breakdown/`) and differs
+ * per mode:
+ *   - Intervals  : semitone count, interval class, consonance rating
+ *   - Chords     : voicing, inversion, figured bass, Riemannian function,
+ *                  voice leading table, chord scales sub-section
+ *   - Scales     : degree sequence, cardinality, modes
+ *   - Progressions : per-chord breakdown rows
+ *
+ * `.breakdown-row` is a label/value pair. `.breakdown-key` is the uppercase
+ * label column (min-width 90px); `.breakdown-val` is the value column.
+ * `.breakdown-sep` is a middot or slash separator between multiple values.
+ *
+ * `.breakdown-figured` renders figured bass notation as a superscript (e.g. ⁶₄).
+ *
+ * `.breakdown-divider` is a horizontal rule separating the main breakdown rows
+ * from the supplemental pills section below it.
+ *
+ * `.breakdown-pill` is a two-line badge used for relational analysis values
+ * (Riemannian function, tritone substitution, etc.). Each pill has a small
+ * uppercase category label on line 1 and a bold value on line 2.
+ *
+ * @element  .breakdown-panel         — inner content card
+ * @element  .breakdown-header        — chord/interval name heading
+ * @element  .breakdown-figured       — superscript figured bass notation
+ * @element  .breakdown-row           — label/value pair row
+ * @element  .breakdown-key           — uppercase label column
+ * @element  .breakdown-val           — value column
+ * @element  .breakdown-sep           — separator between multiple values
+ * @element  .breakdown-divider       — <hr> rule between sections
+ * @element  .breakdown-pills         — flex row of relation badge pills
+ * @element  .breakdown-pill          — two-line relational analysis badge
+ * @element  .breakdown-pill-label    — small uppercase category label
+ * @element  .breakdown-pill-value    — bold value
+ *
+ * @component Riemannian function tooltip
+ * @description Info icon and hover/focus tooltip explaining the Riemannian
+ * harmonic function label (Tonic / Subdominant / Dominant) shown in the chord
+ * breakdown. The tooltip is shown via CSS `:hover` and `:focus-within` — no
+ * JavaScript required. On viewports narrower than 480px, the tooltip is
+ * right-anchored and width-reduced to prevent it from clipping off the left
+ * edge of the screen.
+ *
+ * @element  .bd-riemann-wrap         — relative-positioned wrapper
+ * @element  .bd-riemann-icon         — circular ⓘ info button
+ * @element  .bd-riemann-tooltip      — absolutely positioned tooltip panel
+ *
+ * @component Chord scales sub-section
+ * @description Collapsible sub-section inside the chord breakdown listing the
+ * harmonic field — the scales in which the chord functions as a diatonic chord.
+ * Each row (`.cs-row`) shows a scale name, an optional mode tag (`.cs-tag`),
+ * and a degree annotation (`.cs-note`). Rows with `.cs-row-link` are
+ * interactive: clicking navigates to that scale in Dictionary mode, indicated
+ * by a CSS-generated `→` arrow that appears on hover.
+ *
+ * @element  .cs-section              — outer bordered collapsible container
+ * @element  .cs-header               — clickable toggle row
+ * @element  .cs-body                 — hidden by default
+ * @modifier .cs-body.open            — expanded; display:block
+ * @element  .cs-row                  — scale entry row
+ * @modifier .cs-row.cs-row-link      — interactive row; navigates on click
+ * @element  .cs-name                 — scale name text
+ * @element  .cs-name-link            — underlined teal link variant
+ * @element  .cs-tag                  — mode badge (e.g. "Dorian")
+ * @element  .cs-note                 — degree annotation (e.g. "ii")
+ */
 .breakdown-panel {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
   padding: 1rem 1.25rem; margin-bottom: 1rem; font-size: 1rem;
@@ -262,37 +706,25 @@
 .breakdown-key { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; min-width: 90px; flex-shrink: 0; }
 .breakdown-val { color: var(--text); line-height: 1.4; }
 .breakdown-sep { color: var(--text-faint); margin: 0 3px; }
-
-/* ── POINT 22: Breakdown enrichment styles ── */
-/* Sub-section divider inside breakdown panel */
-.breakdown-divider {
-  border: none; border-top: 1px solid var(--border);
-  margin: 0.6rem 0 0.5rem;
-}
-/* Relation pills row (Riemannian, tritone sub, etc.) */
+.breakdown-divider { border: none; border-top: 1px solid var(--border); margin: 0.6rem 0 0.5rem; }
 .breakdown-pills { display: flex; flex-wrap: wrap; gap: 5px; }
 .breakdown-pill {
   display: inline-flex; flex-direction: column; align-items: flex-start;
   background: var(--bg-chip); border: 1px solid var(--border);
   border-radius: 8px; padding: 0.25rem 0.5rem;
   font-size: 0.8125rem; line-height: 1.3;
-  cursor: default;
-  position: relative;
+  cursor: default; position: relative;
 }
-.breakdown-pill-label {
-  font-size: 0.625rem; font-weight: 700; color: var(--text-faint);
-  text-transform: uppercase; letter-spacing: 0.06em;
-}
+.breakdown-pill-label { font-size: 0.625rem; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
 .breakdown-pill-value { font-weight: 600; color: var(--text); }
-/* Riemannian tooltip — shown on hover/focus */
+
 .bd-riemann-wrap { position: relative; display: inline-block; }
 .bd-riemann-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 1.125rem; height: 1.125rem; border-radius: 50%;
   background: var(--bg-chip); border: 1px solid var(--border);
   color: var(--text-faint); font-size: 0.625rem; font-weight: 700;
-  cursor: help; margin-left: 5px; vertical-align: middle;
-  flex-shrink: 0;
+  cursor: help; margin-left: 5px; vertical-align: middle; flex-shrink: 0;
 }
 .bd-riemann-tooltip {
   display: none; position: absolute; bottom: calc(100% + 6px); left: 0;
@@ -306,12 +738,15 @@
 .bd-riemann-tooltip p:last-child { margin: 0; }
 .bd-riemann-wrap:hover .bd-riemann-tooltip,
 .bd-riemann-wrap:focus-within .bd-riemann-tooltip { display: block; }
-/* On very narrow screens push tooltip right so it doesn't clip */
+/*
+ * On viewports narrower than 480px the tooltip left-anchored to the icon clips
+ * outside the screen edge. Flipping to right-anchor with a reduced width keeps
+ * the tooltip fully visible on the smallest supported phone sizes.
+ */
 @media (max-width: 479px) {
   .bd-riemann-tooltip { left: auto; right: 0; width: 220px; }
 }
 
-/* ── POINT 36: Chord scales collapsible sub-section ── */
 .cs-section { margin-top: 0.5rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .cs-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -326,6 +761,7 @@
 .cs-body.open { display: block; }
 .cs-row { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.2rem 0.375rem; border-radius: 6px; transition: background 0.15s; }
 .cs-row.cs-row-link { cursor: pointer; }
+/* CSS-generated arrow appears on hover to signal that the row is navigable. */
 .cs-row.cs-row-link::after { content: '→'; font-size: 0.75rem; color: transparent; margin-left: auto; padding-left: 0.5rem; transition: color 0.15s; flex-shrink: 0; }
 .cs-row.cs-row-link:hover { background: var(--bg-hover); }
 .cs-row.cs-row-link:hover::after { color: var(--accent); }
@@ -340,12 +776,47 @@
 }
 .cs-note { font-size: 0.75rem; color: var(--text-faint); flex-shrink: 0; }
 
-/* ── POINT 8: Root toggle ── */
+
+/* ── 16. Root toggle & stats panel ──────────────────────────────────────── */
+/**
+ * @component Root note toggle
+ * @description A checkbox row inside `#rootPanel` that controls whether the
+ * root note is revealed to the user before they answer. When unchecked,
+ * JavaScript suppresses the root badge display and increases quiz difficulty.
+ * `.root-badge` displays the current root note name (e.g. "C#") as a small
+ * teal-tinted badge inline with the checkbox label.
+ *
+ * @element  .root-toggle-row   — flex row containing checkbox + label + badge
+ * @element  .root-badge        — teal pill displaying the current root note name
+ *
+ * @component Session stats panel
+ * @description Collapsible panel (`#statsPanel`) showing per-type accuracy for
+ * the current session. The table is updated by `js/ui/stats.js` after every
+ * answer. A mini progress bar (`.stat-bar` inside `.stat-bar-wrap`) visualises
+ * accuracy percentage inline within the table cell.
+ *
+ * `.stats-toggle` is the standalone text button above the panel that expands
+ * and collapses it, separate from the panel header pattern used elsewhere.
+ *
+ * `.kbd-hint` is a persistent one-line hint bar below the stats toggle
+ * reminding the user of keyboard shortcuts (Space = play, Enter = next).
+ *
+ * `.new-session-btn` is a pill button in the score bar that resets all session
+ * state via JavaScript, clearing stats and starting a fresh quiz round.
+ *
+ * @element  .stats-panel        — collapsible stats card; hidden by default
+ * @element  .stats-title        — panel label row with inline Reset button
+ * @element  .stats-table        — accuracy table; tabular-nums for alignment
+ * @element  .stat-bar-wrap      — fixed-width progress bar track
+ * @element  .stat-bar           — filled portion of progress bar; width set inline by JS
+ * @element  .stats-toggle       — standalone expand/collapse text button
+ * @element  .kbd-hint           — keyboard shortcut reminder bar
+ * @element  .new-session-btn    — pill button; resets session state
+ */
 .root-toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-muted); }
 .root-toggle-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; min-height: 2.75rem; }
 .root-badge { display: inline-block; background: var(--bg-chip-active); border: 1px solid var(--border-active); color: var(--accent-text); border-radius: 6px; padding: 2px 10px; font-size: 0.875rem; font-weight: 600; margin-left: 4px; }
 
-/* ── POINT 8: Stats panel ── */
 .stats-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: none; }
 .stats-title { font-size: 0.75rem; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; }
 .stats-title button { font-size: 0.75rem; color: var(--text-faint); background: none; border: none; cursor: pointer; padding: 0; min-height: 2.75rem; }
@@ -360,27 +831,101 @@
 .stat-bar { height: 6px; border-radius: 3px; background: var(--accent); }
 .stats-toggle { font-size: 0.75rem; color: var(--text-faint); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 0.75rem; display: block; min-height: 2.75rem; }
 .stats-toggle:hover { color: var(--text-muted); }
-
-/* ── POINT 8: Keyboard hint ── */
 .kbd-hint { font-size: 0.75rem; color: var(--text-faint); text-align: center; margin-top: 0.5rem; letter-spacing: 0.02em; }
+.new-session-btn {
+  font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+  background: var(--bg-chip); border: 1px solid var(--border);
+  border-radius: 20px; padding: 0.25rem 0.625rem; cursor: pointer;
+  letter-spacing: 0.03em; transition: all 0.15s; white-space: nowrap;
+  min-height: 2.75rem; display: inline-flex; align-items: center;
+}
+.new-session-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-chip-active); }
 
-/* ── POINT 37: Voice leading ── */
-/* Selected resolution card — teal border highlight */
+
+/* ── 17. Voice leading ───────────────────────────────────────────────────── */
+/**
+ * @component Voice leading table
+ * @description Rendered inside the Chords breakdown panel by
+ * `js/breakdown/breakdown-chords.js`. Displays the Pass 1 / Pass 2 voice
+ * leading resolution engine output: for each voice, the source note, the
+ * target note (teal, bold), the interval of motion, and an optional
+ * annotation (e.g. "leading tone", "common tone").
+ *
+ * `.vl-selected` is applied to the chord-scales `.cs-section` card that
+ * corresponds to the resolution target, giving it a teal border to visually
+ * connect the voice leading output to the harmonic field panel.
+ *
+ * @element  .vl-selected        — teal highlight on the target chord-scale card
+ * @element  .vl-table           — voice leading data table
+ * @element  .vl-table td        — base cell; voice name / target / motion / annotation
+ */
 .vl-selected {
   border-color: var(--border-active) !important;
   background: var(--bg-chip-active) !important;
 }
 .vl-selected .cs-arrow { color: var(--accent); }
-
 .vl-table { width: 100%; border-collapse: collapse; margin-top: 0.25rem; font-size: 0.8125rem; }
 .vl-table td { padding: 0.18rem 0.35rem; color: var(--text); }
+/* Column 1: voice name label */
 .vl-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+/* Column 2: target note — teal bold, the primary output of the voice leading engine */
 .vl-table td:nth-child(2) { color: var(--accent); font-weight: 600; white-space: nowrap; }
+/* Column 3: interval of motion (e.g. "P5 ↑") */
 .vl-table td:nth-child(3) { color: var(--text-faint); font-size: 0.75rem; white-space: nowrap; }
+/* Column 4: optional annotation (e.g. "leading tone", "tritone resolution") */
 .vl-table td:nth-child(4) { color: var(--text-faint); font-size: 0.75rem; font-style: italic; }
 .vl-table tr:hover td { background: var(--bg-hover); }
 
-/* ── POINT 38: Progression mode ── */
+
+/* ── 18. Progression mode ────────────────────────────────────────────────── */
+/**
+ * @component Progression mode
+ * @description UI components specific to the Progressions training mode.
+ * A chord progression is presented as a horizontal row of slot cards
+ * (`.prog-slot`), each representing one chord in the progression. The user
+ * selects a chord answer chip within each slot and submits all answers at once.
+ *
+ * `.prog-slots-wrap` is a horizontally scrollable flex row so that long
+ * progressions (4–6 chords) remain accessible on narrow viewports.
+ * Custom scrollbar styling is applied for a minimal appearance.
+ *
+ * `.prog-slot` correct/wrong modifiers are applied by JavaScript after
+ * submission. `.prog-slot-label .prog-slot-revealed` shows the correct answer
+ * in red when the user's selection was wrong.
+ *
+ * `.prog-chip` is the answer chip inside each slot — smaller and more compact
+ * than the standard `.pool-chip` since multiple chips must fit within a slot.
+ *
+ * `.prog-submit-btn` is the single submission button for the entire progression,
+ * enabled only after at least one chip per slot has been selected.
+ *
+ * `.prog-notation-row` is a supplemental horizontal scroll row of mini VexFlow
+ * staves, one per chord slot, rendered in Dictionary mode below the slot cards.
+ *
+ * `.pool-chip.prog-pool-chip` is a two-line pool chip variant used in the
+ * Progressions training pool. Line 1 shows the chord symbol; line 2 shows the
+ * full chord name. This stacked layout fits more information into the chip
+ * without widening it beyond the pool panel.
+ *
+ * @element  .prog-slots-wrap          — horizontally scrollable slot container
+ * @element  .prog-slot                — individual chord slot card
+ * @modifier .prog-slot.correct        — correct answer; green border + background
+ * @modifier .prog-slot.wrong          — wrong answer; red border + background
+ * @element  .prog-slot-label          — slot header label (e.g. "Chord 1")
+ * @element  .prog-slot-revealed       — correct answer text shown on wrong submission
+ * @element  .prog-slot-row            — flex row of answer chips within the slot
+ * @element  .prog-chip                — compact answer chip inside a slot
+ * @modifier .prog-chip.active         — selected chip
+ * @modifier .prog-chip.disabled       — chip locked after submission
+ * @element  .prog-submit-row          — centred row containing the submit button
+ * @element  .prog-submit-btn          — progression answer submission button
+ * @element  .prog-notation-row        — horizontal scroll row of mini staves
+ * @element  .prog-notation-cell       — wrapper for one mini stave
+ * @element  .prog-notation-cell-label — chord name label below each mini stave
+ * @element  .pool-chip.prog-pool-chip — two-line pool chip variant
+ * @element  .prog-chip-sym            — line 1: chord symbol (bold)
+ * @element  .prog-chip-name           — line 2: full chord name (small, muted)
+ */
 .prog-slots-wrap {
   display: flex; flex-direction: row; gap: 0.75rem;
   margin: 0.5rem 0 0.75rem;
@@ -391,19 +936,15 @@
 .prog-slots-wrap::-webkit-scrollbar-track { background: transparent; }
 .prog-slots-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .prog-slot {
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 0.55rem 0.7rem 0.6rem;
-  background: var(--bg-card);
-  transition: border-color 0.2s;
-  min-width: 160px; flex: 0 0 auto;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 0.55rem 0.7rem 0.6rem; background: var(--bg-card);
+  transition: border-color 0.2s; min-width: 160px; flex: 0 0 auto;
 }
 .prog-slot.correct  { border-color: var(--correct-border); background: var(--correct-bg); }
 .prog-slot.wrong    { border-color: var(--wrong-border);   background: var(--wrong-bg);   }
 .prog-slot-label {
   font-size: 0.7rem; font-weight: 600; color: var(--text-faint);
-  text-transform: uppercase; letter-spacing: 0.05em;
-  margin-bottom: 0.35rem;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;
 }
 .prog-slot-label .prog-slot-revealed {
   font-size: 0.75rem; font-weight: 700;
@@ -418,10 +959,7 @@
   white-space: nowrap;
 }
 .prog-chip:hover { background: var(--bg-hover); color: var(--text); }
-.prog-chip.active {
-  background: var(--bg-chip-active); border-color: var(--border-active);
-  color: var(--accent-text); font-weight: 600;
-}
+.prog-chip.active { background: var(--bg-chip-active); border-color: var(--border-active); color: var(--accent-text); font-weight: 600; }
 .prog-chip.disabled { opacity: 0.45; pointer-events: none; }
 .prog-submit-row { display: flex; justify-content: center; margin-top: 0.5rem; }
 .prog-submit-btn {
@@ -431,146 +969,160 @@
 }
 .prog-submit-btn:hover { background: var(--accent-dark); }
 .prog-submit-btn:disabled { opacity: 0.4; pointer-events: none; }
-/* Notation row for progressions — horizontal scroll of mini staves */
 .prog-notation-row {
   display: flex; gap: 0.5rem; overflow-x: auto;
   padding: 0.25rem 0 0.5rem; align-items: flex-start;
 }
 .prog-notation-cell { flex: 0 0 auto; text-align: center; }
-.prog-notation-cell-label {
-  font-size: 0.7rem; color: var(--text-faint); margin-bottom: 0.15rem;
-}
-/* Pool chip two-line variant for progressions */
+.prog-notation-cell-label { font-size: 0.7rem; color: var(--text-faint); margin-bottom: 0.15rem; }
 .pool-chip.prog-pool-chip { line-height: 1.25; padding: 0.35rem 0.65rem; }
 .pool-chip.prog-pool-chip .prog-chip-sym  { display: block; font-weight: 600; font-size: 0.82rem; color: var(--text); }
 .pool-chip.prog-pool-chip .prog-chip-name { display: block; font-size: 0.68rem; color: var(--text-faint); }
 
-/* ── POINT 20.5: New Session button — 44px touch target ── */
-.new-session-btn {
-  font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
-  background: var(--bg-chip); border: 1px solid var(--border);
-  border-radius: 20px; padding: 0.25rem 0.625rem; cursor: pointer;
-  letter-spacing: 0.03em; transition: all 0.15s; white-space: nowrap;
-  min-height: 2.75rem; display: inline-flex; align-items: center;
-}
-.new-session-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-chip-active); }
 
-/* ── About view ── */
-.about-section {
-  display: flex; flex-direction: column; gap: 1rem;
-  padding-top: 0.25rem;
-}
-.about-card {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 14px; padding: 1.25rem 1.5rem;
-}
+/* ── 19. About view ──────────────────────────────────────────────────────── */
+/**
+ * @component About view
+ * @description Full-panel view (`#aboutView`) shown when the About (ℹ) button
+ * is activated. Hidden by default (`display:none` set inline); shown by
+ * `js/modes/about-mode.js` which also hides all training panels while the view
+ * is open. The view is a vertical stack of `.about-card` sections covering:
+ * project credits and social badges, a YouTube embed placeholder, and a
+ * sponsor/donate section with a QR code placeholder.
+ *
+ * `.about-badges` displays a flex row of social badge `<img>` elements wrapped
+ * in `<a>` links. Badges are self-hosted SVGs at `assets/badges/`; no CDN calls.
+ * The subtle lift animation on hover (`translateY(-1px)`) gives a tactile feel
+ * without being distracting.
+ *
+ * `.about-youtube-placeholder` and `.about-qr-placeholder` are dashed-border
+ * placeholder boxes for content not yet produced (YouTube embed video, QR code
+ * image). Both will be replaced with real content before v1.0.0 deployment.
+ *
+ * @element  .about-section              — flex column container; gap between cards
+ * @element  .about-card                 — individual content card; border-radius 14px
+ * @element  .about-card-title           — Playfair Display card heading
+ * @element  .about-card-text            — body text; muted colour; 1.6 line-height
+ * @element  .about-badges               — flex row of social badge links
+ * @element  .about-youtube-placeholder  — dashed placeholder for YouTube embed
+ * @element  .about-sponsor-btn          — teal CTA button linking to sponsor page
+ * @element  .about-qr-placeholder       — dashed placeholder for QR code image
+ */
+.about-section { display: flex; flex-direction: column; gap: 1rem; padding-top: 0.25rem; }
+.about-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem 1.5rem; }
 .about-card-title {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.05rem; font-weight: 700;
-  color: var(--text); margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+  font-size: 1.05rem; font-weight: 700; color: var(--text);
+  margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
 }
-.about-card-text {
-  font-size: 0.9rem; color: var(--text-muted);
-  line-height: 1.6; margin-bottom: 0.875rem;
-}
+.about-card-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.875rem; }
 .about-card-text strong { color: var(--text); }
-.about-badges {
-  display: flex; flex-wrap: wrap; gap: 0.5rem;
-}
+.about-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .about-badges a { display: inline-block; opacity: 0.88; transition: opacity 0.15s, transform 0.15s; }
 .about-badges a:hover { opacity: 1; transform: translateY(-1px); }
 .about-badges img { display: block; height: 20px; }
-
-/* YouTube placeholder */
 .about-youtube-placeholder {
   background: var(--bg); border: 2px dashed var(--border);
   border-radius: 10px; padding: 2.5rem 1rem;
-  text-align: center; color: var(--text-faint);
-  font-size: 0.9rem;
+  text-align: center; color: var(--text-faint); font-size: 0.9rem;
 }
-
-/* Sponsor button */
 .about-sponsor-btn {
   display: inline-flex; align-items: center; gap: 0.4rem;
-  background: var(--accent); color: #fff;
-  border: none; border-radius: 8px;
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
   padding: 0.6rem 1.25rem; font-size: 0.9rem; font-weight: 600;
-  text-decoration: none; cursor: pointer;
-  transition: background 0.15s;
-  margin-bottom: 1rem;
+  text-decoration: none; cursor: pointer; transition: background 0.15s; margin-bottom: 1rem;
 }
 .about-sponsor-btn:hover { background: var(--accent-dark); }
-
-/* QR placeholder */
 .about-qr-placeholder {
   background: var(--bg); border: 2px dashed var(--border);
   border-radius: 10px; padding: 2rem 1rem;
-  text-align: center; color: var(--text-faint);
-  font-size: 0.875rem;
+  text-align: center; color: var(--text-faint); font-size: 0.875rem;
 }
 
-/* ── Help view ── */
-.help-section {
-  display: flex; flex-direction: column; gap: 1rem;
-  padding-top: 0.25rem;
-}
 
-/* Search box */
+/* ── 20. Help view ───────────────────────────────────────────────────────── */
+/**
+ * @component Help view
+ * @description Full-panel searchable reference view (`#helpView`) shown when
+ * the Help (?) button is activated. Hidden by default; rendered once on first
+ * open by `js/modes/help-mode.js` from the `HELP_SECTIONS` data structure
+ * defined in `js/data/help-content.js`. All training panels are hidden while
+ * the Help view is open.
+ *
+ * The view is a vertical stack of `.help-card` sections (e.g. "Getting Started",
+ * "Intervals", "Chords"). Each card contains a list of `.help-entry` elements
+ * implemented as native `<details>` / `<summary>` elements styled as an
+ * accordion. JavaScript adds a live search filter that toggles `display:none`
+ * on non-matching entries.
+ *
+ * `.help-search-wrap` is `position:sticky` so the search input remains visible
+ * at the top of the scrollable help panel as the user scrolls through entries.
+ *
+ * The `::after` pseudo-element on `.help-entry-term` generates the ▸ arrow
+ * indicator. When the `<details>` element is `[open]`, CSS rotates the arrow
+ * 90° and changes the term text to the teal accent colour — no JavaScript
+ * needed for open/close animation.
+ *
+ * `.help-entry-body br + br` adds vertical spacing between logical paragraphs
+ * within entries that use `<br><br>` as a paragraph separator in the data.
+ *
+ * @element  .help-section           — flex column container; gap between cards
+ * @element  .help-search-wrap       — sticky wrapper for the search input
+ * @element  .help-search            — live filter text input
+ * @element  .help-card              — content group card; border-radius 14px
+ * @element  .help-card-title        — Playfair Display card heading
+ * @element  .help-entries           — flex column of <details> accordion entries
+ * @element  .help-entry             — native <details> element; bottom border
+ * @element  .help-entry-term        — <summary> styled as accordion trigger row
+ * @modifier .help-entry[open]       — entry is expanded; teal term colour
+ * @element  .help-entry-body        — accordion body; definition text
+ */
+.help-section { display: flex; flex-direction: column; gap: 1rem; padding-top: 0.25rem; }
 .help-search-wrap {
   position: sticky; top: 0; z-index: 10;
   background: var(--bg); padding: 0.25rem 0 0.5rem;
 }
 .help-search {
-  width: 100%; box-sizing: border-box;
-  padding: 0.6rem 0.875rem;
+  width: 100%; box-sizing: border-box; padding: 0.6rem 0.875rem;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 10px; font-size: 0.9375rem; color: var(--text);
-  outline: none; transition: border-color 0.15s;
-  -webkit-appearance: none;
+  outline: none; transition: border-color 0.15s; -webkit-appearance: none;
 }
 .help-search::placeholder { color: var(--text-muted); }
 .help-search:focus { border-color: var(--accent); }
-
-/* Cards — same shape as About cards */
-.help-card {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 14px; overflow: hidden;
-}
+.help-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .help-card-title {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.05rem; font-weight: 700;
-  color: var(--text); padding: 1rem 1.25rem 0.875rem;
-  border-bottom: 1px solid var(--border);
+  font-size: 1.05rem; font-weight: 700; color: var(--text);
+  padding: 1rem 1.25rem 0.875rem; border-bottom: 1px solid var(--border);
 }
-
-/* Entries — native <details> collapsibles */
 .help-entries { display: flex; flex-direction: column; }
-.help-entry {
-  border-bottom: 1px solid var(--border);
-}
+.help-entry { border-bottom: 1px solid var(--border); }
 .help-entry:last-child { border-bottom: none; }
-
 .help-entry-term {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.7rem 1.25rem; font-size: 0.9375rem; font-weight: 500;
   color: var(--text); cursor: pointer; user-select: none;
-  list-style: none; min-height: 2.75rem;
-  transition: background 0.15s;
+  list-style: none; min-height: 2.75rem; transition: background 0.15s;
 }
+/* Remove the browser's default disclosure triangle on <summary>. */
 .help-entry-term::-webkit-details-marker { display: none; }
+/* CSS-generated ▸ arrow; rotated to ▾ when the <details> is open. */
 .help-entry-term::after {
   content: '▸'; font-size: 0.7rem; color: var(--text-faint);
-  flex-shrink: 0; margin-left: 0.5rem;
-  transition: transform 0.2s;
+  flex-shrink: 0; margin-left: 0.5rem; transition: transform 0.2s;
 }
 .help-entry[open] > .help-entry-term { color: var(--accent); }
 .help-entry[open] > .help-entry-term::after { transform: rotate(90deg); }
 .help-entry-term:hover { background: var(--bg-hover); }
-
 .help-entry-body {
   padding: 0 1.25rem 0.875rem;
-  font-size: 0.9rem; color: var(--text-muted);
-  line-height: 1.65;
+  font-size: 0.9rem; color: var(--text-muted); line-height: 1.65;
 }
+/* Double <br> tags in help-content.js data act as paragraph breaks. */
 .help-entry-body br + br { display: block; margin-top: 0.5rem; content: ''; }
+
+/* =============================================================================
+   The Sound Travels Ear Training — components.css
+   Created by Renato Fera P. — The Sound Travels — 2026
+   ============================================================================= */

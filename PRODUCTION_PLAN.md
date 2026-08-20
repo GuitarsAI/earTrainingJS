@@ -609,64 +609,64 @@ For each file, complete all six steps in order:
 
 #### Phase 1 — Data layer
 
-| # | File | Priority notes |
-|---|---|---|
-| 1 | `js/data/spelling.js` | Core enharmonic engine — most complex data file; algorithmic comments critical |
-| 2 | `js/data/keysig.js` | Key signature helpers; document all key/accidental lookup tables |
-| 3 | `js/data/chords.js` | Large data file; document the data schema (fields: `symbol`, `name`, `intervals`, `basic`, `family`, etc.) |
-| 4 | `js/data/intervals.js` | Document schema (`label`, `semitones`, `compound`, etc.) |
-| 5 | `js/data/scales.js` | Document schema (`group`, `basic`, `degrees`, `directions`) |
-| 6 | `js/data/progressions.js` | Document schema (`symbol`, `chords`, `basic`, `group`) |
-| 7 | `js/data/help-content.js` | Document structure; this file IS the Help content — audit against all other files |
+| # | File | Status | Notes |
+|---|---|---|---|
+| 1 | `js/data/spelling.js` | ✅ Done | JSDoc header/footer; JSDoc on all 5 functions and 9 constants; algorithmic inline comments polished; POINT 13 dev tag removed |
+| 2 | `js/data/keysig.js` | ✅ Done | JSDoc header/footer; JSDoc on all 13 functions and 8 constants; `keySigCoveredPcs` marked `@deprecated`; both POINT 32b dev tags removed; `respellForKeySig` priority algorithm documented |
+| 3 | `js/data/chords.js` | ✅ Done | JSDoc header/footer; all 12 family schemas documented; POINT tags removed; specialised family block comments (classical, quartal, cluster, slash, poly, ust) rewritten in clean format; `CHORD_PLAYBACK_STYLES` JSDoc added; help-content.js updated (classical bass-note root convention, UST root-omitted playback, slash alsoKnownAs) |
+| 4 | `js/data/intervals.js` | ✅ Done | JSDoc header/footer; schema documented (`name`, `symbol`, `semitones`, `compound`); POINT tags removed; `INTERVAL_STYLES` JSDoc added |
+| 5 | `js/data/scales.js` | ✅ Done | JSDoc header/footer; schema documented (`group`, `basic`, `intervals`, `parentKey`, `directions`); POINT tags removed; `messiaen_3` moved from diatonic block to octatonic block; Japanese pentatonic and Messiaen null-quality entries annotated; `SCALE_DIRECTIONS` JSDoc added; help-content.js audited — no gaps found |
+| 6 | `js/data/progressions.js` | ✅ Done | JSDoc header/footer; schema documented (`symbol`, `name`, `group`, `basic`, `degrees`, `qualities`); all five constants and five runtime state variables JSDoc'd; 12-bar slot structure and symbol suffix convention explained; `PROG_GROUP_COLLAPSED` default logic documented; help-content.js audited — no gaps found |
+| 7 | `js/data/help-content.js` | ✅ Done | JSDoc header/footer added; two content gaps from components.css audit fixed (chord-scales row clickability, Riemannian ⓘ discoverability); stale `Breakdown: Scales — Chord scales` entry corrected; three further updates from chords.js audit: classical bass-note root convention, UST root-omitted playback, slash alsoKnownAs |
 
 #### Phase 2 — Engine layer
 
-| # | File | Priority notes |
-|---|---|---|
-| 8 | `js/engine/state.js` | Document every state variable — type, purpose, valid values |
-| 9 | `js/engine/defaults.js` | Document default selection logic and dependency on data files |
-| 10 | `js/engine/helpers.js` | Pure utility functions — full JSDoc on every helper |
-| 11 | `js/engine/audio.js` | Document soundfont loading, AudioContext init, self-hosted URL change (§4.3) |
-| 12 | `js/engine/notation.js` | Most complex file — `addAccidentalsFiltered`, `renderPolyNotation`, key sig conflict logic all need thorough inline comments |
-| 13 | `js/engine/voicings.js` | Document all 6 groups and 62 voicing symbols; `applyVoicing()` switch cases need per-case comments |
-| 14 | `js/engine/voiceLeading.js` | Document Pass 1 / Pass 2 algorithm; `RESOLUTION_TARGETS` fallback note |
+| # | File | Status | Notes |
+|---|---|---|---|
+| 8 | `js/engine/state.js` | ✅ Done | JSDoc header/footer; all 40 variables documented with type, valid values, and purpose; POINT tags removed; `var` convention explained; slash/poly/UST state blocks clearly delimited; voice leading cache shape documented; cross-file state references noted |
+| 9 | `js/engine/defaults.js` | ✅ Done | JSDoc header/footer; all 4 `selectedX` constants documented; hard-coded vs derived default distinction explained; load-order constraints noted; dependency on `INTERVALS` and `PROGRESSIONS` documented |
+| 10 | `js/engine/helpers.js` | ✅ Done | JSDoc header/footer; all 15 functions documented with signatures; `INV_LABELS` constant documented; `currentVoicingMode` and `currentChordPlayStyle` exception to state.js rule noted; inversion exclusion logic explained; all three fallback safety behaviours documented |
+| 11 | `js/engine/audio.js` | ✅ Done | JSDoc header/footer; all 10 functions documented; all POINT tags removed; production blocker noted in file header (MusyngKite CDN → self-hosted); resolve-then-store pattern documented; slow playback stored-state behaviour documented; slash bass merge vs poly/UST distinction documented |
+| 12 | `js/engine/notation.js` | ✅ Done | JSDoc header/footer; all 4 top-level and 5 label helper functions documented; `addAccidentalsFiltered` three-case logic fully commented; `spellMidi` / `spellMidiRelative` `forcedAcc` detection explained; grand staff split points documented; sequential layout math (headerPx, formatterBudget) commented; `renderPolyNotation` separation rationale documented; all POINT tags removed; help-content.js audited — no gaps; ARCHITECTURE.md updated |
+| 13 | `js/engine/voicings.js` | [ ] Pending | Document all 6 groups and 62 voicing symbols; `applyVoicing()` switch cases need per-case comments |
+| 14 | `js/engine/voiceLeading.js` | [ ] Pending | Document Pass 1 / Pass 2 algorithm; `RESOLUTION_TARGETS` fallback note |
 
 #### Phase 3 — Breakdown layer
 
-| # | File | Priority notes |
-|---|---|---|
-| 15 | `js/breakdown/breakdown.js` | Document `isMobile()`, `showBreakdown()`, mobile path logic |
-| 16 | `js/breakdown/breakdown-intervals.js` | Document interval breakdown row structure |
-| 17 | `js/breakdown/breakdown-chords.js` | Document chord breakdown row structure; figured bass, chord scales |
-| 18 | `js/breakdown/breakdown-scales.js` | Document scale breakdown row structure |
-| 19 | `js/breakdown/breakdown-progressions.js` | Document progression breakdown rows |
+| # | File | Status | Notes |
+|---|---|---|---|
+| 15 | `js/breakdown/breakdown.js` | [ ] Pending | Document `isMobile()`, `showBreakdown()`, mobile path logic |
+| 16 | `js/breakdown/breakdown-intervals.js` | [ ] Pending | Document interval breakdown row structure |
+| 17 | `js/breakdown/breakdown-chords.js` | [ ] Pending | Document chord breakdown row structure; figured bass, chord scales |
+| 18 | `js/breakdown/breakdown-scales.js` | [ ] Pending | Document scale breakdown row structure |
+| 19 | `js/breakdown/breakdown-progressions.js` | [ ] Pending | Document progression breakdown rows |
 
 #### Phase 4 — UI layer
 
-| # | File | Priority notes |
-|---|---|---|
-| 20 | `js/ui/stats.js` | Document stats table update logic |
-| 21 | `js/ui/controls.js` | Document answer dropdown, auto-submit, green/red feedback |
-| 22 | `js/ui/pool.js` | Document `iterateScaleGroups()`, all pool renderers, Basic/Advanced filter logic |
+| # | File | Status | Notes |
+|---|---|---|---|
+| 20 | `js/ui/stats.js` | [ ] Pending | Document stats table update logic |
+| 21 | `js/ui/controls.js` | [ ] Pending | Document answer dropdown, auto-submit, green/red feedback |
+| 22 | `js/ui/pool.js` | [ ] Pending | Document `iterateScaleGroups()`, all pool renderers, Basic/Advanced filter logic |
 
 #### Phase 5 — Modes layer
 
-| # | File | Priority notes |
-|---|---|---|
-| 23 | `js/modes/intervals-mode.js` | Document quiz flow, playback styles, direction handling |
-| 24 | `js/modes/chords-mode.js` | Document quiz flow, voicing integration |
-| 25 | `js/modes/scales-mode.js` | Document quiz flow, direction chip behaviour |
-| 26 | `js/modes/progressions-mode.js` | Largest mode file — document `teardownProgressionUI()`, `recomputeCurrentNotes()`, notation rendering |
-| 27 | `js/modes/help-mode.js` | Document search logic, panel open/close |
-| 28 | `js/modes/about-mode.js` | Document panel open/close |
+| # | File | Status | Notes |
+|---|---|---|---|
+| 23 | `js/modes/intervals-mode.js` | [ ] Pending | Document quiz flow, playback styles, direction handling |
+| 24 | `js/modes/chords-mode.js` | [ ] Pending | Document quiz flow, voicing integration |
+| 25 | `js/modes/scales-mode.js` | [ ] Pending | Document quiz flow, direction chip behaviour |
+| 26 | `js/modes/progressions-mode.js` | [ ] Pending | Largest mode file — document `teardownProgressionUI()`, `recomputeCurrentNotes()`, notation rendering |
+| 27 | `js/modes/help-mode.js` | [ ] Pending | Document search logic, panel open/close |
+| 28 | `js/modes/about-mode.js` | [ ] Pending | Document panel open/close |
 
 #### Phase 6 — App & HTML
 
-| # | File | Priority notes |
-|---|---|---|
-| 29 | `js/app.js` | Central orchestrator — document `switchMode()`, `setAppDifficulty()`, `setAppMode()`, boot sequence, theme init |
-| 30 | `index.html` | ✅ Production pass complete — see blocker note below |
-| 31–33 | `css/base.css`, `css/components.css`, `css/mobile.css` | Section headers, token documentation |
+| # | File | Status | Notes |
+|---|---|---|---|
+| 29 | `js/app.js` | [ ] Pending | Central orchestrator — document `switchMode()`, `setAppDifficulty()`, `setAppMode()`, boot sequence, theme init |
+| 30 | `index.html` | ✅ Done | Production pass complete — see blocker note below |
+| 31–33 | `css/base.css`, `css/components.css`, `css/mobile.css` | [ ] Pending | Section headers, token documentation |
 
 #### `index.html` — Production Pass Status
 
@@ -714,16 +714,20 @@ The parent `<a>` wrapper elements and their `href`, `target`, `rel`, and `aria-l
 
 The Help system (`js/data/help-content.js`, rendered by `js/modes/help-mode.js`) must be audited against every file in the production pass. The following gaps are **known at the time of writing**:
 
-| Gap | Status | File to check |
+| Gap | Status | Notes |
 |---|---|---|
-| Basic / Advanced mode — no Help entry exists | ❌ Missing | `js/engine/state.js`, `js/ui/pool.js` |
-| Compound intervals (m9–M13) — not described in Help | ❌ Missing | `js/data/intervals.js` |
-| Voice leading panel — behaviour not documented in Help | ❌ Missing | `js/engine/voiceLeading.js` |
-| Chord Scales breakdown — not documented in Help | ❌ Missing | `js/breakdown/breakdown-chords.js` |
-| Progressions mode — quiz flow not documented | ❌ Missing | `js/modes/progressions-mode.js` |
-| Voicing system — Group 5 fix already done | ✅ Done | `help-content.js` Aug 2026 update |
-| Scale direction Random chip | ✅ Done | `help-content.js` Aug 2026 update |
-| 7 new glossary entries | ✅ Done | `help-content.js` Aug 2026 update |
+| Basic / Advanced mode — no Help entry exists | ✅ Done | Documented in Controls & Settings §3 |
+| Compound intervals (m9–M13) — not described in Help | ✅ Done | Documented in Modes §2 (Intervals mode) and Glossary §5 |
+| Voice leading panel — behaviour not documented in Help | ✅ Done | Documented in Breakdown Panel §4 |
+| Chord Scales breakdown — not documented in Help | ✅ Done | Documented in Breakdown Panel §4; stale Scales entry corrected (Aug 2026) |
+| Progressions mode — quiz flow not documented | ✅ Done | Documented in Modes §2 and Breakdown Panel §4 |
+| Chord-scales row: entire row clickable, not just scale name | ✅ Done | Both entries (line 231 and line 297) now consistent (Aug 2026) |
+| Riemannian ⓘ icon not mentioned — users may miss it | ✅ Done | Neo-tonal entry now opens with tap instruction (Aug 2026) |
+| Voicing system — Group 5 fix | ✅ Done | `help-content.js` prior update |
+| Scale direction Random chip | ✅ Done | `help-content.js` prior update |
+| 7 new glossary entries | ✅ Done | `help-content.js` prior update |
+
+**Help system audit is complete.** All known gaps resolved. Continue auditing during each remaining file's production pass per the rule below.
 
 **During each file's production pass**, check: does this file contain any user-facing behaviour, setting, or concept that is not explained in Help? If yes, add a Help entry before marking the file done.
 
@@ -1117,11 +1121,13 @@ Use this as the final gate before tagging `v1.0.0`.
 - [ ] `<meta name="theme-color">` added
 
 ### Help system
-- [ ] Basic / Advanced mode documented in Help
-- [ ] Compound intervals documented in Help
-- [ ] Voice leading panel documented in Help
-- [ ] Chord Scales breakdown documented in Help
-- [ ] Progressions mode quiz flow documented in Help
+- [x] Basic / Advanced mode documented in Help
+- [x] Compound intervals documented in Help
+- [x] Voice leading panel documented in Help
+- [x] Chord Scales breakdown documented in Help *(both entries consistent — Aug 2026)*
+- [x] Progressions mode quiz flow documented in Help
+- [x] Riemannian ⓘ icon discoverability documented in Help *(Aug 2026)*
+- [x] Chord-scales row clickability clarified in Help *(Aug 2026)*
 
 ### Legal
 - [ ] `LICENSE` (MIT) in repository root

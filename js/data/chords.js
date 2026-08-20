@@ -1,8 +1,37 @@
-// POINT 9b: Six-family chord library — Berklee/Real Book professional symbols
-// Each entry: { name, symbol, intervals, family }
-// name   = display label shown to user (unicode ♭/♯)
-// symbol = internal key (b/# ASCII, unique)
-// family = groups chips in the pool panel
+/**
+ * @file chords.js
+ * @description Chord type library for The Sound Travels Ear Training — defines all
+ * playable chord families, their interval structures, and playback style options.
+ *
+ * @module chords
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+
+// =============================================================================
+// CHORD_TYPES — complete chord library organised by family.
+//
+// Standard families (major, minor, dominant, diminished, augmented, suspended)
+// share a common schema:
+//
+//   name      {string}   Display label shown to the user — uses Unicode ♭/♯ symbols.
+//   symbol    {string}   Internal key — ASCII only (b/#), unique across all families.
+//   intervals {number[]} Semitone offsets from the root (0 = root). Values above 11
+//                        represent compound intervals (e.g. 14 = major 9th).
+//   family    {string}   Groups the chord into a pool panel chip category.
+//   basic     {boolean}  Optional. true = included in Basic difficulty mode.
+//
+// Specialised families extend this schema with additional fields documented
+// at the head of each section below.
+// =============================================================================
+
+/**
+ * Complete chord type library, keyed by family name.
+ * Each family is an array of chord descriptor objects.
+ *
+ * @type {Object.<string, Array.<Object>>}
+ */
 const CHORD_TYPES = {
   major: [
     { name: 'maj',              symbol: 'maj',           intervals: [0,4,7],             family: 'major', basic: true },
@@ -89,32 +118,41 @@ const CHORD_TYPES = {
     { name: 'sus4(add9)',       symbol: 'sus4_add9',     intervals: [0,5,7,14],          family: 'suspended' },
   ],
 
-  // Classical chords — chromatic pre-dominant chords from common-practice harmony.
-  // All are built from the bass note (♭6 / le for aug sixths; ♭2 for Neapolitan).
-  // Root in the app = the bass reference note as described above.
-  // classicalNote: shown in the breakdown as a 'Classical function' sub-section.
+  // ── Classical ──────────────────────────────────────────────────────────────
+  // Chromatic pre-dominant chords from common-practice harmony.
+  // All are built from the bass note (♭6 / le for augmented sixths; ♭2 for Neapolitan).
+  // The app root = the bass reference note as described above.
+  //
+  // Additional field:
+  //   classicalNote {string} Explanatory text shown in the 'Classical function'
+  //                          breakdown sub-section.
   classical: [
     // Neapolitan — major triad on ♭II; typically appears in first inversion (N6)
     { name: 'N6 (Neapolitan)',    symbol: 'N6',      intervals: [0,4,7],    family: 'classical',
       classicalNote: '\u266dII major triad — pre-dominant chord in classical harmony. Typically appears in first inversion (N\u2076). Resolves to V or V\u2077.' },
-    // Italian augmented sixth — built from \u266d6: \u266d6\u20131\u2013\u266f4 (aug 6th between outer voices)
+    // Italian augmented sixth — built from ♭6: ♭6–1–♯4 (aug 6th between outer voices)
     { name: 'It\u207a\u2076 (Italian +6)', symbol: 'It6',  intervals: [0,4,9],    family: 'classical',
       classicalNote: 'Italian augmented sixth — \u266d6, 1, \u266f4 from the bass. The augmented sixth interval (\u266d6\u2013\u266f4) expands outward to the octave V. Resolves to V.' },
-    // French augmented sixth — \u266d6\u20131\u20132\u2013\u266f4
+    // French augmented sixth — ♭6–1–2–♯4
     { name: 'Fr\u207a\u2076 (French +6)',  symbol: 'Fr6',  intervals: [0,4,6,9],  family: 'classical',
       classicalNote: 'French augmented sixth — \u266d6, 1, 2, \u266f4 from the bass. Contains a whole-tone tetrachord; the most dissonant of the three. Resolves to V.' },
-    // German augmented sixth — \u266d6\u20131\u2013\u266d3\u2013\u266f4 (enharmonic = dom7)
+    // German augmented sixth — ♭6–1–♭3–♯4 (enharmonic = dom7)
     { name: 'Ger\u207a\u2076 (German +6)', symbol: 'Ger6', intervals: [0,4,7,9],  family: 'classical',
       classicalNote: 'German augmented sixth — \u266d6, 1, \u266d3, \u266f4 from the bass. Enharmonically identical to a dominant 7th chord. Resolves to V (often via I\u2076\u2084 to avoid parallel 5ths).' },
   ],
 
-  // Quartal / Quintal chords — built by stacking perfect fourths (quartal) or perfect fifths
-  // (quintal) instead of thirds. Quintal is the inversion of quartal — same pitch content,
-  // different stacking order. Common in jazz (McCoy Tyner, Bill Evans, Herbie Hancock) and
-  // 20th-century classical (Hindemith, Bartók, Schoenberg).
-  // quartal: true — triggers custom breakdown path (modal contexts instead of chord scales,
-  //                  adjacent interval analysis in 'Quartal construction' sub-section).
-  // quartNote: detailed note shown in the 'Quartal construction' breakdown sub-section.
+  // ── Quartal / Quintal ──────────────────────────────────────────────────────
+  // Built by stacking perfect fourths (quartal) or perfect fifths (quintal)
+  // instead of thirds. Quintal is the inversion of quartal — same pitch content,
+  // different stacking order. Common in jazz (McCoy Tyner, Bill Evans, Herbie
+  // Hancock) and 20th-century classical (Hindemith, Bartók, Schoenberg).
+  //
+  // Additional fields:
+  //   quartal   {boolean} Always true. Triggers the custom breakdown path:
+  //                       modal contexts instead of chord scales; adjacent interval
+  //                       analysis in the 'Quartal construction' sub-section.
+  //   quartNote {string}  Detailed note shown in the 'Quartal construction'
+  //                       breakdown sub-section.
   quartal: [
     // 3-note quartal: two stacked perfect fourths
     { name: 'qrt3 (Quartal, 3-note)',   symbol: 'qrt3',  intervals: [0,5,10],     family: 'quartal', quartal: true,
@@ -136,12 +174,18 @@ const CHORD_TYPES = {
       quartNote: 'Four-note quintal chord — three stacked perfect fifths (P5 + P5 + P5). The widest-spanning standard quintal voicing, spanning three octaves minus a whole tone. Inversionally equivalent to the four-note quartal chord but voiced with maximum registral spread. Creates an enormous, cathedral-like sonority when played in the lower register; translucent and ringing in the upper register. Used in Hindemith, Bart\u00f3k, and contemporary orchestral writing for its tonal neutrality and resonance. Sound character: expansive, resonant, harmonically open.' },
   ],
 
-  // Cluster / Secundal chords — built by stacking major or minor seconds instead of thirds
-  // or fourths. More timbral than harmonic: dense dissonant sound masses used in contemporary
+  // ── Cluster / Secundal ─────────────────────────────────────────────────────
+  // Built by stacking major or minor seconds instead of thirds or fourths.
+  // More timbral than harmonic: dense dissonant sound masses used in contemporary
   // classical, avant-garde, film scoring, and ambient music.
-  // cluster: true — triggers custom breakdown path (no chord scales — "timbral chord" note,
-  //                  adjacent interval analysis in 'Cluster construction' sub-section).
-  // clustNote: detailed note shown in the 'Cluster construction' breakdown sub-section.
+  //
+  // Additional fields:
+  //   cluster   {boolean} Always true. Triggers the custom breakdown path:
+  //                       no chord scales — a "timbral chord" note is shown instead;
+  //                       adjacent interval analysis in the 'Cluster construction'
+  //                       sub-section.
+  //   clustNote {string}  Detailed note shown in the 'Cluster construction'
+  //                       breakdown sub-section.
   cluster: [
     // 3-note major-second cluster
     { name: 'clust M2 (3-note)',        symbol: 'clust_M2_3',  intervals: [0,2,4],     family: 'cluster', cluster: true,
@@ -157,20 +201,27 @@ const CHORD_TYPES = {
       clustNote: 'Four-note chromatic cluster — three consecutive semitones (m2 + m2 + m2). Four adjacent chromatic pitches: the densest, most dissonant standard cluster voicing. No interval larger than a semitone appears between any adjacent pair, making it a pure noise mass with no implied harmony. Henry Cowell coined the term "tone cluster" in the 1920s for this technique, which he notated as solid black rectangles on the staff. Later adopted by Bartók, Ligeti, Penderecki, and film composers. In jazz, compressed chromatic clusters appear in stride piano and as percussive colour in avant-garde playing. Sound character: maximally dissonant, percussive, noise-mass — the most extreme timbral effect available on a standard keyboard.' },
   ],
 
-  // POINT 25 (redesigned): Slash chords — root-agnostic types, like every other family.
-  // upperIntervals: semitones of the upper triad from its own root (always root-position)
-  // bassInterval:   PITCH CLASS offset from the upper root UP to the bass note (1-11,
-  //                  always positive — the bass note's pc is (upperRootPc + bassInterval) mod 12).
-  //                  At question time the bass is placed the complementary distance BELOW the
-  //                  upper root: soundingSemitonesBelow = 12 - bassInterval.
-  // belowLabel:      plain interval name for that sounding-below distance (m2/M2/.../M7/TT),
-  //                  used in the type name — matches how bass notes are actually described in
-  //                  standard chord-symbol practice (as an interval/scale-degree of the chord
-  //                  itself), not a fixed major-scale Roman numeral independent of chord quality.
-  // The upper root is randomised per question exactly like every other chord family.
-  // The quiz plays bass note first, then upper chord; notation splits across grand staff.
+  // ── Slash chords ───────────────────────────────────────────────────────────
+  // Root-agnostic upper triads over an independent bass note. The upper root is
+  // randomised per question exactly like every other chord family; the bass note
+  // is derived from it via bassInterval.
+  //
+  // Additional fields:
+  //   upperIntervals {number[]} Semitone offsets within the upper triad from its
+  //                             own root (always root-position).
+  //   bassInterval   {number}   Pitch-class offset from the upper root UP to the
+  //                             bass note (1–11, always positive). The bass pitch
+  //                             class = (upperRootPc + bassInterval) mod 12.
+  //                             At question time the bass is placed the complementary
+  //                             distance BELOW the upper root:
+  //                             soundingSemitonesBelow = 12 − bassInterval.
+  //   belowLabel     {string}   Plain interval name for the sounding-below distance
+  //                             (m2 / M2 / … / M7 / TT). Used in the chord name.
+  //   upperQuality   {string}   'maj' or 'min' — quality of the upper triad.
+  //   alsoKnownAs    {string}   Optional. Equivalent standard chord symbol where
+  //                             the slash voicing has a common tertian reading.
   slash: [
-    // Major upper triad (excludes offsets 0, 4, 7 — those are the triad's own tones)
+    // Major upper triad (excludes bass offsets 0, 4, 7 — those are the triad's own tones)
     { name: 'maj / M7 below',  symbol: 'slashMaj_M7below',  upperIntervals: [0,4,7], bassInterval: 1,  belowLabel: 'M7', family: 'slash', upperQuality: 'maj' },
     { name: 'maj / m7 below',  symbol: 'slashMaj_m7below',  upperIntervals: [0,4,7], bassInterval: 2,  belowLabel: 'm7', family: 'slash', upperQuality: 'maj' },
     { name: 'maj / M6 below',  symbol: 'slashMaj_M6below',  upperIntervals: [0,4,7], bassInterval: 3,  belowLabel: 'M6', family: 'slash', upperQuality: 'maj' },
@@ -180,7 +231,7 @@ const CHORD_TYPES = {
     { name: 'maj / m3 below',  symbol: 'slashMaj_m3below',  upperIntervals: [0,4,7], bassInterval: 9,  belowLabel: 'm3', family: 'slash', upperQuality: 'maj', alsoKnownAs: 'm7' },
     { name: 'maj / M2 below',  symbol: 'slashMaj_M2below',  upperIntervals: [0,4,7], bassInterval: 10, belowLabel: 'M2', family: 'slash', upperQuality: 'maj' },
     { name: 'maj / m2 below',  symbol: 'slashMaj_m2below',  upperIntervals: [0,4,7], bassInterval: 11, belowLabel: 'm2', family: 'slash', upperQuality: 'maj' },
-    // Minor upper triad (excludes offsets 0, 3, 7 — those are the triad's own tones)
+    // Minor upper triad (excludes bass offsets 0, 3, 7 — those are the triad's own tones)
     { name: 'm / M7 below',    symbol: 'slashMin_M7below',  upperIntervals: [0,3,7], bassInterval: 1,  belowLabel: 'M7', family: 'slash', upperQuality: 'min' },
     { name: 'm / m7 below',    symbol: 'slashMin_m7below',  upperIntervals: [0,3,7], bassInterval: 2,  belowLabel: 'm7', family: 'slash', upperQuality: 'min' },
     { name: 'm / m6 below',    symbol: 'slashMin_m6below',  upperIntervals: [0,3,7], bassInterval: 4,  belowLabel: 'm6', family: 'slash', upperQuality: 'min' },
@@ -191,11 +242,19 @@ const CHORD_TYPES = {
     { name: 'm / M2 below',    symbol: 'slashMin_M2below',  upperIntervals: [0,3,7], bassInterval: 10, belowLabel: 'M2', family: 'slash', upperQuality: 'min' },
     { name: 'm / m2 below',    symbol: 'slashMin_m2below',  upperIntervals: [0,3,7], bassInterval: 11, belowLabel: 'm2', family: 'slash', upperQuality: 'min' },
   ],
-  // POINT 26: Polychords — two independent triads, each root-agnostic.
-  // lowerOffset: semitones from upper root DOWN to lower root (always positive, 1–11).
-  // upperIntervals / lowerIntervals: intervals within each triad from its own root.
-  // At question time: upperRootMidi is chosen freely; lowerRootMidi = upperRootMidi - lowerOffset.
-  // Lower chord rendered in bass staff, upper in treble.
+
+  // ── Polychords ─────────────────────────────────────────────────────────────
+  // Two independent triads sounding simultaneously, each root-agnostic. The upper
+  // root is chosen freely at question time; the lower root is derived from it.
+  // Lower chord rendered in the bass staff, upper chord in the treble staff.
+  //
+  // Additional fields:
+  //   upperIntervals {number[]} Intervals within the upper triad from its own root.
+  //   lowerIntervals {number[]} Intervals within the lower triad from its own root.
+  //   lowerOffset    {number}   Semitones from the upper root DOWN to the lower root
+  //                             (always positive, 1–11).
+  //   upperSymbol    {string}   Short quality label for the upper triad ('maj'|'min'|'aug').
+  //   lowerSymbol    {string}   Short quality label for the lower triad ('maj'|'min'|'aug'|'7').
   poly: [
     { name: 'Maj / Maj (P5 below)',  symbol: 'poly_MM_P5',  upperIntervals:[0,4,7], lowerIntervals:[0,4,7], lowerOffset:7,  upperSymbol:'maj', lowerSymbol:'maj', family:'poly' },
     { name: 'Maj / Maj (TT below)',  symbol: 'poly_MM_TT',  upperIntervals:[0,4,7], lowerIntervals:[0,4,7], lowerOffset:6,  upperSymbol:'maj', lowerSymbol:'maj', family:'poly' },
@@ -205,35 +264,48 @@ const CHORD_TYPES = {
     { name: 'Min / Maj (TT below)',  symbol: 'poly_mM_TT',  upperIntervals:[0,3,7], lowerIntervals:[0,4,7], lowerOffset:6,  upperSymbol:'min', lowerSymbol:'maj', family:'poly' },
     { name: 'Min / Min (P5 below)',  symbol: 'poly_mm_P5',  upperIntervals:[0,3,7], lowerIntervals:[0,3,7], lowerOffset:7,  upperSymbol:'min', lowerSymbol:'min', family:'poly' },
     { name: 'Min / Min (TT below)',  symbol: 'poly_mm_TT',  upperIntervals:[0,3,7], lowerIntervals:[0,3,7], lowerOffset:6,  upperSymbol:'min', lowerSymbol:'min', family:'poly' },
-    // POINT 34: Aug upper triad (symmetrical — 3 enharmonic roots)
+    // Aug upper triad (symmetrical — 3 enharmonic roots)
     { name: 'Aug / Maj (P5 below)',  symbol: 'poly_aM_P5',  upperIntervals:[0,4,8], lowerIntervals:[0,4,7], lowerOffset:7,  upperSymbol:'aug', lowerSymbol:'maj', family:'poly' },
     { name: 'Aug / Maj (TT below)',  symbol: 'poly_aM_TT',  upperIntervals:[0,4,8], lowerIntervals:[0,4,7], lowerOffset:6,  upperSymbol:'aug', lowerSymbol:'maj', family:'poly' },
     { name: 'Aug / Min (P5 below)',  symbol: 'poly_am_P5',  upperIntervals:[0,4,8], lowerIntervals:[0,3,7], lowerOffset:7,  upperSymbol:'aug', lowerSymbol:'min', family:'poly' },
     { name: 'Aug / Min (TT below)',  symbol: 'poly_am_TT',  upperIntervals:[0,4,8], lowerIntervals:[0,3,7], lowerOffset:6,  upperSymbol:'aug', lowerSymbol:'min', family:'poly' },
-    // POINT 34: Maj / Aug lower
+    // Maj / Aug lower
     { name: 'Maj / Aug (P5 below)',  symbol: 'poly_Ma_P5',  upperIntervals:[0,4,7], lowerIntervals:[0,4,8], lowerOffset:7,  upperSymbol:'maj', lowerSymbol:'aug', family:'poly' },
     { name: 'Maj / Aug (TT below)',  symbol: 'poly_Ma_TT',  upperIntervals:[0,4,7], lowerIntervals:[0,4,8], lowerOffset:6,  upperSymbol:'maj', lowerSymbol:'aug', family:'poly' },
     { name: 'Min / Aug (P5 below)',  symbol: 'poly_ma_P5',  upperIntervals:[0,3,7], lowerIntervals:[0,4,8], lowerOffset:7,  upperSymbol:'min', lowerSymbol:'aug', family:'poly' },
     { name: 'Min / Aug (TT below)',  symbol: 'poly_ma_TT',  upperIntervals:[0,3,7], lowerIntervals:[0,4,8], lowerOffset:6,  upperSymbol:'min', lowerSymbol:'aug', family:'poly' },
-    // POINT 34: Dom7 upper structure
+    // Dom7 upper structure
     { name: 'Dom7 / Maj (P5 below)', symbol: 'poly_7M_P5',  upperIntervals:[0,4,7,10], lowerIntervals:[0,4,7], lowerOffset:7,  upperSymbol:'7', lowerSymbol:'maj', family:'poly' },
     { name: 'Dom7 / Maj (TT below)', symbol: 'poly_7M_TT',  upperIntervals:[0,4,7,10], lowerIntervals:[0,4,7], lowerOffset:6,  upperSymbol:'7', lowerSymbol:'maj', family:'poly' },
     { name: 'Dom7 / Min (P5 below)', symbol: 'poly_7m_P5',  upperIntervals:[0,4,7,10], lowerIntervals:[0,3,7], lowerOffset:7,  upperSymbol:'7', lowerSymbol:'min', family:'poly' },
     { name: 'Dom7 / Min (TT below)', symbol: 'poly_7m_TT',  upperIntervals:[0,4,7,10], lowerIntervals:[0,3,7], lowerOffset:6,  upperSymbol:'7', lowerSymbol:'min', family:'poly' },
-    // POINT 34: Maj / Dom7 lower
+    // Maj / Dom7 lower
     { name: 'Maj / Dom7 (P5 below)', symbol: 'poly_M7_P5',  upperIntervals:[0,4,7], lowerIntervals:[0,4,7,10], lowerOffset:7,  upperSymbol:'maj', lowerSymbol:'7', family:'poly' },
     { name: 'Maj / Dom7 (TT below)', symbol: 'poly_M7_TT',  upperIntervals:[0,4,7], lowerIntervals:[0,4,7,10], lowerOffset:6,  upperSymbol:'maj', lowerSymbol:'7', family:'poly' },
     { name: 'Min / Dom7 (P5 below)', symbol: 'poly_m7_P5',  upperIntervals:[0,3,7], lowerIntervals:[0,4,7,10], lowerOffset:7,  upperSymbol:'min', lowerSymbol:'7', family:'poly' },
     { name: 'Min / Dom7 (TT below)', symbol: 'poly_m7_TT',  upperIntervals:[0,3,7], lowerIntervals:[0,4,7,10], lowerOffset:6,  upperSymbol:'min', lowerSymbol:'7', family:'poly' },
   ],
 
-  // POINT 26: Upper Structure Triads (UST) — jazz rootless dominant 7th voicings.
-  // Shell = [M3, m7] = intervals [4, 10] from the chord root.
-  // upperTriadRoot: semitones ABOVE the chord root where the upper triad root sits.
-  // upperTriadIntervals: [0,4,7] (major) or [0,3,7] (minor) from upperTriadRoot.
-  // tensions / resultingChord: the full chord symbol implied by shell + upper triad.
-  // ustNumber: scale-degree label (e.g. ♭II = major triad on ♭2 above root).
+  // ── Upper Structure Triads (UST) ───────────────────────────────────────────
+  // Jazz rootless voicings: a two-note shell defines the chord quality; an upper
+  // triad voiced above it supplies the tensions. The root is not played.
+  //
+  // Additional fields:
+  //   shellIntervals     {number[]} Two-note shell intervals from the chord root
+  //                                 (e.g. [4,10] = M3 + m7 for a dominant 7th shell).
+  //   upperTriadRoot     {number}   Semitones above the chord root where the upper
+  //                                 triad root sits.
+  //   upperTriadIntervals{number[]} Intervals within the upper triad from its own root
+  //                                 ([0,4,7] = major, [0,3,7] = minor).
+  //   upperQuality       {string}   'maj' or 'min' — quality of the upper triad.
+  //   ustNumber          {string}   Scale-degree label (e.g. '♭II', 'IIm', 'V').
+  //   tensions           {string}   Comma-separated tensions implied by shell + upper triad.
+  //   resultingChord     {string}   Full chord symbol implied by the combined voicing.
+  //   subFamily          {string}   Shell context: 'dom7' | 'min' | 'maj7'.
+  //   shellQuality       {string}   Optional. Explicit shell label for non-dominant contexts:
+  //                                 'min' or 'maj7'. Absent on dom7 entries (implied by default).
   ust: [
+    // Dom7 shell UST — shell = [M3, m7] = [4, 10]
     // UST ♭II — major triad on ♭II above root → 7(♭9)(♯11)(♭13) — "the Bartók UST"
     { name: 'UST ♭II (♭II maj over dom7)',  symbol: 'ust_I',   shellIntervals:[4,10], upperTriadRoot:1,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭II',   tensions:'♭9, ♯11, ♭13', resultingChord:'7(♭9)(♯11)(♭13)', family:'ust', subFamily:'dom7' },
     // UST II — major triad on II above root → 7(9)(♯11)(13)
@@ -249,8 +321,7 @@ const CHORD_TYPES = {
     // UST IIm — minor triad on II → 7(9)(11) — "McCoy Tyner" sound
     { name: 'UST IIm (II min over dom7)',   symbol: 'ust_VII', shellIntervals:[4,10], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',   tensions:'9, 11',        resultingChord:'7(9)(11)',       family:'ust', subFamily:'dom7' },
 
-    // POINT 35: Minor shell UST — shell = [m3, m7] = [3, 10] — implies m7 chord context
-    // Upper triads voiced over a minor 7th shell (root not played)
+    // Minor shell UST — shell = [m3, m7] = [3, 10] — implies m7 chord context
     // IIm over m7 → m7(9)(11) — Dorian flavour
     { name: 'UST IIm (II min over m7)',    symbol: 'ust_m_IIm',  shellIntervals:[3,10], upperTriadRoot:2,  upperTriadIntervals:[0,3,7], upperQuality:'min', ustNumber:'IIm',  tensions:'9, 11',    resultingChord:'m7(9)(11)',    family:'ust', shellQuality:'min', subFamily:'min' },
     // IV over m7 → m7(11)(13) — Dorian brightness
@@ -260,8 +331,7 @@ const CHORD_TYPES = {
     // ♭VI over m7 → m9(♭13) — Phrygian / Aeolian colour
     { name: 'UST ♭VI (♭VI maj over m7)',   symbol: 'ust_m_bVI',  shellIntervals:[3,10], upperTriadRoot:8,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'♭VI',  tensions:'♭13',      resultingChord:'m7(♭13)',      family:'ust', shellQuality:'min', subFamily:'min' },
 
-    // POINT 35: Maj7 shell UST — shell = [M3, M7] = [4, 11] — implies Maj7 chord context
-    // Upper triads voiced over a major 7th shell (root not played)
+    // Maj7 shell UST — shell = [M3, M7] = [4, 11] — implies Maj7 chord context
     // II over Maj7 → Maj7(9)(♯11) — Lydian sound
     { name: 'UST II (II maj over Maj7)',   symbol: 'ust_M7_II',  shellIntervals:[4,11], upperTriadRoot:2,  upperTriadIntervals:[0,4,7], upperQuality:'maj', ustNumber:'II',   tensions:'9, ♯11',   resultingChord:'Maj7(9)(♯11)',  family:'ust', shellQuality:'maj7', subFamily:'maj7' },
     // IIm over Maj7 → Maj7(9) — warm, lush
@@ -273,7 +343,16 @@ const CHORD_TYPES = {
   ],
 };
 
-// POINT 6: Playback modes for chords
+// ── Chord playback styles ───────────────────────────────────────────────────
+
+/**
+ * Available playback styles for chord questions.
+ * Controls the order in which notes are sounded during playback.
+ *
+ * @type {Array.<{name: string, symbol: string}>}
+ * @property {string} name   Display label shown in the UI.
+ * @property {string} symbol Internal key used in state and mode logic.
+ */
 const CHORD_PLAYBACK_STYLES = [
   { name: 'Block',       symbol: 'block'      },
   { name: 'Ascending',   symbol: 'ascending'  },
@@ -282,6 +361,7 @@ const CHORD_PLAYBACK_STYLES = [
   { name: 'Random',      symbol: 'random'     },
 ];
 
-// INTERVALS and INTERVAL_STYLES moved to js/data/intervals.js
-// SCALES and SCALE_DIRECTIONS moved to js/data/scales.js (Point 45 refactor)
-
+// =============================================================================
+// The Sound Travels Ear Training — chords.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================

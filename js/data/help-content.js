@@ -1,12 +1,19 @@
-// ── Help content ─────────────────────────────────────────────────────────────
-//
-// Single source of truth for all Help text.
-// No DOM, no rendering logic — content only.
-//
-// Structure:
-//   HELP_SECTIONS — array of section objects
-//   Each section: { id, title, entries[] }
-//   Each entry:   { term, body }   (body is plain text; \n = paragraph break)
+/**
+ * @file help-content.js
+ * @description Single source of truth for all in-app Help text. Contains no DOM
+ *   references or rendering logic — content only. Consumed by help-mode.js.
+ *
+ * Data structure:
+ *   HELP_SECTIONS — top-level array of section objects
+ *   Each section:  { id: string, title: string, entries: Entry[] }
+ *   Each entry:    { term: string, body: string }
+ *                  body is plain text; \n renders as a paragraph break.
+ *
+ * @module HelpContent
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
 
 const HELP_SECTIONS = [
 
@@ -64,7 +71,7 @@ const HELP_SECTIONS = [
       },
       {
         term: 'Chords mode',
-        body: 'Trains you to identify chords by ear. The app plays a chord built on a random root (or a pinned root if you set one) and you name it.\n\nChords are organised into twelve families:\n• Major — triads, added-note chords, sixth chords, and major 7th extensions\n• Minor — minor triads, minor 6th, minor 7th, and minor-major 7th extensions\n• Dominant — dominant 7th chords and all altered, suspended, and extended dominant variants\n• Diminished — diminished triad, half-diminished (m7♭5), fully diminished 7th (°7), and °7(Maj7)\n• Augmented — augmented triad and augmented 7th variants\n• Suspended — sus2, sus4, power chord (5th only), and suspended extensions\n• Classical — chromatic pre-dominant chords from common-practice harmony: Neapolitan (N6) and the three augmented sixth chords (Italian, French, German)\n• Quartal / Quintal — chords built by stacking perfect fourths or fifths instead of thirds\n• Cluster — chords built by stacking seconds; dense, timbral sonorities\n• Slash chords — a triad over a bass note that isn\'t its root, creating ambiguous or extended harmony\n• Polychords — two independent triads stacked on top of each other\n• Upper Structure Triads (UST) — a triad played over a shell voicing; a jazz reharmonisation technique',
+        body: 'Trains you to identify chords by ear. The app plays a chord built on a random root (or a pinned root if you set one) and you name it.\n\nChords are organised into twelve families:\n• Major — triads, added-note chords, sixth chords, and major 7th extensions\n• Minor — minor triads, minor 6th, minor 7th, and minor-major 7th extensions\n• Dominant — dominant 7th chords and all altered, suspended, and extended dominant variants\n• Diminished — diminished triad, half-diminished (m7♭5), fully diminished 7th (°7), and °7(Maj7)\n• Augmented — augmented triad and augmented 7th variants\n• Suspended — sus2, sus4, power chord (5th only), and suspended extensions\n• Classical — chromatic pre-dominant chords from common-practice harmony: Neapolitan (N6) and the three augmented sixth chords (Italian, French, German). Note: in this app the root badge shows the bass note of the chord, not the theoretical root. For augmented sixth chords the bass note is ♭6; for the Neapolitan it is ♭2 (the third of the chord, since N6 appears in first inversion). This matches how these chords are built and voiced in the pool.\n• Quartal / Quintal — chords built by stacking perfect fourths or fifths instead of thirds\n• Cluster — chords built by stacking seconds; dense, timbral sonorities\n• Slash chords — a triad over a bass note that isn\'t its root, creating ambiguous or extended harmony\n• Polychords — two independent triads stacked on top of each other\n• Upper Structure Triads (UST) — a triad played over a shell voicing; a jazz reharmonisation technique',
       },
       {
         term: 'Scales mode',
@@ -228,7 +235,7 @@ Click Reset to clear the stats without starting a new session.`,
       },
       {
         term: 'Breakdown: Scales — Chord scales',
-        body: 'Scales whose notes contain all the pitch classes of the current chord. Shown in the chord breakdown as well. A chord scale is a scale you can use for improvisation or harmonisation over that chord without clashing.\n\nEach result shows the scale name and a character tag (neutral / bright / tense / dark / etc.) describing its mood. Clicking a scale name in chord mode opens that scale in Dictionary mode.',
+        body: 'Scales whose notes contain all the pitch classes of the current chord. Shown in the chord breakdown as well. A chord scale is a scale you can use for improvisation or harmonisation over that chord without clashing.\n\nEach result shows the scale name and a character tag (neutral / bright / tense / dark / etc.) describing its mood. Each scale row is interactive — tap or click anywhere on the row to open that scale in Dictionary mode. A → arrow appears on the right when you hover, confirming the row is navigable.',
       },
 
       // Chords
@@ -254,7 +261,7 @@ Click Reset to clear the stats without starting a new session.`,
       },
       {
         term: 'Breakdown: Chords — Neo-tonal (Riemannian)',
-        body: 'Shown for major and minor triads. Neo-tonal (or Riemannian) theory describes relationships between chords by transforming one into another with minimal voice movement. Each relation is named:\n\n• Parallel (P) — switches major/minor quality while keeping root and fifth the same (C major ↔ C minor)\n• Relative (R) — moves one voice by a whole step to reach the relative major/minor (C major ↔ A minor)\n• Leading-tone exchange (L) — moves the root by a semitone in the opposite direction (C major ↔ E minor)\n• Subdominant parallel (S) — moves to the chord a perfect fifth away\n\nThese relations describe chord progressions that sound smooth and logical even when they cross key boundaries — common in film music and Romantic-era harmony.',
+        body: 'Shown for major and minor triads. Tap the ⓘ icon next to the label to see an inline explanation of each relation directly in the breakdown.\n\nNeo-tonal (or Riemannian) theory describes relationships between chords by transforming one into another with minimal voice movement. Each relation is named:\n\n• Parallel (P) — switches major/minor quality while keeping root and fifth the same (C major ↔ C minor)\n• Relative (R) — moves one voice by a whole step to reach the relative major/minor (C major ↔ A minor)\n• Leading-tone exchange (L) — moves the root by a semitone in the opposite direction (C major ↔ E minor)\n• Subdominant parallel (S) — moves to the chord a perfect fifth away\n\nThese relations describe chord progressions that sound smooth and logical even when they cross key boundaries — common in film music and Romantic-era harmony.',
       },
       {
         term: 'Breakdown: Chords — Dominant: Tritone sub',
@@ -294,7 +301,7 @@ Click Reset to clear the stats without starting a new session.`,
       },
       {
         term: 'Breakdown: Chords — Chord scales',
-        body: 'Scales whose notes contain all the pitch classes of the current chord. Useful for improvisation: any note from a matching chord scale will fit over the chord without clashing.\n\nThe teal character tags show the mood of each scale (neutral / bright / tense / dark / exotic / symmetric / ambiguous). The faint note next to each scale name gives a brief stylistic description. Clicking a scale name opens that scale in Dictionary mode.',
+        body: 'Scales whose notes contain all the pitch classes of the current chord. Useful for improvisation: any note from a matching chord scale will fit over the chord without clashing.\n\nThe teal character tags show the mood of each scale (neutral / bright / tense / dark / exotic / symmetric / ambiguous). The faint note next to each scale name gives a brief stylistic description.\n\nEach scale row is interactive — tap or click anywhere on the row to open that scale in Dictionary mode. A → arrow appears on the right when you hover, confirming the row is navigable.',
       },
       {
         term: 'Breakdown: Chords — Voice leading',
@@ -468,7 +475,7 @@ Click Reset to clear the stats without starting a new session.`,
       },
       {
         term: 'Slash chord',
-        body: 'A chord written as ChordName/BassNote indicating a specific bass note that differs from the chord\'s root. C/E means a C major chord with E in the bass (first inversion). Slash chords are used to create smooth bass lines or to specify a particular voicing.',
+        body: 'A chord written as ChordName/BassNote indicating a specific bass note that differs from the chord\'s root. C/E means a C major chord with E in the bass (first inversion). Slash chords are used to create smooth bass lines or to specify a particular voicing.\n\nSome slash chords in the pool are enharmonically equivalent to standard chord symbols — for example, a major triad with its minor 3rd in the bass is the same pitch content as a minor 7th chord. Where this applies, the breakdown shows an "Also known as" label with the equivalent standard symbol.',
       },
       {
         term: 'Tension dots',
@@ -492,7 +499,7 @@ Click Reset to clear the stats without starting a new session.`,
       },
       {
         term: 'Upper Structure Triad (UST)',
-        body: 'A jazz voicing technique where a complete triad is played in the right hand above a shell voicing (3rd + 7th) in the left hand. The upper triad adds extensions and alterations to the chord without spelling them out individually. For example, a D triad over a C dominant shell (E + B♭) creates a C dominant chord with a 9th and a 13th. USTs are labelled by the Roman numeral of the upper triad relative to the chord root.',
+        body: 'A jazz voicing technique where a complete triad is played in the right hand above a shell voicing (3rd + 7th) in the left hand. The upper triad adds extensions and alterations to the chord without spelling them out individually. For example, a D triad over a C dominant shell (E + B♭) creates a C dominant chord with a 9th and a 13th. USTs are labelled by the Roman numeral of the upper triad relative to the chord root.\n\nIn this app, UST questions play exactly what a pianist would play: the two-note shell plus the upper triad — five notes in total, with no root. The root is intentionally omitted, as it would normally be held by the bass player. The breakdown shows which shell is used, which upper triad sits above it, and the full resulting chord symbol.',
       },
       {
         term: 'Voice leading',
@@ -501,3 +508,8 @@ Click Reset to clear the stats without starting a new session.`,
     ],
   },
 ];
+
+// =============================================================================
+// The Sound Travels Ear Training — help-content.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================
