@@ -63,8 +63,6 @@ function makeGlobalAllNone(body, allItems, selectedSet, getAllChips, onChangeFn)
     e.stopPropagation();
     allItems.forEach(it => selectedSet.add(it.symbol));
     getAllChips().forEach(c => c.classList.add('active'));
-    // Also update per-section counts by re-rendering — simplest: trigger onChangeFn
-    // then re-render counts by querying count elements
     body.querySelectorAll('.pool-section-count').forEach(countEl => {
       const sec = countEl.closest('.pool-section');
       if (!sec) return;
@@ -95,7 +93,9 @@ function makeGlobalAllNone(body, allItems, selectedSet, getAllChips, onChangeFn)
   body.appendChild(row);
 }
 
-function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = true) {
+// useDisplayName: when true, chip label uses item.displayName if present, falling back to
+// item.name. Used by the Pentatonic scale section where dual labels are needed (POINT 27).
+function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = true, useDisplayName = false) {
   const hasSelected = items.some(it => selectedSet.has(it.symbol));
   const startCollapsed = hasSelected ? false : collapsed;
 
@@ -176,7 +176,7 @@ function makeSection(body, title, items, selectedSet, onChangeFn, collapsed = tr
   items.forEach(item => {
     const chip = document.createElement('button');
     chip.className = 'pool-chip' + (selectedSet.has(item.symbol) ? ' active' : '');
-    chip.textContent = item.name;
+    chip.textContent = useDisplayName ? (item.displayName || item.name) : item.name;
     chip.addEventListener('click', () => {
       if (selectedSet.has(item.symbol)) selectedSet.delete(item.symbol);
       else selectedSet.add(item.symbol);
@@ -287,7 +287,7 @@ function _buildChordFamilies() {
   const sections = [];
   const isBasic = appDifficulty === 'basic';
   for (const [key, entries] of Object.entries(CHORD_TYPES)) {
-    // POINT 50: in Basic mode filter to basic:true entries only; skip empty families entirely
+    // In Basic mode filter to basic:true entries only; skip empty families entirely
     const filtered = isBasic ? entries.filter(e => e.basic) : entries;
     if (filtered.length === 0) continue;
 
@@ -349,15 +349,7 @@ function _renderChordQualitySection(body) {
   }
 }
 
-// ─── POINT 41: Voicing section in the chord pool panel ───────────────────────
-//
-// Quiz mode:        multi-select — user builds a voicing training pool (selectedVoicings Set)
-// Dict/post-answer: single-select — selecting immediately re-voices and re-renders
-//
-// Random chip sits above the 6 groups, always visible.
-// All 63 algorithms are implemented in voicings.js.
-
-// ─── POINT 41: Voicing section ────────────────────────────────────────────────
+// ─── Voicing section ──────────────────────────────────────────────────────────
 //
 // Quiz before answering — multi-select:
 //   Global All/None (covers all 63 voicings + Random)
@@ -439,7 +431,7 @@ function _renderVoicingMulti(body) {
   // Keep refs to all chip elements so global buttons can sync them
   const allChipRefs = []; // { symbol, chipEl }
 
-  // POINT 50: in Basic mode All/None only covers basic voicing symbols
+  // In Basic mode All/None only covers basic voicing symbols
   const visibleVoicingSymbols = appDifficulty === 'basic'
     ? VOICING_GROUPS.filter(g => g.basic).flatMap(g => g.symbols)
     : ALL_VOICING_SYMBOLS;
@@ -615,7 +607,7 @@ function _renderVoicingSingle(body) {
   randomRow.appendChild(randomChip);
   body.appendChild(randomRow);
 
-  // 6 collapsible groups — single-select; POINT 50: basic mode shows Position + Doubling only
+  // Basic mode shows Position + Doubling only
   const visibleGroups = appDifficulty === 'basic'
     ? VOICING_GROUPS.filter(g => g.basic)
     : VOICING_GROUPS;
@@ -716,8 +708,7 @@ function _updateSectionCount(sec, symbols) {
 
 function renderIntervalPoolPanel(panel) {
   const { body } = makePoolPanelShell(panel, 'Training pool — Intervals', null);
-  // POINT 39: split into simple and compound sections — all collapsed by default
-  // POINT 50: compound section hidden in basic mode
+  // Simple and compound split; compound section hidden in Basic mode
   const onChange39 = () => appMode === 'dict' ? setAppMode('dict') : generateIntervalQuestion();
 
   const visibleIntervals = appDifficulty === 'basic'
@@ -735,7 +726,7 @@ function renderIntervalPoolPanel(panel) {
 }
 
 // Display titles and section-renderer choice for scale group values.
-// sectionFn: 'withDisplayName' uses makeSectionWithDisplayName; anything else uses makeSection.
+// sectionFn: 'withDisplayName' uses useDisplayName=true on makeSection; anything else uses the default.
 const SCALE_GROUP_CONFIG = {
   pentatonic: { title: 'Pentatonic (5 notes)',      sectionFn: 'withDisplayName' },
   hexatonic:  { title: 'Hexatonic (6 notes)',        sectionFn: 'standard' },
@@ -748,7 +739,7 @@ const SCALE_GROUP_CONFIG = {
 // Single source of truth for group structure; used by both quiz and dict renderers.
 function iterateScaleGroups(callback) {
   const groupMap = new Map();
-  // POINT 50: in Basic mode only show scales with basic: true
+  // In Basic mode only show scales with basic: true
   const visibleScales = appDifficulty === 'basic'
     ? SCALES.filter(s => s.basic)
     : SCALES;
@@ -768,7 +759,7 @@ function renderProgressionPoolPanel(panel) {
   const { body } = makePoolPanelShell(panel, 'Training pool — Progressions', null);
   const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateProgressionQuestion();
 
-  // POINT 50: in Basic mode only show progressions with basic: true
+  // In Basic mode only show progressions with basic: true
   const visibleProgressions = appDifficulty === 'basic'
     ? PROGRESSIONS.filter(p => p.basic)
     : [...PROGRESSIONS];
@@ -786,8 +777,8 @@ function renderProgressionPoolPanel(panel) {
 }
 
 function renderScalePoolPanel(panel) {
-  // POINT 28: Group by the 'group' field on each SCALES entry — auto-discovers new groups.
-  // POINT 50: iterateScaleGroups already filters to basic scales in Basic mode.
+  // Groups are auto-discovered via the 'group' field on each SCALES entry.
+  // iterateScaleGroups already filters to basic scales in Basic mode.
   const { body } = makePoolPanelShell(panel, 'Training pool — Scales', null);
   const onChange = () => appMode === 'dict' ? setAppMode('dict') : generateScaleQuestion();
 
@@ -796,112 +787,9 @@ function renderScalePoolPanel(panel) {
     () => body.querySelectorAll('.pool-chip'), onChange);
 
   iterateScaleGroups((key, title, items, cfg) => {
-    if (cfg && cfg.sectionFn === 'withDisplayName') {
-      makeSectionWithDisplayName(body, title, items, selectedScales, onChange, true);
-    } else {
-      makeSection(body, title, items, selectedScales, onChange, true);
-    }
+    const useDisplayName = cfg && cfg.sectionFn === 'withDisplayName';
+    makeSection(body, title, items, selectedScales, onChange, true, useDisplayName);
   });
-}
-
-// Like makeSection but uses item.displayName for the chip label when present (POINT 27)
-function makeSectionWithDisplayName(body, title, items, selectedSet, onChangeFn, collapsed = true) {
-  const hasSelected = items.some(it => selectedSet.has(it.symbol));
-  const startCollapsed = hasSelected ? false : collapsed;
-
-  const sec = document.createElement('div');
-  sec.className = 'pool-section';
-
-  const hdr = document.createElement('div');
-  hdr.className = 'pool-section-header';
-
-  const titleEl = document.createElement('span');
-  titleEl.className = 'pool-section-title';
-
-  const chevron = document.createElement('span');
-  chevron.className = 'pool-section-chevron';
-  chevron.textContent = startCollapsed ? '▸' : '▾';
-  titleEl.appendChild(chevron);
-  titleEl.appendChild(document.createTextNode(title));
-
-  const right = document.createElement('span');
-  right.style.display = 'flex';
-  right.style.alignItems = 'center';
-  right.style.gap = '8px';
-
-  const countEl = document.createElement('span');
-  countEl.className = 'pool-section-count';
-
-  const allBtn = document.createElement('button');
-  allBtn.className = 'pool-all-btn';
-  allBtn.textContent = 'All';
-
-  const noneBtn = document.createElement('button');
-  noneBtn.className = 'pool-all-btn';
-  noneBtn.textContent = 'None';
-
-  right.appendChild(countEl);
-  right.appendChild(allBtn);
-  right.appendChild(noneBtn);
-  hdr.appendChild(titleEl);
-  hdr.appendChild(right);
-
-  const sectionBody = document.createElement('div');
-  sectionBody.className = 'pool-section-body' + (startCollapsed ? ' collapsed' : '');
-
-  const chipsEl = document.createElement('div');
-  chipsEl.className = 'pool-chips';
-  chipsEl.style.marginBottom = '0.4rem';
-
-  hdr.addEventListener('click', (e) => {
-    if (e.target === allBtn || e.target === noneBtn) return;
-    const isCollapsed = sectionBody.classList.toggle('collapsed');
-    chevron.textContent = isCollapsed ? '▸' : '▾';
-  });
-
-  allBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    items.forEach(it => selectedSet.add(it.symbol));
-    chips.forEach(c => c.classList.add('active'));
-    updateCount();
-    onChangeFn();
-  });
-
-  noneBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    items.forEach(it => selectedSet.delete(it.symbol));
-    chips.forEach(c => c.classList.remove('active'));
-    updateCount();
-    onChangeFn();
-  });
-
-  const chips = [];
-
-  function updateCount() {
-    const active = items.filter(it => selectedSet.has(it.symbol)).length;
-    countEl.textContent = active + ' / ' + items.length;
-  }
-
-  items.forEach(item => {
-    const chip = document.createElement('button');
-    chip.className = 'pool-chip' + (selectedSet.has(item.symbol) ? ' active' : '');
-    chip.textContent = item.displayName || item.name;
-    chip.addEventListener('click', () => {
-      if (selectedSet.has(item.symbol)) selectedSet.delete(item.symbol);
-      else selectedSet.add(item.symbol);
-      chip.classList.toggle('active', selectedSet.has(item.symbol));
-      updateCount();
-      onChangeFn();
-    });
-    chips.push(chip);
-    chipsEl.appendChild(chip);
-  });
-
-  updateCount();
-  sectionBody.appendChild(chipsEl);
-  sec.appendChild(hdr);
-  sec.appendChild(sectionBody);
-  body.appendChild(sec);
 }
 
 // POINT 6: Render chord playback style chips
@@ -923,8 +811,7 @@ function renderChordStyleChips() {
         : s.symbol === 'broken'     ? 'Play chord (broken)'
         : 'Play chord (random style)';
       document.getElementById('playLabel').textContent = label;
-      // POINT 32/33: update notation to mirror new style if currently visible.
-      // For a concrete style, update immediately. For random, notation stays as
+      // For a concrete style, update notation immediately. For random, notation stays as
       // last-played until Play is hit — nothing to show until resolved.
       if (s.symbol !== 'random') {
         currentChordPlayStyle = s.symbol;
@@ -947,13 +834,12 @@ function renderIntervalStyleChips() {
       intervalStyle = s.symbol;
       row.querySelectorAll('.style-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      // Update play label hint
       document.getElementById('playLabel').textContent =
         s.symbol === 'harmonic'   ? 'Play interval (together)'  :
         s.symbol === 'ascending'  ? 'Play interval (ascending)' :
         s.symbol === 'descending' ? 'Play interval (descending)':
-                                    'Play interval (random style)'; // POINT 20b
-      // POINT 33: update notation to mirror new style if currently visible
+                                    'Play interval (random style)';
+      // Update notation to mirror new style if currently visible
       if (s.symbol !== 'random') {
         currentIntervalStyle = s.symbol;
         if (appMode === 'dict' || answered) { showNotation(); showBreakdown(); }
@@ -978,9 +864,9 @@ function renderScaleDirChips() {
       const label = d.symbol === 'asc'    ? 'Play scale (ascending)'
                   : d.symbol === 'desc'   ? 'Play scale (descending)'
                   : d.symbol === 'both'   ? 'Play scale (ascending + descending)'
-                  : 'Play scale (random direction)'; // POINT 20b
+                  : 'Play scale (random direction)';
       document.getElementById('playLabel').textContent = label;
-      // POINT 33: update notation to mirror new direction if currently visible
+      // Update notation to mirror new direction if currently visible
       if (d.symbol !== 'random') {
         currentScaleDir = d.symbol;
         if (appMode === 'dict' || answered) { showNotation(); showBreakdown(); }
