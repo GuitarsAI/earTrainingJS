@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: js/ui/controls.js ✅
+> Last updated: js/ui/pool-progressions.js ✅
 
 ---
 
@@ -67,7 +67,11 @@ earTrainingJS/
 │   ├── ui/
 │   │   ├── stats.js                   ✅ production pass complete
 │   │   ├── controls.js                ✅ production pass complete
-│   │   └── pool.js                    [ ] pending
+│   │   ├── pool.js                    ✅ production pass complete
+│   │   ├── pool-chords.js             ✅ production pass complete
+│   │   ├── pool-intervals.js          ✅ production pass complete
+│   │   ├── pool-scales.js             ✅ production pass complete
+│   │   └── pool-progressions.js       ✅ production pass complete
 │   ├── modes/
 │   │   ├── chords-mode.js             [ ] pending
 │   │   ├── intervals-mode.js          [ ] pending
@@ -106,7 +110,7 @@ Layer 1 — Data          spelling, keysig, chords, intervals, scales, progressi
 Layer 2 — State         state, defaults
 Layer 3 — Engine        helpers, voicings, audio, notation, voiceLeading
 Layer 4 — Breakdown     breakdown, breakdown-intervals, breakdown-chords, breakdown-scales, breakdown-progressions
-Layer 5 — UI            stats, controls, pool
+Layer 5 — UI            stats, controls, pool, pool-chords, pool-intervals, pool-scales, pool-progressions
 Layer 6 — Modes         chords-mode, intervals-mode, scales-mode, progressions-mode, help-mode, about-mode
 Layer 7 — Boot          app.js
 ```
@@ -135,7 +139,7 @@ breakdown.js → breakdown-intervals.js → breakdown-chords.js
 → breakdown-scales.js → breakdown-progressions.js
        │
        ▼
-stats.js → controls.js → pool.js
+stats.js → controls.js → pool.js → pool-chords.js → pool-intervals.js → pool-scales.js → pool-progressions.js
        │
        ▼
 chords-mode.js → intervals-mode.js → scales-mode.js
@@ -1057,8 +1061,137 @@ Specialised families extend the schema with additional fields:
 
 ---
 
-### js/ui/pool.js
-[ ] — pending production pass
+### ✅ js/ui/pool.js
+
+**Role:** Shared pool panel primitives and top-level mode dispatcher. Provides the six building-block functions consumed by all four mode-specific pool files. Contains no mode-specific logic — the dispatcher (`renderPoolPanel`) routes to the appropriate mode renderer and nothing else.
+
+**Size:** ~300 lines across 6 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `renderPoolPanel()` | `() → void` | Clears `#poolPanel` and delegates to the appropriate mode renderer (`renderChordPoolPanel`, `renderIntervalPoolPanel`, `renderScalePoolPanel`, `renderProgressionPoolPanel`) based on `currentMode`. |
+| `makePoolPanelShell(panel, title, metaFn)` | `(HTMLElement, string, function\|null) → { body, meta, updateMeta }` | Builds the collapsible header + body shell for any pool panel. Returns the inner body, the meta span, and an `updateMeta()` helper. |
+| `makeGlobalAllNone(body, allItems, selectedSet, getAllChips, onChangeFn)` | `(HTMLElement, object[], Set, function, function) → void` | Appends a global All / None row. All/None operate across every item in `allItems`, syncing both the Set and the active class on every chip. |
+| `makeSection(body, title, items, selectedSet, onChangeFn, collapsed?, useDisplayName?)` | `(HTMLElement, string, object[], Set, function, boolean, boolean) → void` | Appends a collapsible chip section with per-section All/None and a count display. Starts collapsed unless a selected item is present. `useDisplayName` causes chips to prefer `item.displayName` over `item.name` (used by Pentatonic scales for dual labels). |
+| `_makeSubGroup(body, title)` | `(HTMLElement, string) → HTMLElement` | Builds a collapsible sub-group container (used by `pool-chords.js` to wrap Chord quality and Voicing). Returns the inner body. |
+| `_makeAllNoneBtn(label)` | `(string) → HTMLButtonElement` | Creates a styled All or None button (used by `pool-chords.js` voicing group headers). |
+
+**Key design patterns:**
+
+- **Pure primitive layer:** `pool.js` owns no data constants and no mode-specific logic. Every symbol it defines is a generic DOM builder. Mode-specific constants (`CHORD_FAMILY_TITLES`, `VOICING_GROUPS`, `SCALE_GROUP_CONFIG`, etc.) live in the mode split files.
+- **`makeSection` / `useDisplayName` merge:** The former `makeSectionWithDisplayName` was merged into `makeSection` via an optional `useDisplayName = false` parameter. The Pentatonic section in `pool-scales.js` passes `true`, surfacing `item.displayName` (e.g. "Major Pentatonic / Ionian Pentatonic"). All other callers use the default.
+- **`_makeSubGroup` placement:** Although only `pool-chords.js` calls `_makeSubGroup`, it lives in the shared layer because it is a generic DOM primitive (collapsible container with header + arrow), not chord-specific logic.
+
+**Dependencies:** `state.js` (`currentMode`), plus the four mode renderers defined in `pool-chords.js`, `pool-intervals.js`, `pool-scales.js`, `pool-progressions.js` (called by `renderPoolPanel` at dispatch time).
+
+**Consumed by:** `app.js` and all four mode files (via `renderPoolPanel()`). Primitives consumed by all four `pool-*.js` files.
+
+---
+
+### ✅ js/ui/pool-chords.js
+
+**Role:** Chord quality and voicing pool panel rendering. Handles the full complexity of the chord pool — 12 chord families (with UST sub-family splitting), the inversions toggle, and the two-mode voicing panel (multi-select before answering; single-select in dict and post-answer). Delegates to shared primitives in `pool.js`.
+
+**Size:** ~330 lines across 4 constants and 14 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `CHORD_FAMILY_TITLES` | `Object.<string, string>` | Display titles for known `CHORD_TYPES` family keys. Keys absent from this map get a capitalised fallback. |
+| `UST_SUBFAMILY_TITLES` | `Object.<string, string>` | Display titles for UST `subFamily` values (`dom7`, `min`, `maj7`). |
+| `VOICING_GROUPS` | `Array.<{label, basic, symbols[]}>` | Voicing groups in display order. Each group carries a `basic` flag that limits visibility in Basic mode. |
+| `ALL_VOICING_SYMBOLS` | `string[]` | Flat array of all voicing symbols including `'random'` — used for global All/None coverage. |
+| `renderChordPoolPanel(panel)` | `(HTMLElement) → void` | Builds the chord pool shell and delegates sub-group rendering. Called by `renderPoolPanel()`. |
+| `renderChordStyleChips()` | `() → void` | Renders chord playback style chips into `#chordStyleRow`. Updates `chordPlayStyle`, the play label, and notation on selection. |
+
+**Private helpers (not exported, documented for maintainers):**
+
+| Symbol | Description |
+|---|---|
+| `_familyTitle(key)` | Returns the display title for a `CHORD_TYPES` family key. |
+| `_buildChordFamilies()` | Builds the flat `{ title, items }` section list from `CHORD_TYPES`, splitting families with `subFamily` into one section per sub-family. Respects Basic mode filter. |
+| `_renderChordSubGroups(body)` | Builds the Chord quality and Voicing collapsible sub-groups. Shared by quiz and dict renderers. |
+| `_renderChordQualitySection(body)` | Renders chord quality: multi-select + inversions toggle in quiz; single-select via `makeDictSection` in dict. |
+| `_renderVoicingSection(body)` | Routes to multi or single-select voicing rendering based on `appMode` and `answered`. |
+| `_renderVoicingMulti(body)` | Full multi-select voicing panel: global All/None, Random chip, six collapsible groups. |
+| `_makeVoicingGroupMulti(body, title, items, allChipRefs)` | Builds one collapsible multi-select voicing group; pushes chip refs into `allChipRefs` for global sync. |
+| `_renderVoicingSingle(body)` | Single-select voicing panel: Random chip + collapsible groups; each chip re-voices immediately. |
+| `_makeVoicingGroupSingle(body, title, items)` | Builds one collapsible single-select voicing group. |
+| `_syncVoicingChipActive(body)` | Syncs the active class across all single-select voicing chips after a selection. |
+| `_updateAllSectionCounts(body)` | Updates count displays for all voicing group sections in multi-select mode. |
+| `_updateSectionCount(sec, symbols)` | Updates the count display for a single voicing section. |
+
+**Key design patterns:**
+
+- **Two voicing modes:** The voicing panel has two distinct rendering paths. Before answering in quiz mode it is multi-select (selectedVoicings Set, no immediate re-render). Post-answer and in dict mode it switches to single-select (activeVoicingMode string, immediate re-voice on chip click via `recomputeCurrentNotes()`).
+- **External dependency — `makeDictSection`:** `_renderChordQualitySection` calls `makeDictSection` in dict mode. This function is defined in the dict/dictionary UI layer, not in `pool.js`. It must be loaded before `pool-chords.js`.
+
+**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`, `makeSection`, `_makeSubGroup`, `_makeAllNoneBtn`), `state.js`, `defaults.js`, `chords.js` (`CHORD_TYPES`), `voicings.js` (`VOICING_MODES`), `audio.js` (`recomputeCurrentNotes`), `notation.js`.
+
+**Consumed by:** `pool.js` (`renderPoolPanel` dispatcher).
+
+---
+
+### ✅ js/ui/pool-intervals.js
+
+**Role:** Interval training pool panel and playback style chip rendering. Splits the interval pool into Simple and Extended/Compound sections, hiding the compound section in Basic mode.
+
+**Size:** ~65 lines across 2 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `renderIntervalPoolPanel(panel)` | `(HTMLElement) → void` | Builds the interval pool panel. Shows Simple intervals always; Extended/Compound section in Advanced mode only. Called by `renderPoolPanel()`. |
+| `renderIntervalStyleChips()` | `() → void` | Renders interval playback style chips into `#intervalStyleRow` (Harmonic, Ascending, Descending, Random). Updates `intervalStyle`, the play label, and notation on selection. |
+
+**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`, `makeSection`), `state.js`, `defaults.js`, `intervals.js` (`INTERVALS`, `INTERVAL_STYLES`), `notation.js`.
+
+**Consumed by:** `pool.js` (`renderPoolPanel` dispatcher).
+
+---
+
+### ✅ js/ui/pool-scales.js
+
+**Role:** Scale training pool panel and direction chip rendering. Groups scales by cardinality using `iterateScaleGroups`, which is the single source of truth for scale group structure and is consumed by both quiz and dict renderers.
+
+**Size:** ~110 lines across 1 constant and 4 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `SCALE_GROUP_CONFIG` | `Object.<string, {title: string, sectionFn: string}>` | Display titles and section-renderer config per group key. `sectionFn: 'withDisplayName'` triggers dual-label chip rendering (used by Pentatonic). Keys absent from this object get a capitalised fallback title. |
+| `iterateScaleGroups(callback)` | `(function) → void` | Iterates SCALES grouped by the `group` field in insertion order, filtered to basic scales in Basic mode. Calls `callback(key, title, items, cfg)` once per group. **Single source of truth for scale group structure** — both quiz pool and dict renderer consume this. |
+| `renderScalePoolPanel(panel)` | `(HTMLElement) → void` | Builds the scale pool panel. Groups auto-discovered via `iterateScaleGroups`; Pentatonic chips show `displayName`. Called by `renderPoolPanel()`. |
+| `renderScaleDirChips()` | `() → void` | Renders scale direction chips into `#scaleDirRow` (Ascending, Descending, Both, Random). Updates `scaleDirection`, the play label, and notation on selection. |
+
+**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`, `makeSection`), `state.js`, `defaults.js`, `scales.js` (`SCALES`, `SCALE_DIRECTIONS`), `notation.js`.
+
+**Consumed by:** `pool.js` (`renderPoolPanel` dispatcher), dict renderer (via `iterateScaleGroups`).
+
+---
+
+### ✅ js/ui/pool-progressions.js
+
+**Role:** Progression training pool panel rendering. Groups progressions by `PROG_GROUPS` order; respects Basic mode filtering. The smallest pool file — a single public function.
+
+**Size:** ~40 lines across 1 function.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `renderProgressionPoolPanel(panel)` | `(HTMLElement) → void` | Builds the progression pool panel. Groups follow `PROG_GROUPS` order; collapse state driven by `PROG_GROUP_COLLAPSED`. Called by `renderPoolPanel()`. |
+
+**Note:** `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — no constants defined here.
+
+**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`, `makeSection`), `state.js`, `defaults.js`, `progressions.js` (`PROGRESSIONS`, `PROG_GROUPS`, `PROG_GROUP_COLLAPSED`).
+
+**Consumed by:** `pool.js` (`renderPoolPanel` dispatcher).
 
 ---
 

@@ -44,14 +44,14 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 > The only logic change in the entire split. Do it first, in isolation, and verify before
 > creating any new files.
 
-- [ ] In `pool.js`, add an optional `useDisplayName = false` parameter to `makeSection`
-- [ ] Inside `makeSection`, change the chip label line to:
+- [x] In `pool.js`, add an optional `useDisplayName = false` parameter to `makeSection`
+- [x] Inside `makeSection`, change the chip label line to:
   `chip.textContent = useDisplayName ? (item.displayName || item.name) : item.name;`
-- [ ] Delete `makeSectionWithDisplayName` entirely from `pool.js`
-- [ ] In `renderScalePoolPanel` (still in `pool.js`), change the `makeSectionWithDisplayName` call to:
+- [x] Delete `makeSectionWithDisplayName` entirely from `pool.js`
+- [x] In `renderScalePoolPanel` (still in `pool.js`), change the `makeSectionWithDisplayName` call to:
   `makeSection(body, title, items, selectedScales, onChange, true, true)`
-- [ ] Verify in the browser: Pentatonic chips still show `displayName` (e.g. "Major Pentatonic / Ionian Pentatonic"); all other scale chips unchanged
-- [ ] Verify chord, interval, and progression pool panels unaffected
+- [x] Verify in the browser: Pentatonic chips still show `displayName` (e.g. "Major Pentatonic / Ionian Pentatonic"); all other scale chips unchanged
+- [x] Verify chord, interval, and progression pool panels unaffected
 
 ---
 
@@ -82,14 +82,14 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 | `renderChordPoolPanel()` | function |
 | `renderChordStyleChips()` | function |
 
-- [ ] Create `js/ui/pool-chords.js`
-- [ ] Copy all symbols above into `pool-chords.js` in logical order: constants first, private helpers, public renderers last
-- [ ] Remove the duplicate `// POINT 41: Voicing section` comment block — keep only one description
-- [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
-- [ ] Add JSDoc to all public functions (`renderChordPoolPanel`, `renderChordStyleChips`)
-- [ ] Add JSDoc to all private helpers
-- [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
-- [ ] Add `@file-end` footer with copyright line
+- [x] Create `js/ui/pool-chords.js`
+- [x] Copy all symbols above into `pool-chords.js` in logical order: constants first, private helpers, public renderers last
+- [x] Remove the duplicate `// POINT 41: Voicing section` comment block — keep only one description
+- [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
+- [x] Add JSDoc to all public functions (`renderChordPoolPanel`, `renderChordStyleChips`)
+- [x] Add JSDoc to all private helpers
+- [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
+- [x] Add `@file-end` footer with copyright line
 
 ---
 
@@ -104,12 +104,12 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 | `renderIntervalPoolPanel()` | function |
 | `renderIntervalStyleChips()` | function |
 
-- [ ] Create `js/ui/pool-intervals.js`
-- [ ] Copy both functions into `pool-intervals.js`
-- [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
-- [ ] Add JSDoc to both functions
-- [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
-- [ ] Add `@file-end` footer with copyright line
+- [x] Create `js/ui/pool-intervals.js`
+- [x] Copy both functions into `pool-intervals.js`
+- [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
+- [x] Add JSDoc to both functions
+- [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
+- [x] Add `@file-end` footer with copyright line
 
 ---
 
@@ -127,13 +127,13 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 | `renderScalePoolPanel()` | function |
 | `renderScaleDirChips()` | function |
 
-- [ ] Create `js/ui/pool-scales.js`
-- [ ] Copy all symbols above into `pool-scales.js`
-- [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
-- [ ] Add JSDoc to all functions and the `SCALE_GROUP_CONFIG` constant
-- [ ] Document `iterateScaleGroups` carefully — single source of truth for scale group structure, consumed by both quiz and dict renderers
-- [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
-- [ ] Add `@file-end` footer with copyright line
+- [x] Create `js/ui/pool-scales.js`
+- [x] Copy all symbols above into `pool-scales.js`
+- [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
+- [x] Add JSDoc to all functions and the `SCALE_GROUP_CONFIG` constant
+- [x] Document `iterateScaleGroups` carefully — single source of truth for scale group structure, consumed by both quiz and dict renderers
+- [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
+- [x] Add `@file-end` footer with copyright line
 
 ---
 
@@ -148,12 +148,12 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 |---|---|
 | `renderProgressionPoolPanel()` | function |
 
-- [ ] Create `js/ui/pool-progressions.js`
-- [ ] Copy `renderProgressionPoolPanel` into `pool-progressions.js`
-- [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
-- [ ] Add JSDoc to `renderProgressionPoolPanel`
-- [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
-- [ ] Add `@file-end` footer with copyright line
+- [x] Create `js/ui/pool-progressions.js`
+- [x] Copy `renderProgressionPoolPanel` into `pool-progressions.js`
+- [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
+- [x] Add JSDoc to `renderProgressionPoolPanel`
+- [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
+- [x] Add `@file-end` footer with copyright line
 
 ---
 
@@ -161,8 +161,8 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 
 > All four split files must exist before this step.
 
-- [ ] Locate the current `<script src="js/ui/pool.js">` tag
-- [ ] Replace it with the five new script tags in load order:
+- [x] Locate the current `<script src="js/ui/pool.js">` tag
+- [x] Replace it with the five new script tags in load order:
   ```html
   <script src="js/ui/pool.js"></script>
   <script src="js/ui/pool-chords.js"></script>
@@ -170,7 +170,7 @@ No split file depends on another split file. All four depend on `pool.js` for sh
   <script src="js/ui/pool-scales.js"></script>
   <script src="js/ui/pool-progressions.js"></script>
   ```
-- [ ] Confirm these five tags appear after `stats.js` and before the `js/modes/` tags
+- [x] Confirm these five tags appear after `stats.js` and before the `js/modes/` tags
 
 ---
 
@@ -178,14 +178,14 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 
 > At this point `pool.js` still has all original code. Duplication is intentional and temporary.
 
-- [ ] Open the app in the browser — no console errors on load
-- [ ] **Intervals tab:** pool panel opens; Simple intervals section visible; chips toggle correctly; Global All / None works; style chips (Harmonic / Ascending / Descending / Random) render and update play label
-- [ ] **Chords tab:** pool panel opens; all 12 families visible; Voicing sub-group opens; multi-select chips toggle; Global All / None works; chord style chips render; inversions checkbox present
-- [ ] **Scales tab:** pool panel opens; four cardinality groups visible; Pentatonic chips show display names; Global All / None works; direction chips render
-- [ ] **Progressions tab:** pool panel opens; groups visible; Global All / None works
-- [ ] **Basic / Advanced toggle:** switching modes correctly filters pool chips in all four tabs
-- [ ] **Dict mode:** chord pool panel switches to single-select; clicking a chord loads it immediately; voicing single-select works
-- [ ] **Post-answer voicing single-select:** after answering a chord question, voicing panel switches to single-select and re-voices on chip click
+- [x] Open the app in the browser — no console errors on load
+- [x] **Intervals tab:** pool panel opens; Simple intervals section visible; chips toggle correctly; Global All / None works; style chips (Harmonic / Ascending / Descending / Random) render and update play label
+- [x] **Chords tab:** pool panel opens; all 12 families visible; Voicing sub-group opens; multi-select chips toggle; Global All / None works; chord style chips render; inversions checkbox present
+- [x] **Scales tab:** pool panel opens; four cardinality groups visible; Pentatonic chips show display names; Global All / None works; direction chips render
+- [x] **Progressions tab:** pool panel opens; groups visible; Global All / None works
+- [x] **Basic / Advanced toggle:** switching modes correctly filters pool chips in all four tabs
+- [x] **Dict mode:** chord pool panel switches to single-select; clicking a chord loads it immediately; voicing single-select works
+- [x] **Post-answer voicing single-select:** after answering a chord question, voicing panel switches to single-select and re-voices on chip click
 
 ---
 
@@ -204,27 +204,27 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 | `_makeSubGroup()` | Primitive builder — stays in shared layer |
 | `_makeAllNoneBtn()` | Primitive builder — stays in shared layer |
 
-- [ ] Delete all symbols that moved to `pool-chords.js`
-- [ ] Delete all symbols that moved to `pool-intervals.js`
-- [ ] Delete all symbols that moved to `pool-scales.js`
-- [ ] Delete all symbols that moved to `pool-progressions.js`
-- [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
-- [ ] Add JSDoc to every remaining function
-- [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
-- [ ] Add `@file-end` footer with copyright line
-- [ ] Reload the app — no console errors; repeat smoke test spot-checks
+- [x] Delete all symbols that moved to `pool-chords.js`
+- [x] Delete all symbols that moved to `pool-intervals.js`
+- [x] Delete all symbols that moved to `pool-scales.js`
+- [x] Delete all symbols that moved to `pool-progressions.js`
+- [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
+- [x] Add JSDoc to every remaining function
+- [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
+- [x] Add `@file-end` footer with copyright line
+- [x] Reload the app — no console errors; repeat smoke test spot-checks
 
 ---
 
 ## Step 9 — Update `ARCHITECTURE.md`
 
-- [ ] In the repository structure tree, update the `js/ui/` block to show all five pool files with ✅
-- [ ] Replace `pool.js [ ] pending` placeholder with full `pool.js` ARCHITECTURE entry
-- [ ] Add full `pool-chords.js` ARCHITECTURE entry after `pool.js`
-- [ ] Add full `pool-intervals.js` ARCHITECTURE entry
-- [ ] Add full `pool-scales.js` ARCHITECTURE entry
-- [ ] Add full `pool-progressions.js` ARCHITECTURE entry
-- [ ] Update "Last updated" line to `js/ui/pool-progressions.js ✅`
+- [x] In the repository structure tree, update the `js/ui/` block to show all five pool files with ✅
+- [x] Replace `pool.js [ ] pending` placeholder with full `pool.js` ARCHITECTURE entry
+- [x] Add full `pool-chords.js` ARCHITECTURE entry after `pool.js`
+- [x] Add full `pool-intervals.js` ARCHITECTURE entry
+- [x] Add full `pool-scales.js` ARCHITECTURE entry
+- [x] Add full `pool-progressions.js` ARCHITECTURE entry
+- [x] Update "Last updated" line to `js/ui/pool-progressions.js ✅`
 
 ---
 
