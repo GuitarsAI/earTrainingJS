@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: js/ui/pool-progressions.js ✅
+> Last updated: js/modes/progressions-mode.js ✅
 
 ---
 
@@ -76,7 +76,7 @@ earTrainingJS/
 │   │   ├── chords-mode.js             [ ] pending
 │   │   ├── intervals-mode.js          [ ] pending
 │   │   ├── scales-mode.js             [ ] pending
-│   │   ├── progressions-mode.js       [ ] pending
+│   │   ├── progressions-mode.js       ✅ production pass complete
 │   │   ├── help-mode.js               [ ] pending
 │   │   └── about-mode.js              [ ] pending
 │   └── app.js                         [ ] pending
@@ -1218,8 +1218,47 @@ Specialised families extend the schema with additional fields:
 
 ---
 
-### js/modes/progressions-mode.js
-[ ] — pending production pass
+### ✅ js/modes/progressions-mode.js
+
+**Role:** Progression quiz and dictionary mode. Handles playback, question generation, the slot-based answer UI, grading, post-answer VexFlow notation, the dictionary pool panel, and DOM teardown. Pool panel rendering for quiz mode lives in `pool-progressions.js`; the dict pool panel stays here because it is tightly coupled to `dictProgSymbol` state and `dictShowProgression()`.
+
+**Size:** ~370 lines across 12 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `playProgression()` | `() → void` | Plays the current progression at normal speed (~0.5 s gap between chord onsets). |
+| `playProgressionSlowly()` | `() → void` | Plays the current progression slowly (double gaps, longer sustain). Used by the 🐢 Hear slowly button in both quiz and dict modes. |
+| `generateProgressionQuestion()` | `() → void` | Picks a random progression from the selected pool, sets all state, and renders the answer UI. |
+| `renderProgressionAnswerUI()` | `() → void` | Builds the slot-based answer UI: one column per chord with degree row (I–VII) and quality row. |
+| `updateSubmitBtn()` | `() → void` | Enables the Submit button only when every slot has both degree and quality selected. |
+| `submitProgressionAnswer()` | `() → void` | Grades the submission slot by slot, updates score/streak, shows notation and breakdown, appends Next button. |
+| `showProgressionNotation()` | `() → void` | Renders the full progression as a continuous VexFlow score. Supports treble, bass, or grand staff. Shows Roman numeral + quality labels (bold) and teal chord name labels above the stave. |
+| `renderDictProgressionPoolPanel()` | `() → void` | Renders the dict pool panel into `#poolPanel`. Single-select — clicking a chip loads the progression immediately. |
+| `dictShowProgression(prog)` | `(object) → void` | Loads a progression in dict mode: sets state, resets UI, shows notation and breakdown immediately. |
+| `generateProgressionQuestion_entry()` | `() → void` | Entry point from `generateQuestion()`. Routes to dict or quiz flow based on `appMode`. |
+| `generateQuestion()` | `() → void` | Top-level question dispatcher — routes to the mode handler for the current mode. Overrides any earlier stub. |
+| `teardownProgressionUI()` | `() → void` | Restores all DOM elements mutated by `showProgressionNotation()`. Must be called on mode switch or new question. |
+
+**Private helpers (not exported, documented for maintainers):**
+
+| Symbol | Description |
+|---|---|
+| `progChordMidi(rootMidi, qualSym)` | Builds block-chord MIDI notes for one chord slot. Falls back to major triad if symbol not found in `CHORD_TYPES`. |
+| `_makeDictProgSection(body, title, items, collapsed)` | Builds one collapsible group section for the dict pool panel. Single-select chips with no count or All/None buttons. Renamed from `makeDictProgSection` during production pass. |
+
+**Key design patterns:**
+
+- **Pool panel split:** Quiz pool panel (`renderProgressionPoolPanel` + `_makeProgSection`) lives in `pool-progressions.js`. Dict panel (`renderDictProgressionPoolPanel` + `_makeDictProgSection`) stays here because it reads/writes `dictProgSymbol` and calls `dictShowProgression` — both local to this file.
+- **Slot-based answer UI:** Unlike other modes (single dropdown), progressions use a custom multi-slot UI where each chord gets its own degree and quality chip rows. The Submit button is gated until all slots are filled.
+- **All-or-nothing scoring:** A progression answer is correct only if every slot (degree + quality) is correct. Partial credit is not awarded.
+- **Grand staff decision:** `showProgressionNotation` unions all MIDI notes across the whole progression to decide treble / bass / grand staff — not per-chord.
+- **`generateQuestion` override:** This file defines `generateQuestion()`, the top-level dispatcher used by `app.js`. It must load after any earlier stub that defines the same name.
+
+**Dependencies:** `state.js`, `defaults.js`, `progressions.js` (`PROGRESSIONS`, `PROG_GROUPS`, `PROG_GROUP_COLLAPSED`, `PROG_DEGREES`, `PROG_QUALITIES`), `chords.js` (`CHORD_TYPES`), `spelling.js` (`spelledRoot`, `midiToVexKeySpelled`, `pcInterval`, `vexAccidental`), `keysig.js` (`vexKeyMajor`, `keySigCoveredLetters`, `isCoveredByKeySig`, `respellForKeySig`, `keySigAccidentalCount`), `audio.js` (`piano`, `audioCtx`, `NOTE_NAMES`), `notation.js` (`showBreakdown`, `resetQuizUI`, `updateRootBadge`, `updateScore`), `pool.js` (`makePoolPanelShell`), `pool-progressions.js` (`renderProgressionPoolPanel`).
+
+**Consumed by:** `app.js` (calls `generateQuestion`, `teardownProgressionUI`, `generateProgressionQuestion_entry`).
 
 ---
 

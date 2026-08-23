@@ -1,10 +1,27 @@
-// ─── Shared quiz helpers ──────────────────────────────────────────────────────
+/**
+ * @file progressions-mode.js
+ * @description Progression quiz and dictionary mode: playback, question generation,
+ *   answer UI, grading, post-answer notation, dict panel, and DOM teardown.
+ *   Pool panel rendering (quiz) lives in pool-progressions.js.
+ *   Pool panel rendering (dict) lives here — tightly coupled to dictProgSymbol state.
+ * @layer modes
+ * @requires state.js, defaults.js, progressions.js, chords.js, spelling.js,
+ *           keysig.js, notation.js, audio.js, breakdown.js, pool.js,
+ *           pool-progressions.js
+ */
 
-// ─── POINT 38: Progression playback ──────────────────────────────────────────
+// ─── Playback ─────────────────────────────────────────────────────────────────
 
-// Build block chord MIDI notes for one progression chord
+/**
+ * Builds block-chord MIDI notes for one chord in a progression.
+ * Looks up the chord type by symbol in the standard CHORD_TYPES families;
+ * falls back to a plain major triad if the symbol is not found.
+ *
+ * @param {number} rootMidi - MIDI number of the chord root.
+ * @param {string} qualSym  - Chord quality symbol (e.g. 'maj', 'm7', 'dom7').
+ * @returns {number[]} MIDI note numbers for the chord.
+ */
 function progChordMidi(rootMidi, qualSym) {
-  // Find the chord type from CHORD_TYPES by matching symbol
   const allChords = [
     ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
     ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended
@@ -14,14 +31,17 @@ function progChordMidi(rootMidi, qualSym) {
   return intervals.map(i => rootMidi + i);
 }
 
-// Play the current progression — ~0.5s gap between chords
+/**
+ * Plays the current progression at normal speed (~0.5 s gap between chord onsets).
+ * Disables the play button for the duration of playback.
+ */
 function playProgression() {
   if (!piano || !currentProgression) return;
   const btn = document.getElementById('playBtn');
   btn.disabled = true;
 
-  const gapMs  = 500;   // gap between chord onsets
-  const durSec = 1.2;   // how long each chord sustains
+  const gapMs  = 500;  // gap between chord onsets
+  const durSec = 1.2;  // how long each chord sustains
 
   currentProgression.degrees.forEach((degSemis, i) => {
     setTimeout(() => {
@@ -38,12 +58,15 @@ function playProgression() {
   setTimeout(() => { btn.disabled = false; }, totalMs);
 }
 
-// Play slowly (double gaps)
+/**
+ * Plays the current progression slowly (double gaps, longer sustain).
+ * Used by the 🐢 Hear slowly button in both quiz and dict modes.
+ */
 function playProgressionSlowly() {
   if (!piano || !currentProgression) return;
   const btn = document.getElementById('playBtn');
   btn.disabled = true;
-  const gapMs = 1000;
+  const gapMs  = 1000;
   const durSec = 2.0;
 
   currentProgression.degrees.forEach((degSemis, i) => {
@@ -61,8 +84,12 @@ function playProgressionSlowly() {
   setTimeout(() => { btn.disabled = false; }, totalMs);
 }
 
-// ─── POINT 38: Progression question generation ───────────────────────────────
+// ─── Question generation ──────────────────────────────────────────────────────
 
+/**
+ * Picks a random progression from the selected pool, sets up all state,
+ * and renders the answer UI. Resets key sig chip to C on each new question.
+ */
 function generateProgressionQuestion() {
   const pool = PROGRESSIONS.filter(p => selectedProgressions.has(p.symbol));
   if (!pool.length) {
@@ -74,7 +101,7 @@ function generateProgressionQuestion() {
   currentProgression = pool[Math.floor(Math.random() * pool.length)];
   progKeySigMode = 'C'; // reset key sig chip each new question
 
-  // Tonic root — use pinnedRoot if set
+  // Tonic root — use pinnedRoot if set, otherwise random
   const pc = pinnedRoot !== null ? pinnedRoot : Math.floor(Math.random() * 12);
   currentProgRootPc   = pc;
   currentProgRootMidi = 12 + pc + 4 * 12; // octave 4 — comfortable range
@@ -86,18 +113,20 @@ function generateProgressionQuestion() {
   document.getElementById('playLabel').textContent = 'Play progression';
   document.getElementById('playBtn').disabled = false;
   document.getElementById('chordHint').textContent = '';
-  updateRootBadge(showRoot ? spelledRoot(pc) : null); // FIX-3: use spelledRoot for correct flat/sharp spelling
+  updateRootBadge(showRoot ? spelledRoot(pc) : null);
 
   renderProgressionAnswerUI();
 }
 
-// ─── POINT 38: Progression answer UI ─────────────────────────────────────────
+// ─── Answer UI ────────────────────────────────────────────────────────────────
 
+/**
+ * Builds the slot-based answer UI: one column per chord in the progression,
+ * each with a degree row (I–VII) and a quality row (maj / min / dom7 / dim).
+ * Appends Submit and Hear Slowly buttons below the slots.
+ */
 function renderProgressionAnswerUI() {
-  const statusEl = document.getElementById('statusMsg');
-  statusEl.textContent = '';
-
-  // Hide irrelevant panels
+  document.getElementById('statusMsg').textContent = '';
   document.getElementById('answerDropdownWrap').style.display = 'none';
   document.getElementById('notationPanel').style.display = 'none';
   document.getElementById('breakdownWrapper').style.display = 'none';
@@ -126,12 +155,11 @@ function renderProgressionAnswerUI() {
       const chip = document.createElement('button');
       chip.className = 'prog-chip';
       chip.textContent = deg.label;
-      chip.dataset.slot  = slotIdx;
-      chip.dataset.di    = di;
+      chip.dataset.slot = slotIdx;
+      chip.dataset.di   = di;
       chip.addEventListener('click', () => {
         if (progAnswered) return;
         progSlotAnswers[slotIdx].degreeIdx = di;
-        // Deactivate siblings in this row
         degRow.querySelectorAll('.prog-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         updateSubmitBtn();
@@ -165,7 +193,7 @@ function renderProgressionAnswerUI() {
 
   ctrl.appendChild(wrap);
 
-  // Submit button
+  // Submit button — disabled until every slot has both a degree and quality answer
   const submitRow = document.createElement('div');
   submitRow.className = 'prog-submit-row';
   const submitBtn = document.createElement('button');
@@ -177,7 +205,6 @@ function renderProgressionAnswerUI() {
   submitRow.appendChild(submitBtn);
   ctrl.appendChild(submitRow);
 
-  // Slow button
   const sb = document.createElement('button');
   sb.className = 'ctrl-btn slow';
   sb.style.marginTop = '0.5rem';
@@ -186,17 +213,24 @@ function renderProgressionAnswerUI() {
   ctrl.appendChild(sb);
 }
 
+/**
+ * Enables the Submit button only when every slot has both a degree and quality selected.
+ */
 function updateSubmitBtn() {
   const allFilled = progSlotAnswers.every(s => s.degreeIdx !== null && s.qualityIdx !== null);
   const btn = document.getElementById('progSubmitBtn');
   if (btn) btn.disabled = !allFilled;
 }
 
-// ─── POINT 38: Grade answer ───────────────────────────────────────────────────
+// ─── Grading ──────────────────────────────────────────────────────────────────
 
+/**
+ * Grades the submitted answer slot by slot. Marks each slot correct/wrong,
+ * reveals the correct answer in wrong slots, updates score/streak, shows
+ * post-answer notation and breakdown, and appends a Next progression button.
+ */
 function submitProgressionAnswer() {
   progAnswered = true;
-
   let allCorrect = true;
 
   currentProgression.degrees.forEach((degSemis, i) => {
@@ -204,7 +238,7 @@ function submitProgressionAnswer() {
     const correctQualSym = currentProgression.qualities[i];
     const correctQualIdx = PROG_QUALITIES.findIndex(q => q.sym === correctQualSym);
 
-    const ans = progSlotAnswers[i];
+    const ans    = progSlotAnswers[i];
     const degOk  = ans.degreeIdx  === correctDegIdx;
     const qualOk = ans.qualityIdx === correctQualIdx;
     const slotOk = degOk && qualOk;
@@ -213,11 +247,8 @@ function submitProgressionAnswer() {
 
     const slotEl = document.getElementById(`prog-slot-${i}`);
     slotEl.classList.add(slotOk ? 'correct' : 'wrong');
-
-    // Disable all chips in this slot
     slotEl.querySelectorAll('.prog-chip').forEach(c => c.classList.add('disabled'));
 
-    // Reveal correct answer in red slots
     if (!slotOk) {
       const lbl = slotEl.querySelector('.prog-slot-label');
       const revealed = document.createElement('span');
@@ -229,7 +260,7 @@ function submitProgressionAnswer() {
     }
   });
 
-  // Score — all-or-nothing
+  // Score — all-or-nothing per progression
   total++;
   document.getElementById('total').textContent = total;
   const statKey = currentProgression.symbol;
@@ -255,14 +286,12 @@ function submitProgressionAnswer() {
   updateScore();
   answered = true;
 
-  // Hide submit, show Next
   const submitBtnEl = document.getElementById('progSubmitBtn');
   if (submitBtnEl) submitBtnEl.style.display = 'none';
 
   showProgressionNotation();
   showBreakdown();
 
-  // Add Next progression button
   const submitRowEl = document.querySelector('.prog-submit-row');
   if (submitRowEl) {
     const nb = document.createElement('button');
@@ -272,14 +301,17 @@ function submitProgressionAnswer() {
     nb.addEventListener('click', generateProgressionQuestion);
     submitRowEl.appendChild(nb);
   }
-
 }
 
-// ─── POINT 38: Post-answer notation ──────────────────────────────────────────
+// ─── Post-answer notation ─────────────────────────────────────────────────────
 
+/**
+ * Renders the full progression as a continuous VexFlow score after the answer
+ * is submitted or in dict mode. Supports treble, bass, or grand staff depending
+ * on the MIDI range of the progression. Shows Roman numeral + quality labels
+ * above the stave, and teal chord name labels below them.
+ */
 function showProgressionNotation() {
-  // ── BUG-7 FIX: single continuous score replacing per-chord mini staves ────────
-
   const panel  = document.getElementById('notationPanel');
   const nameEl = document.getElementById('notationChordName');
   panel.style.display = 'block';
@@ -295,14 +327,10 @@ function showProgressionNotation() {
   const keySigStr      = progKeySigMode === 'key' ? vexKeyMajor(currentProgRootPc) : null;
   const coveredLetters = keySigStr ? keySigCoveredLetters(keySigStr) : new Set();
 
-  // Show notation area; use the standard #notation-svg canvas
   const notationArea = document.getElementById('notationArea');
   notationArea.style.display = 'block';
-
-  // Remove any legacy per-chord cell rows from old implementation
   notationArea.querySelectorAll('.prog-notation-row').forEach(el => el.remove());
 
-  // Restore the standard scroll wrapper (may have been hidden by old code)
   const scrollEl = notationArea.querySelector('.notation-scroll');
   if (scrollEl) scrollEl.style.display = '';
 
@@ -314,7 +342,7 @@ function showProgressionNotation() {
   if (!VF) return;
   const { Renderer, Stave, StaveNote, StaveConnector, Voice, Formatter } = VF;
 
-  // ── Build per-chord data ──────────────────────────────────────────────────────
+  // Build per-chord data
   const allChordTypes = [
     ...CHORD_TYPES.major, ...CHORD_TYPES.minor, ...CHORD_TYPES.dominant,
     ...CHORD_TYPES.diminished, ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
@@ -329,15 +357,14 @@ function showProgressionNotation() {
     const midiNotes     = intervals.map(iv => chordRootMidi + iv);
     const degObj        = PROG_DEGREES.find(d => d.semi === degSemis)  || { label: '?' };
     const qualObj       = PROG_QUALITIES.find(q => q.sym === qualSym)  || { label: qualSym };
-    const rootName        = spelledRoot(chordRootPc);
-    // FIX-2: full chord name reuses ct.name (display-ready from CHORD_TYPES).
-    // Major triads conventionally omit the quality suffix (G not Gmaj).
+    const rootName      = spelledRoot(chordRootPc);
+    // Major triads conventionally omit the quality suffix (G not Gmaj)
     const chordDisplayName = rootName + (ct && ct.name !== 'maj' ? ct.name : '');
     return { degSemis, qualSym, chordRootMidi, chordRootPc, midiNotes,
              degLabel: degObj.label, qualLabel: qualObj.label, rootName, chordDisplayName };
   });
 
-  // ── Clef decision: union of all MIDI notes across whole progression ───────────
+  // Clef decision: union of all MIDI notes across the whole progression
   const allMidi     = chords.flatMap(c => c.midiNotes);
   const lowestMidi  = Math.min(...allMidi);
   const highestMidi = Math.max(...allMidi);
@@ -345,10 +372,10 @@ function showProgressionNotation() {
   const needsTreble = highestMidi >= 55;
   const grandStaff  = needsBass && needsTreble;
 
-  // ── Layout ───────────────────────────────────────────────────────────────────
+  // Layout
   const keySigCount  = keySigStr ? keySigAccidentalCount(keySigStr) : 0;
-  const headerPx     = 36 + keySigCount * 14;   // clef + key sig
-  const chordWidth   = 80;                        // px per chord slot
+  const headerPx     = 36 + keySigCount * 14; // clef + key sig
+  const chordWidth   = 80;                     // px per chord slot
   const numChords    = chords.length;
   const W            = headerPx + chordWidth * numChords + 20;
   let H, trebleY, bassY;
@@ -361,7 +388,7 @@ function showProgressionNotation() {
   renderer.resize(W, H);
   const ctx = renderer.getContext();
 
-  // ── Spelling helpers (same contract as renderNotation) ────────────────────────
+  // Spelling helpers
   function spellMidi(midi, chordRootPc, qualSym) {
     const raw = midiToVexKeySpelled(midi, pcInterval(midi % 12, chordRootPc), chordRootPc, qualSym);
     if (!keySigStr) return { key: raw, forcedAcc: false };
@@ -406,14 +433,11 @@ function showProgressionNotation() {
       } catch(e) {}
     }
 
-    // ── Build tickables for each stave ──────────────────────────────────────────
-    // Each chord becomes a whole note; barlines between chords.
+    // Each chord becomes a whole note; BarNotes separate slots
     function buildTickables(clef) {
       const tickables = [];
       chords.forEach((chord, i) => {
         const { midiNotes, chordRootPc, qualSym } = chord;
-
-        // Split notes by clef when grand staff
         let notesForClef;
         if (grandStaff) {
           notesForClef = clef === 'treble'
@@ -426,7 +450,6 @@ function showProgressionNotation() {
 
         let tickable;
         if (notesForClef.length === 0) {
-          // Rest for this clef on this chord slot
           const restKey = clef === 'bass' ? 'd/3' : 'b/4';
           tickable = new StaveNote({ keys: [restKey], duration: 'wr', clef });
         } else {
@@ -442,9 +465,8 @@ function showProgressionNotation() {
       return tickables;
     }
 
-    // Formatter budget: full stave width minus header (clef + key sig)
     const formatterBudget = STAVE_W - headerPx - 10;
-    const totalBeats = numChords * 4;
+    const totalBeats      = numChords * 4;
 
     if (needsTreble || grandStaff) {
       const tickables = buildTickables('treble');
@@ -461,19 +483,13 @@ function showProgressionNotation() {
       voice.draw(ctx, bassStave);
     }
 
-    // ── Chord labels above the stave ─────────────────────────────────────────────
-    // Two lines per chord slot:
-    //   Upper line (prominent): Roman numeral + quality, e.g. "V 7"  — what the mode teaches
-    //   Lower line (teal):      Full chord name, e.g. "G7"           — real-world anchor
-    // FIX-1: label order swapped so Roman numeral is the dominant upper element.
-    // FIX-2: lower line now shows chordDisplayName (e.g. "G7") not bare rootName ("G").
-    // x positions are evenly spaced since VexFlow doesn't expose tickable x positions
-    // easily after formatting with BarNotes mixed in.
+    // Chord labels above the stave — two lines per slot:
+    //   Upper (bold):  Roman numeral + quality, e.g. "V 7"
+    //   Lower (teal):  Full chord name, e.g. "G7"
     const labelY = (needsTreble || grandStaff) ? trebleY - 4 : bassY - 4;
     const slotW  = formatterBudget / numChords;
     chords.forEach((chord, i) => {
       const x = STAVE_X + headerPx + i * slotW + slotW / 2;
-      // Upper line: Roman numeral + quality (e.g. "V 7") — bold, prominent
       const t1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       t1.setAttribute('x', x);
       t1.setAttribute('y', labelY - 13);
@@ -484,7 +500,6 @@ function showProgressionNotation() {
       t1.setAttribute('fill', 'currentColor');
       t1.textContent = chord.degLabel + ' ' + chord.qualLabel;
       svg.appendChild(t1);
-      // Lower line: full chord name (e.g. "G7") — smaller, teal
       const t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       t2.setAttribute('x', x);
       t2.setAttribute('y', labelY);
@@ -499,138 +514,19 @@ function showProgressionNotation() {
   } catch(e) { console.error('Progression notation render error:', e); }
 }
 
-// ─── POINT 38: Pool panels ────────────────────────────────────────────────────
+// ─── Dictionary pool panel ────────────────────────────────────────────────────
 
-function renderProgressionPoolPanel(panel) {
-  // POINT 50: in Basic mode only show progressions with basic: true
-  const visibleProgressions = appDifficulty === 'basic'
-    ? PROGRESSIONS.filter(p => p.basic)
-    : [...PROGRESSIONS];
-
-  const { body, updateMeta } = makePoolPanelShell(panel, 'Training pool — Progressions',
-    () => `${visibleProgressions.filter(p => selectedProgressions.has(p.symbol)).length} / ${visibleProgressions.length}`);
-
-  const onChangeFn = () => { updateMeta(); };
-
-  // Global All / None — scoped to visible progressions only
-  makeGlobalAllNone(body, visibleProgressions, selectedProgressions,
-    () => body.querySelectorAll('.pool-chip'), onChangeFn);
-
-  PROG_GROUPS.forEach(group => {
-    const items = visibleProgressions.filter(p => p.group === group);
-    if (items.length === 0) return;
-    const collapsed = PROG_GROUP_COLLAPSED[group] ?? true;
-    makeProgSection(body, group, items, collapsed, onChangeFn);
-  });
-
-  updateMeta();
-}
-
-// Two-line chip section for progressions quiz pool (symbol + name, multi-select + All/None)
-function makeProgSection(body, title, items, collapsed = true, onChangeFn = () => {}) {
-  const hasSelected = items.some(it => selectedProgressions.has(it.symbol));
-  const startCollapsed = hasSelected ? false : collapsed;
-
-  const sec = document.createElement('div');
-  sec.className = 'pool-section';
-
-  const hdr = document.createElement('div');
-  hdr.className = 'pool-section-header';
-
-  const titleEl = document.createElement('span');
-  titleEl.className = 'pool-section-title';
-  const chevron = document.createElement('span');
-  chevron.className = 'pool-section-chevron';
-  chevron.textContent = startCollapsed ? '▸' : '▾';
-  titleEl.appendChild(chevron);
-  titleEl.appendChild(document.createTextNode(title));
-
-  const right = document.createElement('span');
-  right.style.display = 'flex';
-  right.style.alignItems = 'center';
-  right.style.gap = '8px';
-
-  const countEl = document.createElement('span');
-  countEl.className = 'pool-section-count';
-
-  const allBtn = document.createElement('button');
-  allBtn.className = 'pool-all-btn';
-  allBtn.textContent = 'All';
-
-  const noneBtn = document.createElement('button');
-  noneBtn.className = 'pool-all-btn';
-  noneBtn.textContent = 'None';
-
-  right.appendChild(countEl);
-  right.appendChild(allBtn);
-  right.appendChild(noneBtn);
-  hdr.appendChild(titleEl);
-  hdr.appendChild(right);
-
-  const sectionBody = document.createElement('div');
-  sectionBody.className = 'pool-section-body' + (startCollapsed ? ' collapsed' : '');
-
-  const chipsEl = document.createElement('div');
-  chipsEl.className = 'pool-chips';
-  chipsEl.style.marginBottom = '0.4rem';
-
-  hdr.addEventListener('click', (e) => {
-    if (e.target === allBtn || e.target === noneBtn) return;
-    const isCollapsed = sectionBody.classList.toggle('collapsed');
-    chevron.textContent = isCollapsed ? '▸' : '▾';
-  });
-
-  const chips = [];
-
-  function updateCount() {
-    const active = items.filter(it => selectedProgressions.has(it.symbol)).length;
-    countEl.textContent = active + ' / ' + items.length;
-  }
-
-  allBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    items.forEach(it => selectedProgressions.add(it.symbol));
-    chips.forEach(c => c.classList.add('active'));
-    updateCount();
-    onChangeFn();
-  });
-
-  noneBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    items.forEach(it => selectedProgressions.delete(it.symbol));
-    chips.forEach(c => c.classList.remove('active'));
-    updateCount();
-    onChangeFn();
-  });
-
-  items.forEach(item => {
-    const chip = document.createElement('button');
-    chip.className = 'pool-chip prog-pool-chip' + (selectedProgressions.has(item.symbol) ? ' active' : '');
-    chip.innerHTML = `<span class="prog-chip-sym">${item.symbol}</span><span class="prog-chip-name">${item.name}</span>`;
-    chip.addEventListener('click', () => {
-      if (selectedProgressions.has(item.symbol)) selectedProgressions.delete(item.symbol);
-      else selectedProgressions.add(item.symbol);
-      chip.classList.toggle('active', selectedProgressions.has(item.symbol));
-      updateCount();
-      onChangeFn();
-    });
-    chips.push(chip);
-    chipsEl.appendChild(chip);
-  });
-
-  updateCount();
-  sectionBody.appendChild(chipsEl);
-  sec.appendChild(hdr);
-  sec.appendChild(sectionBody);
-  body.appendChild(sec);
-}
-
+/**
+ * Renders the dictionary progression pool panel directly into #poolPanel.
+ * Single-select: clicking a chip immediately loads that progression via
+ * dictShowProgression(). Stays in progressions-mode.js because it is tightly
+ * coupled to dictProgSymbol state and dictShowProgression().
+ */
 function renderDictProgressionPoolPanel() {
   const panel = document.getElementById('poolPanel');
   panel.innerHTML = '';
   const { body } = makePoolPanelShell(panel, 'Dictionary — Progressions', null);
 
-  // POINT 50: in Basic mode only show progressions with basic: true
   const visibleProgressions = appDifficulty === 'basic'
     ? PROGRESSIONS.filter(p => p.basic)
     : [...PROGRESSIONS];
@@ -639,11 +535,21 @@ function renderDictProgressionPoolPanel() {
     const items = visibleProgressions.filter(p => p.group === group);
     if (items.length === 0) return;
     const collapsed = PROG_GROUP_COLLAPSED[group] ?? false;
-    makeDictProgSection(body, group, items, collapsed);
+    _makeDictProgSection(body, group, items, collapsed);
   });
 }
 
-function makeDictProgSection(body, title, items, collapsed = false) {
+/**
+ * Builds one collapsible group section for the dict progression pool panel.
+ * Chips are single-select: clicking immediately loads the progression.
+ * No count display or All/None buttons — dict panels are browse-only.
+ *
+ * @param {HTMLElement} body           - The pool panel body to append into.
+ * @param {string}      title          - Section heading text (group name).
+ * @param {object[]}    items          - Progressions for this section ({ symbol, name, ... }).
+ * @param {boolean}     [collapsed=false] - Default collapsed state.
+ */
+function _makeDictProgSection(body, title, items, collapsed = false) {
   const sec = document.createElement('div');
   sec.className = 'pool-section';
 
@@ -690,20 +596,26 @@ function makeDictProgSection(body, title, items, collapsed = false) {
   body.appendChild(sec);
 }
 
-// ─── POINT 38: Dictionary mode for progressions ───────────────────────────────
+// ─── Dictionary mode ──────────────────────────────────────────────────────────
 
+/** Tracks the currently active progression symbol in dict mode. */
 let dictProgSymbol = null;
 
+/**
+ * Loads a progression in dict mode: sets state, resets UI, shows notation
+ * and breakdown immediately, and renders a Hear Slowly button.
+ *
+ * @param {object} prog - A progression descriptor from PROGRESSIONS.
+ */
 function dictShowProgression(prog) {
   currentProgression = prog;
   const pc = pinnedRoot !== null ? pinnedRoot : 0;
   currentProgRootPc   = pc;
   currentProgRootMidi = 12 + pc + 4 * 12;
-  progAnswered = true; // allows notation to show
+  progAnswered = true; // allows notation to render
 
   updateRootBadge(spelledRoot(pc));
 
-  // Reset UI
   document.getElementById('statusMsg').textContent = '';
   document.getElementById('answerDropdownWrap').style.display = 'none';
   document.getElementById('breakdownWrapper').style.display   = 'none';
@@ -711,11 +623,9 @@ function dictShowProgression(prog) {
   const ctrl = document.getElementById('controls');
   ctrl.innerHTML = '';
 
-  // Show notation immediately
   showProgressionNotation();
   showBreakdown();
 
-  // Hear slowly + play buttons
   const sb = document.createElement('button');
   sb.className = 'ctrl-btn slow';
   sb.textContent = '🐢 Hear slowly';
@@ -723,11 +633,14 @@ function dictShowProgression(prog) {
   ctrl.appendChild(sb);
 }
 
-// ─── POINT 38: setAppMode / switchMode / generateQuestion patches ─────────────
+// ─── Mode entry & routing ─────────────────────────────────────────────────────
 
+/**
+ * Entry point called by generateQuestion() when currentMode === 'progressions'.
+ * Routes to dict or quiz flow depending on appMode.
+ */
 function generateProgressionQuestion_entry() {
   if (appMode === 'dict') {
-    // Dict: show first item by default
     if (!dictProgSymbol) dictProgSymbol = PROGRESSIONS[0].symbol;
     const prog = PROGRESSIONS.find(p => p.symbol === dictProgSymbol) || PROGRESSIONS[0];
     renderDictProgressionPoolPanel();
@@ -737,17 +650,24 @@ function generateProgressionQuestion_entry() {
   }
 }
 
+/**
+ * Top-level question dispatcher — routes to the appropriate mode handler.
+ * Overrides the stub defined in app.js (if any); must load after it.
+ */
 function generateQuestion() {
-  if (currentMode === 'intervals') generateIntervalQuestion();
-  else if (currentMode === 'scales') generateScaleQuestion();
+  if (currentMode === 'intervals')    generateIntervalQuestion();
+  else if (currentMode === 'scales')  generateScaleQuestion();
   else if (currentMode === 'progressions') generateProgressionQuestion_entry();
   else generateChordQuestion();
 }
 
+// ─── DOM teardown ─────────────────────────────────────────────────────────────
 
-// ─── POINT 38: Progression DOM teardown ──────────────────────────────────────
-// Restores every DOM element that showProgressionNotation() mutates.
-// Must be called on any mode switch or new question so other modes
+/**
+ * Restores every DOM element that showProgressionNotation() mutates.
+ * Must be called on any mode switch or new question so other modes
+ * get a clean slate.
+ */
 function teardownProgressionUI() {
   // Restore .notation-scroll (hidden by showProgressionNotation)
   const scrollEl = document.querySelector('.notation-scroll');
@@ -764,3 +684,5 @@ function teardownProgressionUI() {
   const ctrl = document.getElementById('controls');
   if (ctrl) ctrl.innerHTML = '';
 }
+
+// @file-end — The Sound Travels Ear Training © 2026
