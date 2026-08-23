@@ -139,19 +139,25 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 
 ## Step 5 — Create `pool-progressions.js`
 
-> Copy from `pool.js` — do not delete from `pool.js` yet.  
-> Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — nothing to copy.
+> Copy from `progressions-mode.js` — do not delete from `progressions-mode.js` yet.  
+> Note: both functions come from `progressions-mode.js`, not from `pool.js` — the pool dispatcher
+> already calls `renderProgressionPoolPanel(panel)` by name; it was never in `pool.js`.  
+> Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — nothing to copy from there.
 
 **Functions to copy:**
 
-| Symbol | Type |
-|---|---|
-| `renderProgressionPoolPanel()` | function |
+| Symbol | Source | Type |
+|---|---|---|
+| `renderProgressionPoolPanel()` | `progressions-mode.js` | function |
+| `makeProgSection()` → rename `_makeProgSection()` | `progressions-mode.js` | private helper function |
 
 - [x] Create `js/ui/pool-progressions.js`
-- [x] Copy `renderProgressionPoolPanel` into `pool-progressions.js`
+- [x] Copy `renderProgressionPoolPanel` from `progressions-mode.js` into `pool-progressions.js`
+- [x] Copy `makeProgSection` from `progressions-mode.js` into `pool-progressions.js`; rename to `_makeProgSection`
+- [ ] Fix `renderProgressionPoolPanel`: restore `metaFn` lambda and `updateMeta()` call; replace `makeSection` with `_makeProgSection`
 - [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
 - [x] Add JSDoc to `renderProgressionPoolPanel`
+- [ ] Add JSDoc to `_makeProgSection`
 - [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
 - [x] Add `@file-end` footer with copyright line
 
@@ -182,7 +188,7 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 - [x] **Intervals tab:** pool panel opens; Simple intervals section visible; chips toggle correctly; Global All / None works; style chips (Harmonic / Ascending / Descending / Random) render and update play label
 - [x] **Chords tab:** pool panel opens; all 12 families visible; Voicing sub-group opens; multi-select chips toggle; Global All / None works; chord style chips render; inversions checkbox present
 - [x] **Scales tab:** pool panel opens; four cardinality groups visible; Pentatonic chips show display names; Global All / None works; direction chips render
-- [x] **Progressions tab:** pool panel opens; groups visible; Global All / None works
+- [ ] **Progressions tab:** pool panel opens; meta count (e.g. `9 / 9`) visible in panel header; three groups visible (Cadences, Classical, Short); two-line chips render correctly (bold Roman numeral symbol + lighter name on one pill); per-section counts update on toggle; per-section All / None buttons work; Global All / None works
 - [x] **Basic / Advanced toggle:** switching modes correctly filters pool chips in all four tabs
 - [x] **Dict mode:** chord pool panel switches to single-select; clicking a chord loads it immediately; voicing single-select works
 - [x] **Post-answer voicing single-select:** after answering a chord question, voicing panel switches to single-select and re-voices on chip click
@@ -207,7 +213,7 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 - [x] Delete all symbols that moved to `pool-chords.js`
 - [x] Delete all symbols that moved to `pool-intervals.js`
 - [x] Delete all symbols that moved to `pool-scales.js`
-- [x] Delete all symbols that moved to `pool-progressions.js`
+- [ ] Delete `renderProgressionPoolPanel` and `makeProgSection` from `progressions-mode.js` (they moved to `pool-progressions.js`; note these were never in `pool.js`)
 - [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
 - [x] Add JSDoc to every remaining function
 - [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
@@ -223,7 +229,7 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 - [x] Add full `pool-chords.js` ARCHITECTURE entry after `pool.js`
 - [x] Add full `pool-intervals.js` ARCHITECTURE entry
 - [x] Add full `pool-scales.js` ARCHITECTURE entry
-- [x] Add full `pool-progressions.js` ARCHITECTURE entry
+- [ ] Update the `pool-progressions.js` ARCHITECTURE entry: add `_makeProgSection` to private helpers; correct source-of-move note (from `progressions-mode.js`); update size estimate; fix Dependencies to remove `makeSection` and add `_makeProgSection` note
 - [x] Update "Last updated" line to `js/ui/pool-progressions.js ✅`
 
 ---

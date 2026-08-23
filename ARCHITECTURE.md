@@ -1177,19 +1177,27 @@ Specialised families extend the schema with additional fields:
 
 ### ✅ js/ui/pool-progressions.js
 
-**Role:** Progression training pool panel rendering. Groups progressions by `PROG_GROUPS` order; respects Basic mode filtering. The smallest pool file — a single public function.
+**Role:** Progression training pool panel rendering. Groups progressions by `PROG_GROUPS` order; respects Basic mode filtering. Uses two-line chips (`prog-pool-chip` with `.prog-chip-sym` + `.prog-chip-name` spans) — a progression-specific design not shared with other pool files.
 
-**Size:** ~40 lines across 1 function.
+**Size:** ~110 lines across 2 functions.
 
 **Public API:**
 
 | Symbol | Type | Description |
 |---|---|---|
-| `renderProgressionPoolPanel(panel)` | `(HTMLElement) → void` | Builds the progression pool panel. Groups follow `PROG_GROUPS` order; collapse state driven by `PROG_GROUP_COLLAPSED`. Called by `renderPoolPanel()`. |
+| `renderProgressionPoolPanel(panel)` | `(HTMLElement) → void` | Builds the progression training pool panel with meta count (e.g. `9 / 9`), global All / None, and per-group sections via `_makeProgSection`. Groups follow `PROG_GROUPS` order; collapse state driven by `PROG_GROUP_COLLAPSED`. Called by `renderPoolPanel()`. |
+
+**Private helpers (not exported, documented for maintainers):**
+
+| Symbol | Description |
+|---|---|
+| `_makeProgSection(body, title, items, collapsed, onChangeFn)` | Builds one collapsible group section with two-line pool chips (`prog-pool-chip`): bold Roman numeral symbol (`.prog-chip-sym`) + lighter name (`.prog-chip-name`) on a single pill. Includes per-section count display and All / None buttons. Reads/writes `selectedProgressions` directly. |
 
 **Note:** `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — no constants defined here.
 
-**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`, `makeSection`), `state.js`, `defaults.js`, `progressions.js` (`PROGRESSIONS`, `PROG_GROUPS`, `PROG_GROUP_COLLAPSED`).
+**Note on provenance:** Both functions migrated from `progressions-mode.js` during the progressions-mode production pass — they were never in `pool.js`. The dict-mode equivalents (`renderDictProgressionPoolPanel`, `makeDictProgSection`) remain in `progressions-mode.js` because they are tightly coupled to dict state (`dictProgSymbol`, `dictShowProgression`).
+
+**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`), `state.js` (`appDifficulty`, `selectedProgressions`), `defaults.js`, `progressions.js` (`PROGRESSIONS`, `PROG_GROUPS`, `PROG_GROUP_COLLAPSED`).
 
 **Consumed by:** `pool.js` (`renderPoolPanel` dispatcher).
 

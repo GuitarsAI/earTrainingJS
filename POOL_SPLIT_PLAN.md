@@ -153,21 +153,27 @@ Note: `makeSectionWithDisplayName` does not move — it was deleted in Step 1.
 
 ## Step 6 — Create `pool-progressions.js`
 
-**Functions to move from `pool.js`:**
+**Functions to move:**
 
-| Symbol | Type |
-|---|---|
-| `renderProgressionPoolPanel()` | function |
+| Symbol | Source file | Type |
+|---|---|---|
+| `renderProgressionPoolPanel()` | `progressions-mode.js` | function |
+| `makeProgSection()` → rename `_makeProgSection()` | `progressions-mode.js` | private helper function |
 
-Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — nothing to move.
+Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — nothing to move from there.
+Note: Both functions move from `progressions-mode.js`, not from `pool.js`. The `pool.js` dispatcher already calls `renderProgressionPoolPanel(panel)` by name.
 
 - [x] Create `js/ui/pool-progressions.js`
-- [x] Move `renderProgressionPoolPanel` from `pool.js` into `pool-progressions.js`
+- [x] Move `renderProgressionPoolPanel` from `progressions-mode.js` into `pool-progressions.js`
+- [x] Move `makeProgSection` from `progressions-mode.js` into `pool-progressions.js`; rename to `_makeProgSection` to match pool-layer private helper convention
+- [ ] Fix `renderProgressionPoolPanel` in `pool-progressions.js`: restore the `metaFn` lambda (meta count `N / total`) and the `updateMeta()` call; replace `makeSection` call with `_makeProgSection`
+- [ ] Delete `renderProgressionPoolPanel` and `makeProgSection` from `progressions-mode.js`
 - [x] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
 - [x] Add JSDoc to `renderProgressionPoolPanel`
+- [ ] Add JSDoc to `_makeProgSection` (two-line chip builder: `prog-pool-chip` with `.prog-chip-sym` + `.prog-chip-name` spans)
 - [x] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
 - [x] Add `@file-end` footer with copyright line
-- [x] Verify `pool-progressions.js` references only: shared primitives from `pool.js`, and globals from `state.js`, `defaults.js`, `progressions.js`
+- [ ] Verify `pool-progressions.js` references only: shared primitives from `pool.js`, and globals from `state.js`, `defaults.js`, `progressions.js`
 
 ---
 
@@ -193,7 +199,7 @@ Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data l
 - [x] **Intervals tab:** pool panel opens; Simple intervals section visible; chips toggle correctly; Global All / None works; style chips (Harmonic / Ascending / Descending / Random) render and update play label
 - [x] **Chords tab:** pool panel opens; all 12 families visible; Voicing sub-group opens; multi-select chips toggle; Global All / None works; chord style chips render; inversions checkbox present
 - [x] **Scales tab:** pool panel opens; four cardinality groups visible; Pentatonic chips show display names (e.g. "Major Pentatonic / Ionian Pentatonic"); Global All / None works; direction chips render
-- [x] **Progressions tab:** pool panel opens; groups visible; Global All / None works
+- [ ] **Progressions tab:** pool panel opens; meta count (e.g. `9 / 9`) visible in panel header; three groups visible (Cadences, Classical, Short); two-line chips render correctly (bold Roman numeral symbol + lighter name on one pill); per-section counts update on toggle; per-section All / None buttons work; Global All / None works
 - [x] **Basic / Advanced toggle:** switching modes correctly filters pool chips in all four tabs
 - [x] **Dict mode:** chord pool panel switches to single-select; clicking a chord loads it immediately; voicing single-select works
 - [x] **Post-answer voicing single-select:** after answering a chord question, voicing panel switches to single-select mode and re-voices on chip click
@@ -209,7 +215,7 @@ Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data l
 - [x] Add the full `pool-chords.js` ARCHITECTURE entry
 - [x] Add the full `pool-intervals.js` ARCHITECTURE entry
 - [x] Add the full `pool-scales.js` ARCHITECTURE entry
-- [x] Add the full `pool-progressions.js` ARCHITECTURE entry
+- [ ] Update the `pool-progressions.js` ARCHITECTURE entry: add `_makeProgSection` to the private helpers table; correct the source-of-move note (from `progressions-mode.js`, not `pool.js`); update size estimate; fix Dependencies to remove `makeSection` reference
 - [x] Update "Last updated" line to `js/ui/pool-progressions.js ✅`
 
 ---
