@@ -1,13 +1,50 @@
-// ─── breakdown-progressions.js ────────────────────────────────────────────────
-// Progressions branch of the breakdown panel.
-// Depends on shared helpers/globals defined in breakdown.js:
-//   makeNameHeader, makeBDRow, makeCSGroup, makeChordScalesRow, joinSep,
-//   intervalAbbr, qualityFullName, spelledRoot, spelledNote, pcInterval,
-//   currentMode, currentProgression, currentProgRootPc, currentProgRootMidi,
-//   PROG_DEGREES, PROG_QUALITIES, progChordMidi, CHORD_TYPES
-// Called from showBreakdown() in breakdown.js.
-// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * @file breakdown-progressions.js
+ * @description Progressions branch of the post-answer breakdown panel for The Sound Travels
+ * Ear Training. Renders per-chord theory information for each step in the current
+ * progression — degree label, chord name, notes, intervals from root, harmonic
+ * function, and chord scales — as a series of collapsible sections inside the
+ * shared breakdown panel.
+ *
+ * Responsibilities:
+ *   - Lookup table: `HARMONIC_FUNCTION`
+ *   - Theory helper: `progFunctionNote()`
+ *   - Renderer:      `showBreakdownProgressions()`
+ *
+ * Dependencies (globals from earlier layers):
+ *   `makeNameHeader`, `makeBDRow`, `makeChordScalesRow`, `joinSep`, `intervalAbbr`,
+ *   `qualityFullName`, `spelledRoot`, `spelledNote`,
+ *   `currentProgression`, `currentProgRootPc`, `currentProgRootMidi`,
+ *   `PROG_DEGREES`, `PROG_QUALITIES`, `progChordMidi`, `CHORD_TYPES`
+ *
+ * Load order: after `breakdown-scales.js`, before `stats.js`.
+ *
+ * @module breakdown-progressions
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
 
+// ─── Lookup table ─────────────────────────────────────────────────────────────
+
+/**
+ * Harmonic function descriptions keyed first by semitone offset from the tonic
+ * (0–11), then by chord quality symbol. Each bucket must contain a `'default'`
+ * entry used as the fallback when no quality-specific override exists.
+ *
+ * Entry shape per degree:
+ * ```
+ * {
+ *   default: string,          // shown when no quality match is found
+ *   [qualSym: string]: string // override for a specific quality (e.g. 'm', '7', 'maj7')
+ * }
+ * ```
+ *
+ * Quality symbol keys match the internal chord symbol strings used throughout
+ * the app (e.g. `'m'`, `'7'`, `'maj7'`, `'m7'`, `'m7b5'`, `'dim'`, `'o7'`).
+ *
+ * @type {Object.<number, { default: string, [qualSym: string]: string }>}
+ */
 const HARMONIC_FUNCTION = {
   0: {
     default: 'Tonic. Home chord — the point of rest and resolution.',
@@ -75,12 +112,45 @@ const HARMONIC_FUNCTION = {
   },
 };
 
+// ─── Theory helper ────────────────────────────────────────────────────────────
+
+/**
+ * Returns the harmonic function description string for a chord within a
+ * progression. Looks up the degree semitone offset in `HARMONIC_FUNCTION`,
+ * then tries the quality-specific override before falling back to `'default'`.
+ *
+ * @param {number} degSemis - Semitone offset of the scale degree from the tonic (0–11).
+ * @param {string} qualSym  - Internal chord quality symbol (e.g. `'m'`, `'7'`, `'maj7'`).
+ * @returns {string|null} Harmonic function description, or `null` if the degree
+ *   has no entry in `HARMONIC_FUNCTION`.
+ */
 function progFunctionNote(degSemis, qualSym) {
   const bucket = HARMONIC_FUNCTION[((degSemis % 12) + 12) % 12];
   if (!bucket) return null;
   return bucket[qualSym] || bucket.default || null;
 }
 
+// ─── Renderer ─────────────────────────────────────────────────────────────────
+
+/**
+ * Renders the complete progressions breakdown into the given panel element.
+ * Called by `showBreakdown()` in `breakdown.js` whenever the current mode is
+ * `'progressions'`.
+ *
+ * Renders a name header (progression symbol + name), then one collapsible
+ * `cs-section` per chord in the progression. Each chord section contains:
+ *   - Notes (spelled note names)
+ *   - From root (interval abbreviations from the chord root)
+ *   - Function (harmonic function description from `HARMONIC_FUNCTION`)
+ *   - Chord scales (via `makeChordScalesRow()`, already mobile-aware)
+ *
+ * The renderer uses `cs-section` collapsibles directly inside `progBody` with
+ * no outer `breakdown-row` wrapper, so all content is full-width on every
+ * viewport size. No mobile-specific path is required.
+ *
+ * @param {HTMLElement} panel - The breakdown panel element to render into.
+ * @returns {void}
+ */
 function showBreakdownProgressions(panel) {
   if (!currentProgression) return;
 
@@ -93,12 +163,11 @@ function showBreakdownProgressions(panel) {
   currentProgression.degrees.forEach((degSemis, i) => {
     const qualSym = currentProgression.qualities[i];
 
-    const degObj  = PROG_DEGREES.find(d => d.semi === degSemis)   || { label: '?' };
-    const qualObj = PROG_QUALITIES.find(q => q.sym === qualSym)   || { label: qualSym };
+    const degObj  = PROG_DEGREES.find(d => d.semi === degSemis)  || { label: '?' };
+    const qualObj = PROG_QUALITIES.find(q => q.sym === qualSym)  || { label: qualSym };
 
     const chordRootPc   = (currentProgRootPc + degSemis + 12) % 12;
     const chordRootName = spelledRoot(chordRootPc);
-
     const chordRootMidi = currentProgRootMidi + degSemis;
     const midiNotes     = progChordMidi(chordRootMidi, qualSym);
 
@@ -107,7 +176,6 @@ function showBreakdownProgressions(panel) {
       return spelledNote(semi, chordRootPc, qualSym);
     });
 
-    // Build cs-section with custom header showing degree + chord name
     const section = document.createElement('div');
     section.className = 'cs-section';
     section.style.margin = '0.35rem 0';
@@ -148,8 +216,8 @@ function showBreakdownProgressions(panel) {
     makeBDRow(chordBody, 'Notes', joinSep(noteNames));
 
     const allChordTypes = [
-      ...CHORD_TYPES.major,    ...CHORD_TYPES.minor,
-      ...CHORD_TYPES.dominant, ...CHORD_TYPES.diminished,
+      ...CHORD_TYPES.major,     ...CHORD_TYPES.minor,
+      ...CHORD_TYPES.dominant,  ...CHORD_TYPES.diminished,
       ...CHORD_TYPES.augmented, ...CHORD_TYPES.suspended,
     ];
     const ct = allChordTypes.find(c => c.symbol === qualSym);
@@ -168,3 +236,8 @@ function showBreakdownProgressions(panel) {
   panel.style.display = 'block';
   document.getElementById('breakdownWrapper').style.display = 'block';
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// breakdown-progressions.js — The Sound Travels Ear Training
+// © 2026 Renato Fera P. — The Sound Travels — MIT License
+// ─────────────────────────────────────────────────────────────────────────────

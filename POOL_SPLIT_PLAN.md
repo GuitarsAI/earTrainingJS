@@ -2,7 +2,8 @@
 
 > **Pattern:** mirrors the `js/breakdown/` split exactly.  
 > **Result:** `pool.js` (shared primitives + dispatcher) + 4 mode-specific files.  
-> **Risk:** low — pure reorganisation, zero logic changes except the `makeSection` merge.
+> **Risk:** low — pure reorganisation, zero logic changes except the `makeSection` merge.  
+> **Complete this plan before touching `ARCHITECTURE.md` or `index.html`.**
 
 ---
 
@@ -29,37 +30,50 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 
 ---
 
-## Sequencing rules
+## Step 1 — Merge `makeSection` and `makeSectionWithDisplayName`
 
-- **Create all four split files first.** Do not touch `index.html` or `pool.js` until all four files exist.
-- **Wire `index.html` only when all four files are ready.** Add all five script tags at once.
-- **Smoke test immediately after wiring.** At this point `pool.js` still has all the original code — duplication is intentional and temporary.
-- **Delete from `pool.js` last**, after smoke test passes. This is the only moment `pool.js` shrinks.
-- **JSDoc pass on `pool.js` happens during the delete step**, not before.
-
----
-
-## Step 1 — Merge `makeSection` and `makeSectionWithDisplayName` in `pool.js`
-
-> The only logic change in the entire split. Do it first, in isolation, and verify before
-> creating any new files.
+> Do this first, in the original `pool.js`, before the split. Confirms the merge works before
+> adding the complexity of moving files.
 
 - [ ] In `pool.js`, add an optional `useDisplayName = false` parameter to `makeSection`
 - [ ] Inside `makeSection`, change the chip label line to:
   `chip.textContent = useDisplayName ? (item.displayName || item.name) : item.name;`
-- [ ] Delete `makeSectionWithDisplayName` entirely from `pool.js`
-- [ ] In `renderScalePoolPanel` (still in `pool.js`), change the `makeSectionWithDisplayName` call to:
+- [ ] Delete `makeSectionWithDisplayName` entirely
+- [ ] In `renderScalePoolPanel`, change the `makeSectionWithDisplayName` call to:
   `makeSection(body, title, items, selectedScales, onChange, true, true)`
 - [ ] Verify in the browser: Pentatonic chips still show `displayName` (e.g. "Major Pentatonic / Ionian Pentatonic"); all other scale chips unchanged
 - [ ] Verify chord, interval, and progression pool panels unaffected
 
 ---
 
-## Step 2 — Create `pool-chords.js`
+## Step 2 — Create `pool.js` (shared primitives + dispatcher)
 
-> Copy from `pool.js` — do not delete from `pool.js` yet.
+> Strip everything mode-specific out of the current `pool.js`. What remains is the shared
+> primitive layer and the top-level dispatcher.
 
-**Functions and constants to copy:**
+**Functions that stay in `pool.js`:**
+
+| Function | Notes |
+|---|---|
+| `renderPoolPanel()` | Top-level dispatcher — routes to the four mode renderers |
+| `makePoolPanelShell()` | Used by all four mode renderers |
+| `makeGlobalAllNone()` | Used by chords, intervals, scales, progressions |
+| `makeSection()` | Used by chords, intervals, scales, progressions (now merged) |
+| `_makeSubGroup()` | Used by `pool-chords.js` only, but is a primitive builder — stays here |
+| `_makeAllNoneBtn()` | Used by `pool-chords.js` voicing section |
+
+- [ ] Confirm the list above against the current file — nothing else belongs in `pool.js`
+- [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
+- [ ] Add JSDoc to every function in `pool.js`
+- [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
+- [ ] Add `@file-end` footer with copyright line
+- [ ] Verify `pool.js` has no references to `currentMode`, `appDifficulty`, or any mode-specific state beyond what `renderPoolPanel()` needs to dispatch
+
+---
+
+## Step 3 — Create `pool-chords.js`
+
+**Functions to move from `pool.js`:**
 
 | Symbol | Type |
 |---|---|
@@ -83,21 +97,20 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 | `renderChordStyleChips()` | function |
 
 - [ ] Create `js/ui/pool-chords.js`
-- [ ] Copy all symbols above into `pool-chords.js` in logical order: constants first, private helpers, public renderers last
-- [ ] Remove the duplicate `// POINT 41: Voicing section` comment block — keep only one description
+- [ ] Move all symbols listed above from `pool.js` into `pool-chords.js`, in a logical order (constants first, then private helpers, then public renderers)
+- [ ] Remove the duplicate `// POINT 41: Voicing section` comment block (lines ~352–370 in the original) — keep only one description
 - [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
 - [ ] Add JSDoc to all public functions (`renderChordPoolPanel`, `renderChordStyleChips`)
-- [ ] Add JSDoc to all private helpers
+- [ ] Add JSDoc to all private helpers (describe what each builds, not how)
 - [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
 - [ ] Add `@file-end` footer with copyright line
+- [ ] Verify `pool-chords.js` references only: shared primitives from `pool.js`, and globals from `state.js`, `defaults.js`, `chords.js`, `voicings.js`, `audio.js`, `notation.js`
 
 ---
 
-## Step 3 — Create `pool-intervals.js`
+## Step 4 — Create `pool-intervals.js`
 
-> Copy from `pool.js` — do not delete from `pool.js` yet.
-
-**Functions and constants to copy:**
+**Functions to move from `pool.js`:**
 
 | Symbol | Type |
 |---|---|
@@ -105,20 +118,18 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 | `renderIntervalStyleChips()` | function |
 
 - [ ] Create `js/ui/pool-intervals.js`
-- [ ] Copy both functions into `pool-intervals.js`
+- [ ] Move both functions from `pool.js` into `pool-intervals.js`
 - [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
 - [ ] Add JSDoc to both functions
 - [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
 - [ ] Add `@file-end` footer with copyright line
+- [ ] Verify `pool-intervals.js` references only: shared primitives from `pool.js`, and globals from `state.js`, `defaults.js`, `intervals.js`, `notation.js`
 
 ---
 
-## Step 4 — Create `pool-scales.js`
+## Step 5 — Create `pool-scales.js`
 
-> Copy from `pool.js` — do not delete from `pool.js` yet.  
-> Note: `makeSectionWithDisplayName` does not appear here — it was merged into `makeSection` in Step 1.
-
-**Functions and constants to copy:**
+**Functions and constants to move from `pool.js`:**
 
 | Symbol | Type |
 |---|---|
@@ -127,39 +138,40 @@ No split file depends on another split file. All four depend on `pool.js` for sh
 | `renderScalePoolPanel()` | function |
 | `renderScaleDirChips()` | function |
 
+Note: `makeSectionWithDisplayName` does not move — it was deleted in Step 1.
+
 - [ ] Create `js/ui/pool-scales.js`
-- [ ] Copy all symbols above into `pool-scales.js`
+- [ ] Move all symbols listed above from `pool.js` into `pool-scales.js`
 - [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
 - [ ] Add JSDoc to all functions and the `SCALE_GROUP_CONFIG` constant
-- [ ] Document `iterateScaleGroups` carefully — single source of truth for scale group structure, consumed by both quiz and dict renderers
+- [ ] Document `iterateScaleGroups` carefully — it is the single source of truth for scale group structure and is consumed by both quiz and dict renderers
 - [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
 - [ ] Add `@file-end` footer with copyright line
+- [ ] Verify `pool-scales.js` references only: shared primitives from `pool.js`, and globals from `state.js`, `defaults.js`, `scales.js`, `notation.js`
 
 ---
 
-## Step 5 — Create `pool-progressions.js`
+## Step 6 — Create `pool-progressions.js`
 
-> Copy from `pool.js` — do not delete from `pool.js` yet.  
-> Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — nothing to copy.
-
-**Functions to copy:**
+**Functions to move from `pool.js`:**
 
 | Symbol | Type |
 |---|---|
 | `renderProgressionPoolPanel()` | function |
 
+Note: `PROG_GROUPS` and `PROG_GROUP_COLLAPSED` live in `progressions.js` (data layer) — nothing to move.
+
 - [ ] Create `js/ui/pool-progressions.js`
-- [ ] Copy `renderProgressionPoolPanel` into `pool-progressions.js`
+- [ ] Move `renderProgressionPoolPanel` from `pool.js` into `pool-progressions.js`
 - [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires pool.js`)
 - [ ] Add JSDoc to `renderProgressionPoolPanel`
 - [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
 - [ ] Add `@file-end` footer with copyright line
+- [ ] Verify `pool-progressions.js` references only: shared primitives from `pool.js`, and globals from `state.js`, `defaults.js`, `progressions.js`
 
 ---
 
-## Step 6 — Update `index.html`
-
-> All four split files must exist before this step.
+## Step 7 — Update `index.html`
 
 - [ ] Locate the current `<script src="js/ui/pool.js">` tag
 - [ ] Replace it with the five new script tags in load order:
@@ -171,59 +183,33 @@ No split file depends on another split file. All four depend on `pool.js` for sh
   <script src="js/ui/pool-progressions.js"></script>
   ```
 - [ ] Confirm these five tags appear after `stats.js` and before the `js/modes/` tags
+- [ ] Confirm no other script tag references the old `pool.js` content
 
 ---
 
-## Step 7 — Smoke test
-
-> At this point `pool.js` still has all original code. Duplication is intentional and temporary.
+## Step 8 — Smoke test
 
 - [ ] Open the app in the browser — no console errors on load
 - [ ] **Intervals tab:** pool panel opens; Simple intervals section visible; chips toggle correctly; Global All / None works; style chips (Harmonic / Ascending / Descending / Random) render and update play label
 - [ ] **Chords tab:** pool panel opens; all 12 families visible; Voicing sub-group opens; multi-select chips toggle; Global All / None works; chord style chips render; inversions checkbox present
-- [ ] **Scales tab:** pool panel opens; four cardinality groups visible; Pentatonic chips show display names; Global All / None works; direction chips render
+- [ ] **Scales tab:** pool panel opens; four cardinality groups visible; Pentatonic chips show display names (e.g. "Major Pentatonic / Ionian Pentatonic"); Global All / None works; direction chips render
 - [ ] **Progressions tab:** pool panel opens; groups visible; Global All / None works
 - [ ] **Basic / Advanced toggle:** switching modes correctly filters pool chips in all four tabs
 - [ ] **Dict mode:** chord pool panel switches to single-select; clicking a chord loads it immediately; voicing single-select works
-- [ ] **Post-answer voicing single-select:** after answering a chord question, voicing panel switches to single-select and re-voices on chip click
-
----
-
-## Step 8 — Delete moved code from `pool.js` + JSDoc pass
-
-> Only after smoke test passes. This is the only step that shrinks `pool.js`.
-
-**What stays in `pool.js` after the delete:**
-
-| Symbol | Notes |
-|---|---|
-| `renderPoolPanel()` | Top-level dispatcher |
-| `makePoolPanelShell()` | Used by all four mode renderers |
-| `makeGlobalAllNone()` | Used by all four mode renderers |
-| `makeSection()` | Used by all four mode renderers (merged) |
-| `_makeSubGroup()` | Primitive builder — stays in shared layer |
-| `_makeAllNoneBtn()` | Primitive builder — stays in shared layer |
-
-- [ ] Delete all symbols that moved to `pool-chords.js`
-- [ ] Delete all symbols that moved to `pool-intervals.js`
-- [ ] Delete all symbols that moved to `pool-scales.js`
-- [ ] Delete all symbols that moved to `pool-progressions.js`
-- [ ] Add JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
-- [ ] Add JSDoc to every remaining function
-- [ ] Remove all `// POINT X:` dev comments; replace any worth keeping with plain inline comments
-- [ ] Add `@file-end` footer with copyright line
-- [ ] Reload the app — no console errors; repeat smoke test spot-checks
+- [ ] **Post-answer voicing single-select:** after answering a chord question, voicing panel switches to single-select mode and re-voices on chip click
+- [ ] **No ghost functions:** confirm `makeSectionWithDisplayName` is gone from `pool.js` and does not appear anywhere else in the codebase
 
 ---
 
 ## Step 9 — Update `ARCHITECTURE.md`
 
 - [ ] In the repository structure tree, update the `js/ui/` block to show all five pool files with ✅
-- [ ] Replace `pool.js [ ] pending` placeholder with full `pool.js` ARCHITECTURE entry
-- [ ] Add full `pool-chords.js` ARCHITECTURE entry after `pool.js`
-- [ ] Add full `pool-intervals.js` ARCHITECTURE entry
-- [ ] Add full `pool-scales.js` ARCHITECTURE entry
-- [ ] Add full `pool-progressions.js` ARCHITECTURE entry
+- [ ] Change `pool.js [ ] pending` to `✅ production pass complete`
+- [ ] Add the full `pool.js` ARCHITECTURE entry (shared primitives + dispatcher)
+- [ ] Add the full `pool-chords.js` ARCHITECTURE entry
+- [ ] Add the full `pool-intervals.js` ARCHITECTURE entry
+- [ ] Add the full `pool-scales.js` ARCHITECTURE entry
+- [ ] Add the full `pool-progressions.js` ARCHITECTURE entry
 - [ ] Update "Last updated" line to `js/ui/pool-progressions.js ✅`
 
 ---

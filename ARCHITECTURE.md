@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: js/engine/notation.js ✅
+> Last updated: js/ui/controls.js ✅
 
 ---
 
@@ -56,17 +56,17 @@ earTrainingJS/
 │   │   ├── helpers.js                 ✅ production pass complete
 │   │   ├── audio.js                   ✅ production pass complete
 │   │   ├── notation.js                ✅ production pass complete
-│   │   ├── voicings.js                [ ] pending
-│   │   └── voiceLeading.js            [ ] pending
+│   │   ├── voicings.js                ✅ production pass complete
+│   │   └── voiceLeading.js            ✅ production pass complete
 │   ├── breakdown/
-│   │   ├── breakdown.js               [ ] pending
-│   │   ├── breakdown-intervals.js     [ ] pending
-│   │   ├── breakdown-chords.js        [ ] pending
-│   │   ├── breakdown-scales.js        [ ] pending
-│   │   └── breakdown-progressions.js  [ ] pending
+│   │   ├── breakdown.js               ✅ production pass complete
+│   │   ├── breakdown-intervals.js     ✅ production pass complete
+│   │   ├── breakdown-chords.js        ✅ production pass complete
+│   │   ├── breakdown-scales.js        ✅ production pass complete
+│   │   └── breakdown-progressions.js  ✅ production pass complete
 │   ├── ui/
-│   │   ├── stats.js                   [ ] pending
-│   │   ├── controls.js                [ ] pending
+│   │   ├── stats.js                   ✅ production pass complete
+│   │   ├── controls.js                ✅ production pass complete
 │   │   └── pool.js                    [ ] pending
 │   ├── modes/
 │   │   ├── chords-mode.js             [ ] pending
@@ -742,48 +742,318 @@ Specialised families extend the schema with additional fields:
 
 ---
 
-### js/engine/voicings.js
-[ ] — pending production pass
+### ✅ js/engine/voicings.js
+
+**Role:** Voicing system for Chords mode. Owns the complete voicing data table (`VOICING_MODES`, 62 voicings across 6 groups) and all voicing transformation algorithms. `applyVoicing()` is the single entry point that transforms a chord's root and base intervals into a concrete MIDI note array for a given voicing style. `resolveVoicingMode()` picks one concrete mode per question from the user's selection or active setting.
+
+**Size:** ~1,130 lines across 10 functions (6 internal helpers, 1 main dispatcher, 1 resolver, 2 constants).
+
+**Public functions:**
+
+| Function | Signature | Description |
+|---|---|---|
+| `applyVoicing(rootMidi, baseIntervals, mode)` | `(number, number[], string) → number[]` | Main dispatcher. Routes to the correct voicing algorithm for the given mode symbol and returns a sorted MIDI note array. Every voicing mode in `VOICING_MODES` has a corresponding case. Falls back to `'close'` on any error or unrecognised mode. Called recursively by some cases that fall back to simpler modes (e.g. shell voicings fall back to `'close'` for triads with no 7th). |
+| `resolveVoicingMode()` | `() → string` | Picks one concrete voicing symbol for the current question. In quiz mode: picks randomly from `selectedVoicings`, filtering out `'random'` and (in Basic mode) any advanced symbols. In dictionary mode with `activeVoicingMode === 'random'`: picks randomly from all concrete symbols scoped to difficulty. In dictionary mode with a concrete `activeVoicingMode`: returns it directly. Never returns `'random'`. |
+
+**Internal helpers:**
+
+| Function | Signature | Description |
+|---|---|---|
+| `_voicingRoles(baseIntervals)` | `(number[]) → string[]` | Classifies each interval by harmonic role (`'root'`, `'third'`, `'fifth'`, `'altfifth'`, `'seventh'`, `'extension'`). Used throughout `applyVoicing()` to select notes by function rather than raw semitone value. |
+| `_notesByRole(rootMidi, baseIntervals, roles)` | `(number, number[], string[]) → number[]` | Extracts MIDI notes matching specific harmonic roles from a chord's base intervals. |
+| `_pc(midi, rootMidi)` | `(number, number) → number` | Returns the pitch class of a MIDI note as a semitone interval from root (0–11). |
+| `_clampToRange(midi, loMidi, hiMidi)` | `(number, number, number) → number` | Clamps a MIDI note into a target range by transposing by octaves. |
+| `_noteFromInterval(rootMidi, semitones, targetLoMidi)` | `(number, number, number) → number` | Builds a MIDI note from a semitone offset, clamped to a 2-octave window from `targetLoMidi`. |
+| `_stackFourths(startMidi, n)` | `(number, number) → number[]` | Builds `n` notes stacked in perfect fourths from a starting MIDI note. Used by `quartal` and `mccoy_tyner` voicings. |
+| `_stackFifths(startMidi, n)` | `(number, number) → number[]` | Builds `n` notes stacked in perfect fifths. Used by `quintal` voicing. |
+
+**Key design patterns:**
+
+- **62 voicings across 6 groups:** Group 1 Position (3), Group 2 Doubling (4), Group 3 Shell/Rootless (27), Group 4 Drop (4), Group 5 Intervallic (7), Group 6 Style (17). All symbols are in `VOICING_MODES`; `CONCRETE_VOICING_SYMBOLS` is derived from it at startup.
+- **Role-based note selection:** `_voicingRoles()` maps semitone intervals to functional labels so algorithms like `shell`, `drop2`, and `evans_a` work correctly across all chord qualities without hard-coding interval numbers.
+- **Intervallic voicing design (Group 5):** Notes are stacked freely — non-chord tones are intentional; the ambiguity is the sound. Note count: triads → 4 notes; all other chords → 5 notes. Bass clamped to MIDI 36–59; all notes clamped within 2 octaves above bass. `cluster_modal` removed (not distinct from `cluster_diaton` per Persichetti). `secundal` = diatonic-step stacking (m2/M2 mix); `cluster_wt` = pure whole-tone stacking (always M2).
+- **Basic mode scoping:** `resolveVoicingMode()` restricts the pool to position and doubling groups (Groups 1–2) when `appDifficulty === 'basic'`. Advanced voicings (shell, drop, intervallic, style) are only available in Advanced mode.
+- **Graceful fallback:** `applyVoicing()` wraps all cases in try/catch and returns a close-position array on any error. Individual cases fall back to `'close'` when the chord lacks a required tone (e.g. no 7th for shell voicings on triads).
+
+**Dependencies:** `state.js` (`appMode`, `appDifficulty`, `selectedVoicings`, `activeVoicingMode`), `helpers.js` (implicit globals).
+
+**Consumed by:** `helpers.js` (`recomputeCurrentNotes`), `app.js` (`recomputeCurrentNotes`).
 
 ---
 
-### js/engine/voiceLeading.js
-[ ] — pending production pass
+### ✅ js/engine/voiceLeading.js
+
+**Role:** Voice leading and harmonic resolution engine (Point 37, Option B). Given any chord, discovers every diatonic context it fits across all 46 scales × 12 roots, scores harmonic tension per context, derives resolution targets (resolutions, departures, substitutions), and computes globally optimal voice leading to each target via backtracking search. All functions are pure and stateless — no DOM access, no app state mutations.
+
+**Size:** ~919 lines across 14 functions plus 2 startup constants.
+
+**Public API:**
+
+| Function | Signature | Description |
+|---|---|---|
+| `analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi, chordFamily)` | `(number, number[]|Set, number[], number[], string) → { contexts, isAmbiguous }` | Main entry point. Runs the full five-stage pipeline and returns all diatonic contexts, each enriched with pre-computed resolution targets and voice leading moves. Substitutions carry no voice leading. Families in `AMBIGUOUS_FAMILIES` (aug, suspended, poly, UST) return `isAmbiguous: true` and fall back to existing app logic. |
+
+**Pipeline functions:**
+
+| Function | Signature | Description |
+|---|---|---|
+| `findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals)` | `(number, Iterable, number[]) → Object[]` | Step 3. Tests all 552 scale/root combinations. Pass 1: exact match (all chord PCs in scale). Pass 2: fuzzy match for altered dominants (core tones only: root + M3 + m7). Sorts results by musical relevance: dominant function → diatonic group → match quality → scale commonality → tension. |
+| `scoreTension(degSemitones, chordPcs, chordRootPc)` | `(number, Set, number) → number` | Step 4. Combines `BASE_TENSION` for the scale degree with modifiers for tritone presence (+0.08) and chromatic alterations (+0.04 each). Capped at 1.0. |
+| `deriveResolutionTargets(context, chordRootPc)` | `(Object, number) → { resolutions, departures, substitutions }` | Step 5. Returns harmonic motion targets per function: tonic → departures (I→IV/V/ii/vi); dominant → resolutions (V→I/i/vi) + substitutions (tritone sub, related ii); subdominant → resolutions (IV→V/I); predominant → resolutions (ii→V/I). |
+| `computeVoiceLeadingRules(sourceMidi, targetRootPc, targetSymbol, context)` | `(number[], number, string, Object) → Object[]` | Step 6 orchestrator. Runs: `resolveTargetIntervals` → `generateCandidates` → `assignByMinCost` → `repairVoiceCrossing` → `buildMoves`. |
+
+**Voice leading sub-functions:**
+
+| Function | Signature | Description |
+|---|---|---|
+| `resolveTargetIntervals(targetSymbol)` | `(string) → number[]` | Looks up pitch-class intervals for a `CHORD_TYPES` symbol from `CHORD_SYMBOL_INTERVALS`. Falls back to `[0,4,7]` for unknown symbols. |
+| `generateCandidates(targetRootPc, targetIntervals, sourceMidi)` | `(number, number[], number[]) → Object[]` | Enumerates every reachable MIDI note for each target PC within ±12 semitones of the source range, guaranteeing the nearest instance of every target PC is available to every voice. |
+| `moveCost(delta, isBass)` | `(number, boolean) → number` | Cost function: common tones = 0; steps/thirds = distance; leaps = distance + `LEAP_PENALTY` (8). Bass leap penalty halved to allow natural bass motion by 4th/5th. |
+| `assignByMinCost(sourceMidi, candidates)` | `(number[], Object[]) → Object[]` | Globally optimal assignment via backtracking search with branch pruning. No two voices share the same MIDI note. For N ≤ 7 voices, exhaustive search with pruning is trivially fast. |
+| `repairVoiceCrossing(assignments)` | `(Object[]) → Object[]` | Post-processing: swaps adjacent voice pairs when a crossing exists and the swap strictly reduces total cost. Uses strict `<` to guarantee convergence with no cycling risk. |
+| `buildMoves(assignments)` | `(Object[]) → Object[]` | Converts assignments to UI move objects: `{ fromMidi, toMidi, fromPc, toPc, semitones, direction, reason }`. |
+
+**Key design patterns:**
+
+- **Cost function as theory:** The voice leading rules (leading tone rises, seventh falls) emerge from the cost function — not from named-note detection. Those moves have cost 1, the minimum possible for a non-common-tone. No note names are detected anywhere in the voice leading computation.
+- **Fuzzy match for altered dominants:** Chords like `7(♭9)(♯11)(♭13)` have no exact scale match because their extensions are chromatic by design. The fuzzy pass matches on root + M3 + m7 only, then filters to dominant-function contexts, correctly finding the V → I resolution.
+- **`CHORD_SYMBOL_INTERVALS` startup index:** Built once from `CHORD_TYPES` at load time — auto-updates when new chord entries are added, no manual maintenance.
+- **Five-sort context ranking:** Dominant-quality chords always surface their V context first, regardless of how many other exotic scale contexts also contain the chord tones.
+- **Substitutions excluded from voice leading:** Tritone sub and related ii are reharmonisation alternatives, not resolution targets. They appear in `ctx.substitutions` with no `voiceLeading` property.
+
+**Dependencies:** `chords.js` (`CHORD_TYPES`), `scales.js` (`SCALES`), `breakdown.js` (`semitoneToDegree`).
+
+**Consumed by:** `breakdown.js` (`_buildVoiceLeadingAnalysis`), `breakdown-chords.js`.
 
 ---
 
-### js/breakdown/breakdown.js
-[ ] — pending production pass
+### ✅ js/breakdown/breakdown.js
+
+**Role:** Shared foundation for the post-answer breakdown panel. Provides all lookup tables, pure theory helpers, reusable DOM builders, chord-scales analysis, resolution state and playback, and the main `showBreakdown()` / `hideBreakdown()` dispatcher. All per-mode rendering is delegated to the four sibling files.
+
+**Size:** ~875 lines across 14 functions plus 4 constants and 3 state variables.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `SEMITONE_TO_NUMERAL` | `Object.<number,string>` | Semitone offset → Roman numeral string. Covers simple (0–11) and compound (12–21) intervals. |
+| `SEMITONE_TO_ROMAN` | `Object.<number,{roman,prefix}>` | Semitone → qualified Roman numeral descriptor used by `semitoneToDegree()`. |
+| `INTERVAL_ABBR` | `Object.<number,string>` | Semitone count → interval abbreviation (e.g. `'M3'`, `'P5'`). Covers simple and compound intervals. |
+| `SCALE_REF` | `Array<Object>` | Reference list of all scales built once from `SCALES` at load time. Each entry: `{ name, symbol, pcs: Set, tag, note }`. |
+| `resolutionActive` | `boolean` | Whether the resolution view is currently active. |
+| `resolutionRootMidi` | `number\|null` | MIDI root of the resolution target; stored once at answer time. |
+| `selectedResolution` | `Object\|null` | User-selected resolution card; `null` = use default. |
+| `semitonesToNumeral(semitones, symbol)` | `(number, string?) → string` | Context-aware semitone → Roman numeral lookup; resolves tritone / A5 / d7 ambiguity via symbol-keyed exception sets. |
+| `semitoneToDegree(semi, quality)` | `(number, string) → string` | Qualified Roman numeral for a semitone interval; case-folded by chord quality. Consumed by `voiceLeading.js`. |
+| `ordinal(n)` | `(number) → string` | Returns ordinal string (`'1st'`, `'2nd'`, …). Used for inversion labels. |
+| `intervalAbbr(semitones, symbol)` | `(number, string?) → string` | Context-aware interval abbreviation; overrides for d5 / A5 / d7 spellings. |
+| `makePill(label, value)` | `(string\|null, string) → HTMLElement` | Builds a `div.breakdown-pill` element. |
+| `makeBDRow(panel, label, content)` | `(HTMLElement, string, string) → void` | Appends a `breakdown-row` key–value row to a panel. |
+| `makeCSGroup(label, open)` | `(string, boolean?) → {section, body}` | Builds a collapsible `cs-section` group; returns `{ section, body }`. |
+| `makeNameHeader(panel, labelEl_or_text)` | `(HTMLElement, string\|HTMLElement) → {body}` | Builds and appends a Level-1 collapsible name header; returns `{ body }`. |
+| `joinSep(arr)` | `(string[]) → string` | Joins HTML strings with `span.breakdown-sep` en-dash separators. |
+| `isMobile()` | `() → boolean` | Returns `true` when viewport ≤ 600 px. |
+| `getChordScales(rootPc, chordPcs)` | `(number, Set) → Array` | Returns all `SCALE_REF` entries whose pitch classes contain every chord pitch class. |
+| `makeChordScalesRow(panel, rootPc, chordPcs)` | `(HTMLElement, number, Iterable) → void` | Renders a collapsible Chord Scales sub-section. Full-width stack on mobile; `breakdown-row` layout on desktop. Each scale row navigates to Dictionary mode on click. |
+| `playResolution()` | `() → void` | Toggles chord / resolution view. On first entry into resolution view: stores root, plays audio (source → pause → target). |
+| `getSourceMidi()` | `() → number[]` | Returns source MIDI notes for the current chord, handling all family types. |
+| `updateResolveBtn()` | `() → void` | Syncs the Resolve button label with `resolutionActive`. |
+| `showCurrentView()` | `() → void` | Dispatches to `renderResolutionNotation()` or `showNotation()` based on `resolutionActive`. |
+| `renderResolutionNotation()` | `() → void` | Renders source → resolution two-chord grand-staff layout into `#notation-svg`. Fully stateless — re-derived from app state on every call. Honours `chordKeySigMode`. |
+| `qualityFullName(sym)` | `(string) → string` | Maps a chord symbol to its full English quality name; falls back to the symbol itself. |
+| `showBreakdown()` | `() → void` | Main dispatcher: lazily builds voice leading analysis, clears panel, delegates to per-mode renderer. |
+| `hideBreakdown()` | `() → void` | Hides and clears the breakdown panel and wrapper. |
+
+**Key design patterns:**
+
+- **Dispatcher pattern:** `showBreakdown()` is the single entry point; it reads `currentMode` and delegates to one of four sibling renderers. No mode logic lives here.
+- **Mobile / desktop split:** `isMobile()` gates two completely separate DOM structures in `makeChordScalesRow()` and `makeVoiceLeadingRow()` (the latter in `breakdown-chords.js`). Desktop layout is untouched by the mobile path.
+- **Lazy voice leading:** `currentVoiceLeadingAnalysis` is built on first `showBreakdown()` call, not at answer time — avoids paying the analysis cost unless the panel is opened.
+- **Stateless resolution render:** `renderResolutionNotation()` accepts no arguments; all inputs are re-read from global state on every call so voicing changes are always reflected without cache invalidation.
+
+**Dependencies:** `voiceLeading.js` (`analyseChord` via `_buildVoiceLeadingAnalysis`), `helpers.js` (`spelledRoot`, `spelledNote`, `midiToSoundFontName`, `midiToVexKeySpelled`, etc.), `state.js`, `notation.js` (VexFlow globals), `audio.js` (`piano`, `audioCtx`).
+
+**Consumed by:** `breakdown-intervals.js`, `breakdown-chords.js`, `breakdown-scales.js`, `breakdown-progressions.js` (all shared helpers); `app.js` (`showBreakdown`, `hideBreakdown`, `resolutionActive`, `selectedResolution`).
 
 ---
 
-### js/breakdown/breakdown-intervals.js
-[ ] — pending production pass
+### ✅ js/breakdown/breakdown-intervals.js
+
+**Role:** Intervals branch of the post-answer breakdown panel. Renders interval name, semitone count, scale degree numeral, consonance classification, inversion / simple-equivalent (compound intervals only), and common musical context. Enharmonically ambiguous intervals (semitones 6, 8, 9) receive context-aware overrides based on the active chord symbol.
+
+**Size:** ~174 lines across 2 functions plus 4 constants.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `INTERVAL_CONSONANCE` | `Object.<number,string>` | Consonance classification keyed by semitone count (0–21). Compound intervals inherit their simple-interval quality. |
+| `INTERVAL_CONTEXT` | `Object.<number,string>` | Common musical context string keyed by semitone count (1–21). Overridden at render time for enharmonic ambiguities. |
+| `INTERVAL_INVERSION_SEMITONES` | `Object.<number,number>` | Maps a simple interval (1–12) to the semitone count of its complementary inversion (sums to P8). |
+| `INTERVAL_INVERSION_NAME` | `Object.<number,string>` | Display name of the complementary inversion interval, keyed by source semitone count (1–12). |
+| `tritoneLabel(style)` | `(string) → string` | Returns context-aware tritone label: `'A4'` (ascending), `'d5'` (descending), or `'A4 / d5'` (harmonic). |
+| `showBreakdownIntervals(panel)` | `(HTMLElement) → void` | Renders the full intervals breakdown into the panel. Called by `showBreakdown()` in `breakdown.js`. |
+
+**Key design patterns:**
+
+- **Compound interval handling:** `currentInterval.compound` flag branches the inversion row — compound intervals show their simple equivalent instead of the standard inversion, using an inline name map.
+- **Enharmonic context overrides:** After the base `INTERVAL_CONTEXT` lookup, three symbol-set checks (`TRITONE_AS_D5`, `EIGHT_AS_A5`, `NINE_AS_D7`) replace the context string for correctly spelled augmented/diminished intervals.
+- **Tritone label:** `tritoneLabel()` resolves the A4 / d5 ambiguity from playback style rather than from a chord symbol, since tritone is its own inversion.
+
+**Dependencies:** `breakdown.js` (`makeNameHeader`, `makeBDRow`, `SEMITONE_TO_NUMERAL`), `helpers.js` (`spelledRoot`, `spelledNote`, `TRITONE_AS_D5`, `EIGHT_AS_A5`, `NINE_AS_D7`), `state.js` (`currentInterval`, `currentIntervalMidi`, `currentIntervalStyle`).
+
+**Consumed by:** `breakdown.js` (`showBreakdown()` dispatcher).
 
 ---
 
-### js/breakdown/breakdown-chords.js
-[ ] — pending production pass
+### ✅ js/breakdown/breakdown-chords.js
+
+**Role:** Chords branch of the post-answer breakdown panel. Handles all four chord families — polychords, UST, slash, and regular chords — and owns the complete voice leading and resolution rendering pipeline.
+
+**Size:** ~1,624 lines across 15 functions plus 2 constants and 1 IIFE-style section.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `RESOLUTION_TARGETS` | `Object.<string, { offset, quality, label }>` | Fallback resolution table keyed by chord symbol. Used when `analyseChord()` has not run or returns no result. |
+| `VL_INTERVAL_NAMES` | `Object.<number, string>` | Semitone count → interval name string for voice leading move labels (ascending). |
+| `vlRoleLabel(semiFromRoot)` | `(number) → string` | Harmonic role label for a source note (e.g. `'root'`, `'3rd'`, `'♭7th'`). |
+| `buildResolutionMidi(targetRootMidi, quality)` | `(number, string) → number[]` | Builds a close-position MIDI array for a resolution target chord. |
+| `getResolutionInfo()` | `() → Object\|null` | Returns the resolution target for the current chord, consulting user selection, family-specific logic, Pass 1 engine, and `RESOLUTION_TARGETS` in priority order. |
+| `computeVoiceLeading(sourceMidi, targetMidi)` | `(number[], number[]) → Array` | Computes voice leading moves from source to target; uses rule-based engine when available, proximity fallback otherwise. |
+| `makeVoiceLeadingRow(panel)` | `(HTMLElement) → void` | Renders the Voice Leading sub-section. Full-width stack on mobile; `breakdown-row` layout on desktop. |
+| `computeRiemannRelations(rootPc, quality, sym)` | `(number, string, string) → Object` | Computes parallel, relative, leading-tone, and subdominant relations for major/minor triads. |
+| `computeTritoneSubInfo(rootPc, sym)` | `(number, string) → Object` | Returns tritone sub name, related ii name, and resolution tonic names for a dominant chord. |
+| `computeDimEnharmonics(rootPc, sym)` | `(number, string) → string[]` | Returns the three enharmonic re-rootings of a dim7 chord. |
+| `computeDimDomSubs(rootPc, sym)` | `(number, string) → string[]` | Returns the four dom7♭9 chords for which a dim7 can substitute. |
+| `computeAugEnharmonics(rootPc, sym)` | `(number, string) → string[]` | Returns the two enharmonic re-rootings of an augmented triad. |
+| `computeHalfDimContext(rootPc, sym)` | `(number, string) → Object` | Returns the minor key name and related V7 name for a half-diminished chord. |
+| `computeSusResolution(rootPc, sym, chordSym)` | `(number, string, string) → string\|null` | Returns a resolution description string for sus2 and sus4 chords. |
+| `makeRiemannRow(panel, relations)` | `(HTMLElement, Object) → void` | Renders the Neo-tonal / Riemannian relations sub-section. |
+| `figuredBass(chord, invIndex)` | `(Object, number) → string` | Returns the figured bass string for a chord inversion. |
+| `nameChordFromIntervals(rootPc, allPcs)` | `(number, Set) → string` | Names a chord from a set of pitch classes by matching against `CHORD_TYPES`. |
+| `showBreakdownChords(panel)` | `(HTMLElement) → void` | Main renderer. Delegates to family-specific paths (poly / UST / slash / regular) and appends all sub-collapsibles. |
+
+**Key design patterns:**
+
+- **Family dispatch:** `showBreakdownChords()` branches on `currentChord.family` (`'poly'`, `'ust'`, `'slash'`, or regular) before any shared rendering. Each path builds its own name header and core rows independently.
+- **Resolution priority chain:** `getResolutionInfo()` checks four sources in order — user selection, family-specific fixed logic, Pass 1 engine cache (`currentVoiceLeadingAnalysis`), `RESOLUTION_TARGETS` fallback — and returns the first valid result.
+- **Mobile / desktop split:** `makeVoiceLeadingRow()` uses `isMobile()` to render two completely separate DOM structures. The mobile path stacks context collapsibles full-width; the desktop path uses the standard `breakdown-row` layout. Added in Mobile-3.
+- **Chord scales skipped for quartal / cluster:** These families have no standard parent scale; the chord scales row is suppressed and a family-specific note is shown instead.
+
+**Dependencies:** `breakdown.js` (`makeNameHeader`, `makeBDRow`, `makeCSGroup`, `makeChordScalesRow`, `joinSep`, `intervalAbbr`, `semitonesToNumeral`, `qualityFullName`, `makePill`, `SEMITONE_TO_ROMAN`, `INTERVAL_ABBR`, `resolutionActive`, `selectedResolution`, `resolutionRootMidi`, `playResolution`, `isMobile`), `helpers.js` (`spelledRoot`, `spelledNote`, `pcInterval`, `TRITONE_AS_D5`, `EIGHT_AS_A5`, `NINE_AS_D7`), `voicings.js` (`VOICING_MODES`), `state.js`, `voiceLeading.js` (`computeVoiceLeadingRules`).
+
+**Consumed by:** `breakdown.js` (`showBreakdown()` dispatcher).
 
 ---
 
-### js/breakdown/breakdown-scales.js
-[ ] — pending production pass
+### ✅ js/breakdown/breakdown-scales.js
+
+**Role:** Scales branch of the post-answer breakdown panel. Renders all scale theory information — note names, degree numerals, interval rows, step pattern, triad map, modal character, parent scale, and the harmonic field — into the shared breakdown panel.
+
+**Size:** ~340 lines across 8 functions plus 2 constants.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `SCALE_CHARACTER` | `Object.<string, string>` | Modal character string per scale symbol — a single-line mood and brightness description shown in the Character collapsible. |
+| `SCALE_MODAL_PARENT` | `Object.<string, { parent: string, degree: number }>` | Parent scale name and modal degree for scales derived from a parent. Scales absent from this table receive no Parent collapsible. |
+| `computeDegreeNumerals(intervals, symbol)` | `(number[], string) → string[]` | Builds the degree-numeral array for a scale across all note counts. Enharmonically ambiguous semitone counts (6, 8, 9) are resolved via the scale symbol. |
+| `computeTriadMap(intervals, sym, rootPc)` | `(number[], string, number) → string[]\|null` | Builds a diatonic triad map for a 7-note scale. Returns `null` for non-heptatonic scales. Each entry is an HTML `<span>` with a `title` attribute showing the note name. |
+| `harmonicFieldSymbolSuffix(sym)` | `(string) → string\|null` | Maps an internal chord symbol to its display suffix. Returns `null` for unrecognised symbols. |
+| `harmonicFieldQuality(third, fifth)` | `(number, number) → Object\|null` | Classifies a triad from its third and fifth intervals. Returns `null` for non-standard interval pairs. |
+| `harmonicFieldSeventh(third, fifth, seventh)` | `(number, number, number) → string\|null` | Classifies the seventh chord from its third, fifth, and seventh intervals. Returns an internal chord symbol or `null`. |
+| `buildHarmonicField(intervals, rootMidi, sym)` | `(number[], number, string) → Array` | Builds the harmonic field for a scale by stacking diatonic thirds on each degree. Seventh chords attempted first for heptatonic+ scales; triads for pentatonic/hexatonic; graceful fallback for unclassifiable degrees. |
+| `makeHarmonicFieldRow(panel, intervals, rootMidi, sym)` | `(HTMLElement, number[], number, string) → void` | Renders the Harmonic Field collapsible row with one pill per scale degree. No mobile-specific path — pills use `flex-wrap: wrap` and reflow naturally on narrow screens. |
+| `showBreakdownScales(panel)` | `(HTMLElement) → void` | Main renderer. Builds all rows and sub-collapsibles in order: Notes, Degrees, From root, Between notes, Steps, Triad map, Character, Parent, Harmonic field. |
+
+**Key design patterns:**
+
+- **Direction-aware interval rows:** The From root and Between notes rows branch on `currentScaleDir` (`'asc'` / `'desc'` / `'both'`), appending `↓` suffixes and reversing sequences as needed.
+- **Conditional Steps row:** The W/H pattern row is only rendered when every step in the sequence reduces to W (whole), H (half), or W+H (augmented second). Scales with larger or irregular steps omit it silently.
+- **No mobile path needed:** Unlike the voice leading and chord scales rows (which contain `white-space: nowrap` tables), the harmonic field renders pills with `flex-wrap: wrap`. Confirmed against `components.css` — no restructure required.
+
+**Dependencies:** `breakdown.js` (`makeNameHeader`, `makeBDRow`, `makeCSGroup`, `joinSep`, `intervalAbbr`, `semitoneToDegree`, `SEMITONE_TO_ROMAN`, `ordinal`), `helpers.js` (`spelledRoot`, `spelledNote`, `pcInterval`, `TRITONE_AS_D5`, `EIGHT_AS_A5`, `NINE_AS_D7`), `state.js` (`currentScale`, `currentScaleRootMidi`, `currentScaleDir`).
+
+**Consumed by:** `breakdown.js` (`showBreakdown()` dispatcher).
 
 ---
 
-### js/breakdown/breakdown-progressions.js
-[ ] — pending production pass
+### ✅ js/breakdown/breakdown-progressions.js
+
+**Role:** Progressions branch of the post-answer breakdown panel. Renders per-chord theory information for each step in the current progression — degree label, chord name, notes, intervals from root, harmonic function, and chord scales — as a series of collapsible sections inside the shared breakdown panel.
+
+**Size:** ~130 lines across 2 functions plus 1 constant.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `HARMONIC_FUNCTION` | `Object.<number, { default: string, [qualSym: string]: string }>` | Harmonic function descriptions keyed by semitone offset (0–11), then by chord quality symbol. Each bucket has a `'default'` fallback plus optional quality-specific overrides (e.g. `'m'`, `'7'`, `'maj7'`). |
+| `progFunctionNote(degSemis, qualSym)` | `(number, string) → string\|null` | Returns the harmonic function description for a chord at a given degree. Tries the quality-specific override first, then `'default'`. Returns `null` if the degree has no entry. |
+| `showBreakdownProgressions(panel)` | `(HTMLElement) → void` | Main renderer. Builds a name header then one collapsible `cs-section` per chord in the progression, each containing Notes, From root, Function, and Chord scales rows. |
+
+**Key design patterns:**
+
+- **Full-width collapsibles, no label column:** Each chord section is a `cs-section` appended directly into `progBody` with no outer `breakdown-row` wrapper. All content is inherently full-width on every viewport — no mobile-specific path required.
+- **Quality-keyed function overrides:** `HARMONIC_FUNCTION` buckets use the internal chord symbol as the key (e.g. `'m'`, `'7'`, `'o7'`), matching the same symbol strings used throughout `CHORD_TYPES`. The `'default'` key covers all unmatched qualities within a bucket.
+- **Chord scales delegation:** `makeChordScalesRow()` (from `breakdown.js`) handles chord scales rendering, including the mobile/desktop split introduced in Mobile-3.
+
+**Dependencies:** `breakdown.js` (`makeNameHeader`, `makeBDRow`, `makeChordScalesRow`, `joinSep`, `intervalAbbr`, `qualityFullName`, `spelledRoot`, `spelledNote`), `state.js` (`currentProgression`, `currentProgRootPc`, `currentProgRootMidi`, `PROG_DEGREES`, `PROG_QUALITIES`, `progChordMidi`), `chords.js` (`CHORD_TYPES`).
+
+**Consumed by:** `breakdown.js` (`showBreakdown()` dispatcher).
 
 ---
 
-### js/ui/stats.js
-[ ] — pending production pass
+### ✅ js/ui/stats.js
+
+**Role:** UI reset and score display helpers. Handles between-question UI teardown and the score bar update. Note that the heavier session tracking logic — `resetSession()`, `recordAnswer()`, `renderStats()`, and `updateRootBadge()` — lives in `helpers.js` (Layer 3), where it was built alongside the pool and session state it depends on. The naming of this file is a mild misnomer; its actual scope is narrow by design.
+
+**Size:** ~20 lines across 2 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `resetQuizUI()` | `() → void` | Resets all per-question UI state before a new question. Clears `answered`, resolution state, inversion index, notation panels, status message, answer dropdown, and the breakdown panel. Also calls `teardownProgressionUI()` to remove progression-specific DOM residue. |
+| `updateScore()` | `() → void` | Writes the current `correct`, `total`, and `streak` globals to their respective score bar DOM elements (`#correct`, `#total`, `#streak`). |
+
+**Key design patterns:**
+
+- **Narrow scope by proximity:** Stats tracking functions (`resetSession`, `recordAnswer`, `renderStats`) live in `helpers.js` because they were built alongside `getActivePool()` and session state. Moving them to this file would violate the layer rule — `recordAnswer()` is called from Layer 6 mode files, but `resetSession()` calls `generateQuestion()` (Layer 7) and touches engine-layer state, making it impractical to extract without broader refactoring.
+
+**Dependencies:** `state.js` (`answered`, `resolutionActive`, `resolutionRootMidi`, `dictInversionIndex`, `correct`, `total`, `streak`), `breakdown.js` (`hideBreakdown`), `progressions-mode.js` (`teardownProgressionUI`).
+
+**Consumed by:** `app.js`, all four mode files (via `resetQuizUI()` at question generation time).
 
 ---
 
-### js/ui/controls.js
-[ ] — pending production pass
+### ✅ js/ui/controls.js
+
+**Role:** Answer dropdown and quiz control button renderers. Owns all interactive UI in the answer area — building the alphabetically sorted dropdown list, revealing correct/wrong feedback after the user submits, and rendering the Next / Hear Slowly / Resolve control buttons. Has no opinion about quiz logic; it only reads `answered`, `currentMode`, and `resolutionActive` from global state and delegates all callbacks to its callers.
+
+**Size:** ~100 lines across 3 functions plus 1 module-scoped variable.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `renderAnswers(options, submitFn)` | `(Array, function) → void` | Builds and displays the answer dropdown for a new question. Sorts options alphabetically, wires the trigger and outside-click listener, and removes any listener left over from the previous question before adding a new one. |
+| `revealDropdownAnswer(chosenSymbol, correctSymbol)` | `(string, string) → void` | Reveals correct/wrong feedback after the user has answered. Disables the trigger, applies `.correct` / `.wrong` classes to the appropriate list items, and updates the trigger label to the chosen answer name. |
+| `renderControls(nextFn, playFn)` | `(function, function) → void` | Clears and rebuilds `#controls` on every call. After answering: always renders Next (mode-labelled) and Hear Slowly; renders Resolve ↔ Chord in Chords mode only. Empty before answering. |
+
+**Key design patterns:**
+
+- **Module-scoped outside-click handler:** The outside-click listener reference is stored in a module-level variable (`outsideClickHandler`) rather than on the DOM node (`wrap._outsideClick`). This keeps JS state in JS. On each `renderAnswers` call the previous listener is removed before a new one is added (anti-stacking), and the listener removes itself after firing once (auto-cleanup).
+- **Stateless renderer:** `renderControls` tears down and rebuilds `#controls` on every call rather than patching existing buttons. This avoids stale event listener accumulation and keeps the function easy to reason about.
+- **Mode-aware Next label:** The Next button label is derived directly from `currentMode` at render time — no mapping table, no state beyond the global.
+
+**Dependencies:** `state.js` (`answered`, `currentMode`, `resolutionActive`), `audio.js` (`playSlowly`, `playResolution`).
+
+**Consumed by:** all four mode files (via `renderAnswers` and `renderControls` at question generation and answer submission time), `app.js`.
 
 ---
 

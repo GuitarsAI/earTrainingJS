@@ -1,21 +1,39 @@
-// js/engine/voiceLeading.js
-// Voice leading & resolution engine — Point 37 (Option B)
-// See voice_leading_algorithm_plan.md for full design rationale.
-//
-// Dependencies (globals expected from other files):
-//   SCALES       — from js/data/chords.js
-//   CHORD_TYPES  — from js/data/chords.js
-//   semitoneToDegree() — from js/breakdown/breakdown.js
-//
-// All functions are pure and stateless — same input always returns same output.
-// No DOM access. No app state. Consumed by breakdown.js for rendering.
-
+/**
+ * @file voiceLeading.js
+ * @description Voice leading and harmonic resolution engine for The Sound Travels Ear Training.
+ * Implements a five-stage analysis pipeline that, given any chord, discovers every diatonic
+ * context it fits, scores harmonic tension, derives resolution targets, and computes globally
+ * optimal voice leading to each target via backtracking search.
+ *
+ * Pipeline stages:
+ *   1. Constants & startup index  — `FUNCTION_MAP`, `BASE_TENSION`, `CHORD_SYMBOL_INTERVALS`
+ *   2. Pure helpers               — pitch-class arithmetic, quality detection, alteration counting
+ *   3. Context discovery          — `findDiatonicContexts()` (exact + fuzzy passes)
+ *   4. Tension scoring            — `scoreTension()`
+ *   5. Resolution derivation      — `deriveResolutionTargets()`
+ *   6. Voice leading computation  — `computeVoiceLeadingRules()` and its sub-functions
+ *   7. Public API                 — `analyseChord()`
+ *
+ * All functions are pure and stateless — same input always returns the same output.
+ * No DOM access. No app state mutations.
+ *
+ * Load order: after `helpers.js`, `chords.js`, `scales.js`, and `breakdown.js`.
+ *
+ * @module voiceLeading
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
 
 
 // ─── 1. CONSTANTS ────────────────────────────────────────────────────────────
 
-// Harmonic function derived from scale degree (semitones from scale root).
-// Used in Step 3 (context discovery) and Step 4 (tension scoring).
+/**
+ * Harmonic function derived from scale degree (semitones from scale root, 0–11).
+ * Used in context discovery (Step 3) and tension scoring (Step 4).
+ *
+ * @type {Object.<number, string>}
+ */
 const FUNCTION_MAP = {
   0:  'tonic',          // I
   1:  'tonic',          // ♭II  (Neapolitan — tonic substitute in context)
@@ -31,8 +49,13 @@ const FUNCTION_MAP = {
   11: 'dominant',       // VII (leading tone)
 };
 
-// Base tension per scale degree (semitones from scale root, 0–11).
-// Modified by chord content in scoreTension().
+/**
+ * Base tension value per scale degree (semitones from scale root, 0–11).
+ * Modified by chord content in `scoreTension()`.
+ * Range: 0.0 (completely at rest) to 0.9 (maximum pre-resolution tension).
+ *
+ * @type {Object.<number, number>}
+ */
 const BASE_TENSION = {
   0:  0.0,   // I   — tonic, at rest
   1:  0.5,   // ♭II — Neapolitan, unusual, moderate tension
@@ -48,29 +71,46 @@ const BASE_TENSION = {
   11: 0.9,   // VII — leading tone, very high tension
 };
 
-// Chord qualities that get lowercase Roman numerals (minor/diminished).
+/**
+ * Chord qualities whose Roman numerals are lowercased (minor and diminished chords).
+ *
+ * @type {Set.<string>}
+ */
 const LOWERCASE_QUALITIES = new Set(['minor', 'diminished']);
 
-// Exception whitelist — chord families where the algorithm cannot reliably
-// derive a single resolution target. These fall back to existing app logic.
-// See algorithm plan § 6 Edge Cases.
+/**
+ * Chord families where the algorithm cannot reliably derive a single resolution target.
+ * These fall back to existing app logic rather than the voice leading engine.
+ * See algorithm plan § 6 Edge Cases.
+ *
+ * @type {Set.<string>}
+ */
 const AMBIGUOUS_FAMILIES = new Set(['aug', 'augmented', 'sus', 'suspended', 'poly', 'ust']);
 
-// Core tones that must fit the scale in a fuzzy match (root + major 3rd + minor 7th).
-// Used for altered dominant chords whose extensions (♭9, ♯11, ♭13) are chromatic
-// by design and would prevent any exact scale match.
-// Intervals are relative to chord root (semitones).
+/**
+ * Core tones used for fuzzy scale matching of altered dominant chords.
+ * Altered dominants (e.g. 7(♭9)(♯11)(♭13)) have extensions that are chromatic by design
+ * and would prevent any exact scale match. Matching on root + M3 + m7 only identifies
+ * the dominant context without requiring the altered tensions to be diatonic.
+ * Intervals are semitones above the chord root.
+ *
+ * @type {number[]}
+ */
 const DOMINANT_CORE_INTERVALS = [0, 4, 10]; // root, M3, m7
 
 
 // ─── 1b. CHORD_SYMBOL_INTERVALS — startup index ──────────────────────────────
-//
-// Flat symbol → intervals lookup built entirely from CHORD_TYPES.
-// Built once at startup. No manual table. Auto-updates when CHORD_TYPES gains entries.
-// Intervals are normalised mod 12, deduplicated, sorted ascending.
-//
-// Used by resolveTargetIntervals() to map a targetSymbol (e.g. 'Maj7', 'm7', '7')
-// to the pitch-class interval array needed by generateCandidates().
+
+/**
+ * Flat symbol-to-intervals lookup built from `CHORD_TYPES` at startup.
+ * Intervals are normalised mod 12, deduplicated, and sorted ascending.
+ * Auto-updates when `CHORD_TYPES` gains new entries — no manual maintenance needed.
+ *
+ * Used by `resolveTargetIntervals()` to map a target symbol (e.g. `'Maj7'`, `'m7'`)
+ * to the pitch-class interval array required by `generateCandidates()`.
+ *
+ * @type {Object.<string, number[]>}
+ */
 const CHORD_SYMBOL_INTERVALS = (() => {
   const map = {};
   for (const family of Object.values(CHORD_TYPES)) {
@@ -86,9 +126,13 @@ const CHORD_SYMBOL_INTERVALS = (() => {
 
 // ─── 2. HELPERS ──────────────────────────────────────────────────────────────
 
-// Build a Set of pitch classes for a scale given its root and interval array.
-// intervals: e.g. [0,2,4,5,7,9,11,12] — the raw SCALES entry intervals field.
-// rootPc: 0–11
+/**
+ * Builds a Set of pitch classes for a scale given its root and interval array.
+ *
+ * @param {number} rootPc - Scale root as a pitch class (0–11).
+ * @param {number[]} intervals - Raw interval array from a `SCALES` entry (e.g. `[0,2,4,5,7,9,11,12]`).
+ * @returns {Set.<number>} Pitch classes contained in the scale.
+ */
 function buildScalePcs(rootPc, intervals) {
   const pcs = new Set();
   for (const interval of intervals) {
@@ -97,15 +141,23 @@ function buildScalePcs(rootPc, intervals) {
   return pcs;
 }
 
-// Given a scale's pitch classes and the chord root pc, find the scale degree
-// (semitones from scale root to chord root, 0–11).
-// Returns -1 if chordRootPc is not in the scale (shouldn't happen after set-intersection).
+/**
+ * Returns the scale degree of a chord root within a scale as semitones from the scale root.
+ *
+ * @param {number} scaleRootPc - Scale root pitch class (0–11).
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @returns {number} Semitones from scale root to chord root (0–11).
+ */
 function chordDegreeInScale(scaleRootPc, chordRootPc) {
   return ((chordRootPc - scaleRootPc) + 12) % 12;
 }
 
-// Detect if a set of pitch classes contains a tritone (interval of 6 semitones).
-// Returns true if any two pitch classes are 6 semitones apart.
+/**
+ * Returns `true` if any two pitch classes in the set are a tritone (6 semitones) apart.
+ *
+ * @param {Iterable.<number>} pitchClasses - Collection of pitch class integers (0–11).
+ * @returns {boolean} Whether a tritone interval exists between any pair.
+ */
 function hasTritone(pitchClasses) {
   const pcs = [...pitchClasses];
   for (let i = 0; i < pcs.length; i++) {
@@ -116,8 +168,15 @@ function hasTritone(pitchClasses) {
   return false;
 }
 
-// Count chromatic alterations — pitch classes in chord not present in
-// the natural major scale built on the chord root. Used as tension modifier.
+/**
+ * Counts chromatic alterations in a chord — pitch classes not present in the
+ * natural major scale built on the chord root. Used as a tension modifier in
+ * `scoreTension()` and to detect altered dominants for the fuzzy matching pass.
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @param {Iterable.<number>} chordPitchClasses - Pitch classes in the chord.
+ * @returns {number} Number of non-diatonic pitch classes.
+ */
 function countAlterations(chordRootPc, chordPitchClasses) {
   const majorIntervals = new Set([0, 2, 4, 5, 7, 9, 11].map(i => (i + chordRootPc) % 12));
   let count = 0;
@@ -127,19 +186,20 @@ function countAlterations(chordRootPc, chordPitchClasses) {
   return count;
 }
 
-// Derive a short chord quality label from the chord's interval pattern.
-// Used to determine Roman numeral case and functional description.
-// Returns: 'major' | 'minor' | 'diminished' | 'augmented' | 'dominant' | 'suspended'
+/**
+ * Derives a chord quality label from its interval pattern.
+ * Used to determine Roman numeral case and functional description.
+ *
+ * @param {number[]} intervals - Semitone intervals from root (e.g. `[0,4,7,10]`).
+ * @returns {'major'|'minor'|'diminished'|'augmented'|'dominant'|'suspended'} Quality string.
+ */
 function deriveChordQuality(intervals) {
   const pcs = intervals.map(i => i % 12).filter((v, i, a) => a.indexOf(v) === i).sort((a,b) => a-b);
-  // Check third
   const hasMinorThird = pcs.includes(3);
   const hasMajorThird = pcs.includes(4);
   const hasDimFifth   = pcs.includes(6);
-  const hasPerfFifth  = pcs.includes(7);
   const hasAugFifth   = pcs.includes(8);
   const hasMinorSev   = pcs.includes(10);
-  const hasMajorSev   = pcs.includes(11);
   const hasFourth     = pcs.includes(5);
   const hasSecond     = pcs.includes(2);
 
@@ -152,11 +212,14 @@ function deriveChordQuality(intervals) {
   return 'major'; // fallback
 }
 
-// Build the set of core pitch classes for a dominant chord (root + M3 + m7).
-// These are the defining tones of a dominant 7th; alterations (♭9, ♯11, ♭13)
-// are intentionally excluded so that fuzzy matching can find a tonal home
-// even when the full chord is chromatic.
-// chordRootPc: 0–11
+/**
+ * Builds the set of core pitch classes for a dominant chord (root + M3 + m7).
+ * Used in the fuzzy matching pass to locate altered dominant chords in a tonal context
+ * without requiring their chromatic extensions to be diatonic.
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @returns {Set.<number>} Pitch classes for the three core dominant tones.
+ */
 function buildDominantCorePcs(chordRootPc) {
   return new Set(DOMINANT_CORE_INTERVALS.map(i => (chordRootPc + i) % 12));
 }
@@ -164,21 +227,50 @@ function buildDominantCorePcs(chordRootPc) {
 
 // ─── 3. STEP 3 — DIATONIC CONTEXT DISCOVERY ──────────────────────────────────
 
-// Core function. Given a chord root (pitch class) and its pitch classes,
-// find every scale (across all 25 SCALES × 12 roots) that contains all
-// chord pitch classes. For each match, compute the scale degree, Roman
-// numeral, harmonic function, and tension score.
-//
-// For altered dominant chords (dominant quality with 2+ chromatic alterations),
-// a second fuzzy pass is performed using only the core tones (root, M3, m7).
-// Fuzzy matches are tagged with matchQuality: 0.8 and de-duplicated against
-// exact matches so the same context is never listed twice.
-//
-// chordRootPc:      integer 0–11
-// chordPitchClasses: iterable of pitch class integers 0–11
-// chordIntervals:   raw intervals array from CHORD_TYPES entry (for quality detection)
-//
-// Returns: array of context objects, sorted by tension descending.
+/**
+ * Assigns a commonality weight to a scale symbol so that more common scales
+ * surface before rare ones when tension is equal. Higher value = more common.
+ *
+ * @param {string} symbol - Scale symbol from `SCALES`.
+ * @returns {number} Commonality weight (default 2 for unknown scales).
+ */
+function scaleCommonality(symbol) {
+  const weights = {
+    major: 10, nat_minor: 9, harm_minor: 8, mel_minor: 7,
+    dorian: 6, mixolydian: 6, phrygian: 5, lydian: 5,
+    locrian: 3, pent_maj: 4, pent_min: 4, blues: 4,
+  };
+  return weights[symbol] || 2;
+}
+
+/**
+ * Finds every diatonic context in which a chord can function — the core of the
+ * voice leading engine. Tests all 46 scales × 12 roots (552 combinations) and
+ * collects every context where all chord pitch classes are contained in the scale.
+ *
+ * For altered dominant chords (dominant quality with 2+ chromatic alterations), a
+ * second fuzzy pass matches against core tones only (root + M3 + m7), since their
+ * extensions are chromatic by design and would prevent any exact match. Fuzzy
+ * matches are tagged `matchQuality: 0.8` and de-duplicated against exact matches.
+ *
+ * Results are sorted by musical relevance (dominant function → diatonic group →
+ * match quality → scale commonality → tension).
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @param {Iterable.<number>} chordPitchClasses - All pitch classes in the chord.
+ * @param {number[]} chordIntervals - Raw intervals from the `CHORD_TYPES` entry (for quality detection).
+ * @returns {Array.<{
+ *   scaleSymbol: string,
+ *   scaleName: string,
+ *   scaleGroup: string,
+ *   scaleRootPc: number,
+ *   degSemitones: number,
+ *   roman: string,
+ *   harmonicFunction: string,
+ *   tension: number,
+ *   matchQuality: number
+ * }>} Context objects sorted by musical relevance, highest first.
+ */
 function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
   const chordPcs = new Set([...chordPitchClasses].map(p => ((p % 12) + 12) % 12));
   const chordQuality = chordIntervals ? deriveChordQuality(chordIntervals) : 'major';
@@ -192,17 +284,14 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
   for (const scale of SCALES) {
     for (let scaleRootPc = 0; scaleRootPc < 12; scaleRootPc++) {
 
-      // Build scale pitch class set for this root
       const scalePcs = buildScalePcs(scaleRootPc, scale.intervals);
 
-      // Check if ALL chord pitch classes are in this scale
       let fits = true;
       for (const pc of chordPcs) {
         if (!scalePcs.has(pc)) { fits = false; break; }
       }
       if (!fits) continue;
 
-      // Check chord root is actually in the scale
       if (!scalePcs.has(chordRootPc)) continue;
 
       const degSemitones    = chordDegreeInScale(scaleRootPc, chordRootPc);
@@ -224,7 +313,7 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
         roman,
         harmonicFunction,
         tension,
-        matchQuality: 1.0,   // exact match
+        matchQuality: 1.0,
       });
     }
   }
@@ -232,18 +321,12 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
   // ── Pass 2: Fuzzy match for altered dominant chords ───────────────────────
   // An altered dominant has dominant quality (M3 + m7) plus 2 or more
   // chromatic alterations (♭9, ♯9, ♯11, ♭13, etc.). Its extensions are
-  // deliberately non-diatonic, so no single scale contains all its notes —
-  // exact matching returns nothing, leaving the chord without a resolution.
-  //
+  // deliberately non-diatonic, so no single scale contains all its notes.
   // Fix: match scales against core tones only (root + M3 + m7). If the scale
-  // accepts those three tones AND the chord root sits at scale degree 7
-  // (dominant degree), we have a valid dominant context in that key.
-  // The chord still resolves to that key's tonic; the alterations are
-  // understood as chromatic colour, not scale membership violations.
-  //
+  // accepts those three tones AND the chord root sits at a dominant scale degree,
+  // the chord still resolves to that key's tonic.
   // matchQuality is set to 0.8 to distinguish fuzzy entries from exact ones.
-  // Contexts already found in Pass 1 are skipped (de-duplication via `seen`).
-
+  // Contexts already found in Pass 1 are skipped via the `seen` set.
   const alterationCount = countAlterations(chordRootPc, chordPcs);
   const isDominantQualityForFuzzy = chordQuality === 'dominant';
 
@@ -254,34 +337,30 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
       for (let scaleRootPc = 0; scaleRootPc < 12; scaleRootPc++) {
 
         const key = `${scale.symbol}:${scaleRootPc}`;
-        if (seen.has(key)) continue; // already have an exact match for this context
+        if (seen.has(key)) continue;
 
         const scalePcs = buildScalePcs(scaleRootPc, scale.intervals);
 
-        // Core tones (root + M3 + m7) must all fit the scale
         let coreFits = true;
         for (const pc of corePcs) {
           if (!scalePcs.has(pc)) { coreFits = false; break; }
         }
         if (!coreFits) continue;
 
-        // Chord root must be in the scale
         if (!scalePcs.has(chordRootPc)) continue;
 
         const degSemitones     = chordDegreeInScale(scaleRootPc, chordRootPc);
         const harmonicFunction = FUNCTION_MAP[degSemitones] || 'tonic';
 
         // Only keep dominant-function contexts from the fuzzy pass.
-        // A dominant chord with altered extensions sitting on, say, degree I
-        // of a mixolydian scale would be misleading — we want the resolution
-        // context (V → I), not a tonic reading.
+        // A dominant chord with altered extensions at, say, degree I of a Mixolydian
+        // scale carries no functional resolution — the V → I reading is what matters.
         if (harmonicFunction !== 'dominant') continue;
 
         const roman   = (typeof semitoneToDegree === 'function')
           ? semitoneToDegree(degSemitones, chordQuality)
           : degSemitones.toString();
 
-        // Tension: use full chord pcs for scoring (alterations still count)
         const tension = scoreTension(degSemitones, chordPcs, chordRootPc);
 
         seen.add(key);
@@ -295,122 +374,100 @@ function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
           roman,
           harmonicFunction,
           tension,
-          matchQuality: 0.8,   // fuzzy — core tones only
+          matchQuality: 0.8,
         });
       }
     }
   }
 
-  // ── Sort ──────────────────────────────────────────────────────────────────
-  // Sort priority (Berklee functional harmony — most musically relevant first):
-  //
-  //   1. Dominant function first — for dominant-quality chords, a context where
-  //      the chord functions as V must always surface before any other reading,
-  //      regardless of how well the chord fits that scale. An altered dominant
-  //      in a diatonic V context is more musically meaningful than a perfect
-  //      fit in an exotic symmetric scale that implies no functional resolution.
-  //
-  //   2. Diatonic group before all others — only diatonic scales imply a tonic
-  //      to resolve to. Octatonic, hexatonic, and pentatonic scales can contain
-  //      a dominant chord by coincidence (e.g. Messiaen Mode 4 swallows 7-note
-  //      chords easily due to its 8-note density) but carry no harmonic function.
-  //      Diatonic contexts are always more meaningful than exotic exact matches.
-  //
-  //   3. Match quality — within the same group, exact matches before fuzzy.
-  //
-  //   4. Scale commonality — more common scales (major > nat_minor > ...)
-  //      surface before rare ones within the same group.
-  //
-  //   5. Tension — within same commonality band, higher tension listed first.
-
+  // ── Sort by musical relevance ─────────────────────────────────────────────
+  // Priority order (Berklee functional harmony — most musically relevant first):
+  //   1. Dominant function first — for dominant-quality chords, V contexts always
+  //      surface before any other reading, regardless of scale fit quality.
+  //   2. Diatonic group before all others — only diatonic scales imply a functional
+  //      tonic to resolve to. Non-diatonic exact matches are less meaningful.
+  //   3. Match quality — exact before fuzzy within the same group.
+  //   4. Scale commonality — more common scales surface before rare ones.
+  //   5. Tension — higher tension listed first within the same commonality band.
   const isDominantQuality = chordIntervals
     ? (deriveChordQuality(chordIntervals) === 'dominant')
     : false;
 
-  // Group priority: diatonic beats everything; pentatonic/hexatonic/octatonic are equal.
   function groupPriority(group) {
     return group === 'diatonic' ? 1 : 0;
   }
 
   contexts.sort((a, b) => {
-    // Tier 1: dominant-function contexts always first for dominant-quality chords
     if (isDominantQuality) {
       const aIsDom = a.harmonicFunction === 'dominant' ? 1 : 0;
       const bIsDom = b.harmonicFunction === 'dominant' ? 1 : 0;
       if (bIsDom !== aIsDom) return bIsDom - aIsDom;
     }
-
-    // Tier 2: diatonic group beats non-diatonic (pentatonic / hexatonic / octatonic)
     const gDiff = groupPriority(b.scaleGroup) - groupPriority(a.scaleGroup);
     if (gDiff !== 0) return gDiff;
-
-    // Tier 3: exact matches before fuzzy matches (within same group)
     const mDiff = b.matchQuality - a.matchQuality;
     if (mDiff !== 0) return mDiff;
-
-    // Tier 4: scale commonality
     const cDiff = scaleCommonality(b.scaleSymbol) - scaleCommonality(a.scaleSymbol);
     if (cDiff !== 0) return cDiff;
-
-    // Tier 5: tension
     return b.tension - a.tension;
   });
 
   return contexts;
 }
 
-// Commonality weight — more common scales surface first when tension is equal.
-// Higher = more common.
-function scaleCommonality(symbol) {
-  const weights = {
-    major: 10, nat_minor: 9, harm_minor: 8, mel_minor: 7,
-    dorian: 6, mixolydian: 6, phrygian: 5, lydian: 5,
-    locrian: 3, pent_maj: 4, pent_min: 4, blues: 4,
-  };
-  return weights[symbol] || 2;
-}
-
 
 // ─── 4. STEP 4 — TENSION SCORING ─────────────────────────────────────────────
 
-// Compute tension for a chord in a given context.
-// degSemitones: semitones from scale root to chord root (0–11)
-// chordPcs:     Set of pitch classes in the chord
-// chordRootPc:  pitch class of the chord root
-//
-// Returns: float 0.0 – 1.0
+/**
+ * Computes a tension score for a chord in a given diatonic context.
+ * Combines the base tension of the chord's scale degree with modifiers
+ * for tritone presence and chromatic alterations. Capped at 1.0.
+ *
+ * @param {number} degSemitones - Semitones from scale root to chord root (0–11).
+ * @param {Set.<number>} chordPcs - Pitch classes in the chord.
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @returns {number} Tension score in the range 0.0–1.0.
+ */
 function scoreTension(degSemitones, chordPcs, chordRootPc) {
   let tension = BASE_TENSION[degSemitones] ?? 0.3;
-
-  // Modifier: tritone presence increases tension
   if (hasTritone(chordPcs)) tension += 0.08;
-
-  // Modifier: chromatic alterations increase tension
   const alterations = countAlterations(chordRootPc, chordPcs);
   tension += alterations * 0.04;
-
-  return Math.min(tension, 1.0); // cap at 1.0
+  return Math.min(tension, 1.0);
 }
 
 
 // ─── 5. STEP 5 — RESOLUTION TARGET DERIVATION ────────────────────────────────
 
-// For a given context, compute resolutions, departures, and substitutions.
-//
-// Returns an object with three arrays, each entry ranked by strength:
-//   resolutions   — true harmonic resolutions (tension → rest)
-//   departures    — motion away from a stable tonic chord
-//   substitutions — reharmonisation alternatives (not resolutions)
-//
-// Each entry: { targetRootPc, targetQuality, resolutionType, cadenceName, strength }
-//
-// resolutionType values:
-//   resolutions:   'authentic' | 'authentic_minor' | 'deceptive' | 'plagal' |
-//                  'to_dominant' | 'half_cadence' | 'leading_tone'
-//   departures:    'departure'
-//   substitutions: 'tritone_sub' | 'related_ii'
-//
-// context: one entry from findDiatonicContexts()
+/**
+ * Derives all resolution targets, departure paths, and reharmonisation
+ * substitutions for a chord in a given diatonic context.
+ *
+ * Returns three arrays ranked by strength:
+ * - `resolutions`   — true harmonic resolutions (tension → rest); get voice leading pre-computed.
+ * - `departures`    — motion away from a stable tonic chord; get voice leading pre-computed.
+ * - `substitutions` — reharmonisation alternatives (e.g. tritone sub, related ii);
+ *                     no voice leading computed (they are not resolution targets).
+ *
+ * Resolution types:
+ * - Tonic:       departures only (I → IV, I → V, I → ii, I → vi)
+ * - Dominant:    authentic (V → I), authentic minor (V → i), deceptive (V → vi);
+ *                substitutions: tritone sub, related ii
+ * - Subdominant: to dominant (IV → V), plagal (IV → I)
+ * - Predominant: to dominant (ii → V), direct (ii → I)
+ *
+ * @param {{
+ *   degSemitones: number,
+ *   scaleRootPc: number,
+ *   harmonicFunction: string
+ * }} context - One context object from `findDiatonicContexts()`.
+ * @param {number} chordRootPc - Chord root pitch class (0–11); used for tritone sub calculation.
+ * @returns {{
+ *   resolutions: Array.<Object>,
+ *   departures: Array.<Object>,
+ *   substitutions: Array.<Object>
+ * }}
+ */
 function deriveResolutionTargets(context, chordRootPc) {
   const { degSemitones, scaleRootPc, harmonicFunction } = context;
 
@@ -418,11 +475,8 @@ function deriveResolutionTargets(context, chordRootPc) {
   const departures    = [];
   const substitutions = [];
 
-  // ── TONIC — stable chord, no tension to resolve ──────────────────────────────
-  // Provide departure paths only. No resolutions, no substitutions.
+  // ── TONIC — stable chord; provide departure paths only ───────────────────
   if (harmonicFunction === 'tonic') {
-
-    // Most common departure: I → IV (subdominant motion)
     departures.push({
       targetRootPc:   (scaleRootPc + 5) % 12,
       targetSymbol:   'Maj7',
@@ -431,8 +485,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       cadenceName:    'I → IV',
       strength:       0.7,
     });
-
-    // I → V (move toward dominant)
     departures.push({
       targetRootPc:   (scaleRootPc + 7) % 12,
       targetSymbol:   '7',
@@ -441,8 +493,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       cadenceName:    'I → V',
       strength:       0.6,
     });
-
-    // I → ii (predominant departure)
     departures.push({
       targetRootPc:   (scaleRootPc + 2) % 12,
       targetSymbol:   'm7',
@@ -451,8 +501,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       cadenceName:    'I → ii',
       strength:       0.5,
     });
-
-    // I → vi (tonic prolongation / relative minor departure)
     departures.push({
       targetRootPc:   (scaleRootPc + 9) % 12,
       targetSymbol:   'm7',
@@ -465,18 +513,17 @@ function deriveResolutionTargets(context, chordRootPc) {
     return { resolutions, departures, substitutions };
   }
 
-  // ── DOMINANT — V7, VII°, ♭V (tritone degree) → resolves to tonic ─────────────
+  // ── DOMINANT — V7, VII°, ♭V (tritone degree) → resolves to tonic ─────────
   // Standard order per tonal harmony (Berklee, Aldwell & Schachter):
-  //   1. Authentic cadence V → I  (strongest — both chords in root position = perfect authentic)
-  //   2. Authentic cadence V → i  (to minor tonic — applies when scale is minor)
-  //   3. Deceptive cadence V → vi (interrupted resolution — vi substitutes for I)
-  // Substitutions are separate (not resolutions):
-  //   - Tritone sub: D♭7 substitutes FOR G7; both still resolve TO C, not to each other
-  //   - Related ii:  Dm7 precedes G7 in the ii–V–I; it is not a resolution target of G7
+  //   1. Authentic cadence V → I  (strongest)
+  //   2. Authentic cadence V → i  (to minor tonic)
+  //   3. Deceptive cadence V → vi (interrupted resolution)
+  // Substitutions (not resolutions):
+  //   - Tritone sub: D♭7 substitutes FOR G7; both resolve TO C.
+  //   - Related ii:  Dm7 precedes G7 in ii–V–I; not a resolution target of G7.
   if (harmonicFunction === 'dominant') {
     const tonicRootPc = scaleRootPc;
 
-    // 1. Authentic cadence — V7 → I (major tonic)
     resolutions.push({
       targetRootPc:   tonicRootPc,
       targetSymbol:   'Maj7',
@@ -485,9 +532,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       cadenceName:    'V → I',
       strength:       1.0,
     });
-
-    // 2. Authentic cadence — V7 → i (minor tonic)
-    // Always listed; the UI can filter by scale type if desired.
     resolutions.push({
       targetRootPc:   tonicRootPc,
       targetSymbol:   'm7',
@@ -496,8 +540,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       cadenceName:    'V → i',
       strength:       0.9,
     });
-
-    // 3. Deceptive cadence — V → vi
     resolutions.push({
       targetRootPc:   (tonicRootPc + 9) % 12,
       targetSymbol:   'm7',
@@ -507,10 +549,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       strength:       0.6,
     });
 
-    // Substitutions (separate array — not resolutions)
-    // Tritone sub: 6 semitones away from the dominant chord's own root.
-    // e.g. G7 (chordRootPc=7) → D♭7 (7+6=1). D♭7 also resolves to C, same tonic.
-    // chordRootPc is passed in from analyseChord(); fallback: scaleRootPc+7 (V of tonic).
     const ttSubRootPc = ((chordRootPc !== undefined ? chordRootPc : (scaleRootPc + 7)) + 6) % 12;
     substitutions.push({
       targetRootPc:   ttSubRootPc,
@@ -521,9 +559,7 @@ function deriveResolutionTargets(context, chordRootPc) {
       strength:       0.8,
     });
 
-    // Related ii: the minor seventh chord whose root is a P4 below the dominant root.
-    // e.g. for G7 → Dm7 (ii of C major). This is a predecessor, not a resolution target.
-    const relatedIiRootPc = (context.scaleRootPc + 2) % 12; // ii of the tonic scale
+    const relatedIiRootPc = (context.scaleRootPc + 2) % 12;
     substitutions.push({
       targetRootPc:   relatedIiRootPc,
       targetSymbol:   'm7',
@@ -534,14 +570,10 @@ function deriveResolutionTargets(context, chordRootPc) {
     });
   }
 
-  // ── SUBDOMINANT — IV, ♭VI, ♭VII → typically moves to dominant, then resolves ──
-  // Standard order:
-  //   1. IV → V  (subdominant to dominant — most common motion)
-  //   2. IV → I  (plagal cadence — weaker, "amen" cadence)
+  // ── SUBDOMINANT — IV, ♭VI, ♭VII → moves to dominant, then resolves ───────
   if (harmonicFunction === 'subdominant') {
     const tonicRootPc = scaleRootPc;
 
-    // 1. To dominant (IV → V) — prepares authentic cadence
     resolutions.push({
       targetRootPc:   (tonicRootPc + 7) % 12,
       targetSymbol:   '7',
@@ -550,8 +582,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       cadenceName:    'IV → V',
       strength:       0.8,
     });
-
-    // 2. Plagal cadence (IV → I)
     resolutions.push({
       targetRootPc:   tonicRootPc,
       targetSymbol:   'Maj7',
@@ -562,14 +592,10 @@ function deriveResolutionTargets(context, chordRootPc) {
     });
   }
 
-  // ── PREDOMINANT — II, ii → moves to V, then to I ─────────────────────────────
-  // Standard order:
-  //   1. ii → V  (the ii–V motion — backbone of jazz and tonal harmony)
-  //   2. ii → I  (direct resolution — weak, but possible; avoid in strict voice leading)
+  // ── PREDOMINANT — II, ii → moves to V, then to I ─────────────────────────
   if (harmonicFunction === 'predominant') {
     const tonicRootPc = scaleRootPc;
 
-    // 1. ii → V (move to dominant — by far the strongest predominant motion)
     resolutions.push({
       targetRootPc:   (tonicRootPc + 7) % 12,
       targetSymbol:   '7',
@@ -578,8 +604,6 @@ function deriveResolutionTargets(context, chordRootPc) {
       cadenceName:    'ii → V',
       strength:       0.9,
     });
-
-    // 2. ii → I (direct — weak, used in some cadential contexts)
     resolutions.push({
       targetRootPc:   tonicRootPc,
       targetSymbol:   'Maj7',
@@ -597,40 +621,43 @@ function deriveResolutionTargets(context, chordRootPc) {
 // ─── 6. STEP 6 — VOICE LEADING COMPUTATION ───────────────────────────────────
 //
 // Globally optimal, cost-function-driven voice leading assignment.
-// Replaces the greedy named-note engine with a backtracking search that
-// minimises total semitone cost across all voices simultaneously.
+// A backtracking search minimises total semitone cost across all voices simultaneously.
 //
-// Design: the cost function IS the theory. Leading tone rises and seventh
-// falls not because rules say so, but because those moves have cost 1 —
-// the minimum possible. No note names are detected anywhere in this section.
+// Design: the cost function IS the theory. Leading tones rise and sevenths fall
+// not because rules say so, but because those moves have cost 1 — the minimum
+// possible. No note names are detected anywhere in this section.
 
-// LEAP_PENALTY: added to raw semitone distance for any move larger than M3 (4 st).
-// A P5 leap (7 st) costs 7 + 8 = 15 — more than five stepwise moves.
-// Bass leap penalty is halved to allow natural bass motion by 4th/5th.
+/**
+ * Leap penalty added to raw semitone distance for any move larger than a major third (4 st).
+ * A perfect fifth leap (7 st) costs 7 + 8 = 15 — more than five stepwise moves.
+ * Bass leap penalty is halved to allow natural bass motion by fourth or fifth.
+ *
+ * @type {number}
+ */
 const LEAP_PENALTY = 8;
 
-// ── 6.1 resolveTargetIntervals() ─────────────────────────────────────────────
-//
-// Look up interval array for a CHORD_TYPES symbol string.
-// Falls back to [0,4,7] only for unknown symbols (programming error upstream).
-//
-// targetSymbol: a CHORD_TYPES symbol string, e.g. 'Maj7', 'm7', '7'
-// Returns: array of pitch-class intervals mod 12, sorted ascending, deduplicated.
+/**
+ * Looks up the pitch-class interval array for a `CHORD_TYPES` symbol string.
+ * Falls back to `[0,4,7]` (major triad) for unrecognised symbols — indicates
+ * a programming error upstream if triggered.
+ *
+ * @param {string} targetSymbol - A `CHORD_TYPES` symbol string (e.g. `'Maj7'`, `'m7'`, `'7'`).
+ * @returns {number[]} Pitch-class intervals mod 12, sorted ascending, deduplicated.
+ */
 function resolveTargetIntervals(targetSymbol) {
   return CHORD_SYMBOL_INTERVALS[targetSymbol] || [0, 4, 7];
 }
 
-// ── 6.2 generateCandidates() ─────────────────────────────────────────────────
-//
-// For each target pitch class, enumerate every reachable MIDI note within
-// ±12 semitones of the source range. This guarantees the nearest instance
-// of every target PC is always available to every source voice.
-//
-// targetRootPc:    pitch class 0–11
-// targetIntervals: array from resolveTargetIntervals()
-// sourceMidi:      array of source MIDI note numbers
-//
-// Returns: array of { midi, pc, intervalIndex }
+/**
+ * Enumerates every reachable MIDI note for each target pitch class within ±12 semitones
+ * of the source range. Guarantees the nearest instance of every target PC is always
+ * available to every source voice.
+ *
+ * @param {number} targetRootPc - Pitch class of the resolution target root (0–11).
+ * @param {number[]} targetIntervals - Interval array from `resolveTargetIntervals()`.
+ * @param {number[]} sourceMidi - MIDI note numbers of the sounding chord.
+ * @returns {Array.<{ midi: number, pc: number, intervalIndex: number }>} Candidate notes.
+ */
 function generateCandidates(targetRootPc, targetIntervals, sourceMidi) {
   const lo = Math.min(...sourceMidi) - 12;
   const hi = Math.max(...sourceMidi) + 12;
@@ -648,32 +675,36 @@ function generateCandidates(targetRootPc, targetIntervals, sourceMidi) {
   return candidates;
 }
 
-// ── 6.3 moveCost() ───────────────────────────────────────────────────────────
-//
-// Cost of moving a voice by `delta` semitones.
-// delta:  absolute semitone distance (0 = common tone, 1 = m2, …)
-// isBass: true for the lowest source voice — halves the leap penalty
-//
-// Returns a non-negative cost integer.
+/**
+ * Cost of moving a single voice by `delta` semitones.
+ * Common tones are free; steps and thirds cost their distance; leaps incur a penalty.
+ * Bass voice leap penalty is halved to permit natural bass motion by fourth or fifth.
+ *
+ * @param {number} delta - Absolute semitone distance of the move (0 = common tone).
+ * @param {boolean} isBass - Whether this is the lowest source voice.
+ * @returns {number} Non-negative cost value.
+ */
 function moveCost(delta, isBass) {
-  if (delta === 0) return 0;                         // common tone — free
-  if (delta <= 4)  return delta;                     // step or third — cost = distance
-  return delta + (isBass ? LEAP_PENALTY / 2 : LEAP_PENALTY);  // leap — add penalty
+  if (delta === 0) return 0;
+  if (delta <= 4)  return delta;
+  return delta + (isBass ? LEAP_PENALTY / 2 : LEAP_PENALTY);
 }
 
-// ── 6.4 assignByMinCost() ────────────────────────────────────────────────────
-//
-// Global minimum-cost assignment via backtracking search.
-// Assigns each source voice to a candidate such that:
-//   - No two voices share the same MIDI note (no exact unison doubling)
-//   - Total cost across all voices is minimised globally
-//
-// For N ≤ 7 voices, exhaustive search with branch pruning is trivially fast.
-//
-// sourceMidi:  array of MIDI note numbers, sorted ascending (bass first)
-// candidates:  array from generateCandidates()
-//
-// Returns: array of { fromMidi, toMidi } in the same order as sourceMidi (sorted)
+/**
+ * Finds the globally optimal voice leading assignment from source notes to candidate
+ * target notes via backtracking search with branch pruning.
+ *
+ * Constraints:
+ * - No two voices may share the same MIDI note (no exact unison doubling).
+ * - Total cost across all voices is minimised globally (not greedily per voice).
+ *
+ * Pruning: any branch whose partial cost meets or exceeds the current best is abandoned.
+ * For N ≤ 7 voices, exhaustive search with pruning is trivially fast.
+ *
+ * @param {number[]} sourceMidi - MIDI note numbers of the sounding chord (sorted ascending).
+ * @param {Array.<{ midi: number, pc: number, intervalIndex: number }>} candidates - From `generateCandidates()`.
+ * @returns {Array.<{ fromMidi: number, toMidi: number }>} Optimal assignment, one entry per source voice.
+ */
 function assignByMinCost(sourceMidi, candidates) {
   const sorted = [...sourceMidi].sort((a, b) => a - b);
   const n      = sorted.length;
@@ -682,7 +713,6 @@ function assignByMinCost(sourceMidi, candidates) {
   let bestTotalCost  = Infinity;
 
   function search(voiceIdx, assignment, usedMidi, currentCost) {
-    // Prune: abandon branch if already at or above best known cost
     if (currentCost >= bestTotalCost) return;
 
     if (voiceIdx === n) {
@@ -694,7 +724,6 @@ function assignByMinCost(sourceMidi, candidates) {
     const src    = sorted[voiceIdx];
     const isBass = voiceIdx === 0;
 
-    // Sort candidates cheapest-first for this voice — maximises pruning efficiency
     const sortedCands = candidates
       .filter(c => !usedMidi.has(c.midi))
       .sort((a, b) =>
@@ -723,17 +752,15 @@ function assignByMinCost(sourceMidi, candidates) {
   return bestAssignment;
 }
 
-// ── 6.5 repairVoiceCrossing() ────────────────────────────────────────────────
-//
-// Post-processing: swap target notes of adjacent voice pairs when a crossing
-// exists AND the swap strictly reduces total cost.
-//
-// Uses strict < (not <=) in the swap guard to guarantee termination:
-// each accepted swap strictly reduces total cost, so the loop converges
-// in at most O(N²) passes with no risk of cycling.
-//
-// assignments: array of { fromMidi, toMidi } sorted by fromMidi ascending
-// Returns the same array with crossings resolved in-place.
+/**
+ * Post-processes a voice leading assignment to eliminate voice crossings where doing
+ * so strictly reduces total cost. Uses strict `<` in the swap guard to guarantee
+ * termination — each accepted swap strictly reduces total cost, so the loop converges
+ * in at most O(N²) passes with no risk of cycling.
+ *
+ * @param {Array.<{ fromMidi: number, toMidi: number }>} assignments - Sorted by `fromMidi` ascending.
+ * @returns {Array.<{ fromMidi: number, toMidi: number }>} The same array with crossings resolved in-place.
+ */
 function repairVoiceCrossing(assignments) {
   assignments.sort((a, b) => a.fromMidi - b.fromMidi);
 
@@ -745,7 +772,7 @@ function repairVoiceCrossing(assignments) {
       const b = assignments[i + 1];
       if (a.toMidi > b.toMidi) {
         const isBassA = i === 0;
-        const isBassB = false; // i+1 is never the bass
+        const isBassB = false;
         const costBefore = moveCost(Math.abs(a.toMidi - a.fromMidi), isBassA)
                          + moveCost(Math.abs(b.toMidi - b.fromMidi), isBassB);
         const costAfter  = moveCost(Math.abs(b.toMidi - a.fromMidi), isBassA)
@@ -761,12 +788,20 @@ function repairVoiceCrossing(assignments) {
   return assignments;
 }
 
-// ── 6.6 buildMoves() ─────────────────────────────────────────────────────────
-//
-// Convert final assignments to the UI move objects expected by breakdown.js.
-//
-// assignments: array of { fromMidi, toMidi }
-// Returns: array of { fromMidi, toMidi, fromPc, toPc, semitones, direction, reason }
+/**
+ * Converts final voice leading assignments into the UI move objects consumed by `breakdown.js`.
+ *
+ * @param {Array.<{ fromMidi: number, toMidi: number }>} assignments - Final optimised assignments.
+ * @returns {Array.<{
+ *   fromMidi: number,
+ *   toMidi: number,
+ *   fromPc: number,
+ *   toPc: number,
+ *   semitones: number,
+ *   direction: 'up'|'down'|'none',
+ *   reason: 'common_tone'|'stepwise'
+ * }>} Move objects ready for UI rendering.
+ */
 function buildMoves(assignments) {
   return assignments.map(({ fromMidi, toMidi }) => {
     const delta = toMidi - fromMidi;
@@ -782,21 +817,30 @@ function buildMoves(assignments) {
   });
 }
 
-// ── 6.7 computeVoiceLeadingRules() — public API ───────────────────────────────
-//
-// Orchestrates the five-stage pipeline:
-//   1. Resolve target intervals from CHORD_SYMBOL_INTERVALS
-//   2. Generate all reachable candidate MIDI notes
-//   3. Global minimum-cost assignment (backtracking search)
-//   4. Voice crossing repair
-//   5. Build UI move objects
-//
-// sourceMidi:   array of MIDI note numbers (the sounding chord)
-// targetRootPc: pitch class 0–11 of the resolution target root
-// targetSymbol: CHORD_TYPES symbol string (e.g. 'Maj7', 'm7', '7')
-// context:      context object — accepted for signature compatibility, not used
-//
-// Returns: array of { fromMidi, toMidi, fromPc, toPc, semitones, direction, reason }
+/**
+ * Orchestrates the five-stage voice leading pipeline for a single resolution target.
+ *
+ * Stages:
+ *   1. Resolve target intervals from `CHORD_SYMBOL_INTERVALS`
+ *   2. Generate all reachable candidate MIDI notes within ±12 of the source range
+ *   3. Global minimum-cost assignment via backtracking search
+ *   4. Voice crossing repair
+ *   5. Build UI move objects
+ *
+ * @param {number[]} sourceMidi - MIDI note numbers of the sounding chord.
+ * @param {number} targetRootPc - Pitch class of the resolution target root (0–11).
+ * @param {string} targetSymbol - `CHORD_TYPES` symbol string (e.g. `'Maj7'`, `'m7'`, `'7'`).
+ * @param {Object} context - Context object (accepted for signature compatibility; not used internally).
+ * @returns {Array.<{
+ *   fromMidi: number,
+ *   toMidi: number,
+ *   fromPc: number,
+ *   toPc: number,
+ *   semitones: number,
+ *   direction: 'up'|'down'|'none',
+ *   reason: 'common_tone'|'stepwise'
+ * }>} Voice leading move objects.
+ */
 function computeVoiceLeadingRules(sourceMidi, targetRootPc, targetSymbol, context) {
   const targetIntervals = resolveTargetIntervals(targetSymbol);
   const candidates      = generateCandidates(targetRootPc, targetIntervals, sourceMidi);
@@ -808,32 +852,42 @@ function computeVoiceLeadingRules(sourceMidi, targetRootPc, targetSymbol, contex
 
 // ─── 7. PUBLIC API ───────────────────────────────────────────────────────────
 
-// Main entry point. Given a chord's root pc, pitch classes, and interval
-// pattern, return the full analysis: all contexts, resolution targets per
-// context, ready for the UI to render as pills and voice leading table.
-//
-// chordRootPc:       integer 0–11
-// chordPitchClasses: array or Set of pitch class integers 0–11
-// chordIntervals:    raw intervals from CHORD_TYPES entry (e.g. [0,4,7,10])
-// sourceMidi:        array of MIDI note numbers currently sounding
-// chordFamily:       string from CHORD_TYPES family field (for ambiguous check)
-//
-// Returns: { contexts, isAmbiguous }
-// Each context now carries three arrays:
-//   ctx.resolutions   — true harmonic resolutions, ordered strongest first
-//   ctx.departures    — departure paths (tonic chords only)
-//   ctx.substitutions — reharmonisation alternatives (e.g. tritone sub, related ii)
-//
-// Voice leading is pre-computed for every entry in resolutions and departures.
-// Substitutions carry no voice leading (they are chord substitutes, not targets).
+/**
+ * Main entry point for the voice leading engine. Given a chord's root, pitch classes,
+ * interval pattern, sounding MIDI notes, and family, returns the full harmonic analysis:
+ * all diatonic contexts, resolution targets per context, and pre-computed voice leading.
+ *
+ * Voice leading is pre-computed for every entry in `ctx.resolutions` and `ctx.departures`.
+ * Substitutions carry no voice leading — they are chord alternatives, not resolution targets.
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @param {number[]|Set.<number>} chordPitchClasses - All pitch classes in the chord.
+ * @param {number[]} chordIntervals - Raw intervals from the `CHORD_TYPES` entry (e.g. `[0,4,7,10]`).
+ * @param {number[]} sourceMidi - MIDI note numbers currently sounding.
+ * @param {string} chordFamily - Family string from `CHORD_TYPES` (e.g. `'major'`, `'dominant'`).
+ * @returns {{
+ *   contexts: Array.<{
+ *     scaleSymbol: string,
+ *     scaleName: string,
+ *     scaleGroup: string,
+ *     scaleRootPc: number,
+ *     degSemitones: number,
+ *     roman: string,
+ *     harmonicFunction: string,
+ *     tension: number,
+ *     matchQuality: number,
+ *     resolutions: Array.<Object>,
+ *     departures: Array.<Object>,
+ *     substitutions: Array.<Object>
+ *   }>,
+ *   isAmbiguous: boolean
+ * }}
+ */
 function analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi, chordFamily) {
-  // Flag families where algorithm can't reliably resolve
   const isAmbiguous = AMBIGUOUS_FAMILIES.has(chordFamily);
 
-  // Find all diatonic contexts
   const contexts = findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals);
 
-  // For each context, derive resolution targets and voice leading
   for (const ctx of contexts) {
     const derived = deriveResolutionTargets(ctx, chordRootPc);
 
@@ -841,24 +895,25 @@ function analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi
     ctx.departures    = derived.departures;
     ctx.substitutions = derived.substitutions;
 
-    // Pre-compute voice leading for every true resolution
     if (sourceMidi && sourceMidi.length) {
       for (const res of ctx.resolutions) {
         res.voiceLeading = computeVoiceLeadingRules(
           sourceMidi, res.targetRootPc, res.targetSymbol, ctx
         );
       }
-
-      // Pre-compute voice leading for departure paths too
       for (const dep of ctx.departures) {
         dep.voiceLeading = computeVoiceLeadingRules(
           sourceMidi, dep.targetRootPc, dep.targetSymbol, ctx
         );
       }
-
-      // Substitutions do not get voice leading — they are not resolution targets
+      // Substitutions do not get voice leading — they are not resolution targets.
     }
   }
 
   return { contexts, isAmbiguous };
 }
+
+// =============================================================================
+// The Sound Travels Ear Training — js/engine/voiceLeading.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================
