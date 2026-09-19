@@ -815,20 +815,16 @@ Check that the page loads, the sidebar is visible, and the Live App link works.
 Every time you update JS comments or add new files:
 
 ```bash
-npm run docs
-git add docs/
-git commit -m "docs: regenerate"
-git push origin main
+npm run docs && git add -A docs/ && git commit -m "docs: regenerate" && git push origin main
 ```
+
+**Important:** always use `git add -A docs/` (not `git add docs/`) so deleted old hash files are staged alongside new ones. And always commit and push immediately after running `npm run docs` — the CSS filename hash changes on every build, so leaving unstaged docs changes will cause the live site to 404 on its stylesheet until the next push.
 
 If you add new JS, CSS, or HTML files in the future:
 
 ```bash
 ./add_headers.sh
-npm run docs
-git add docs/ js/ css/ index.html
-git commit -m "docs: add headers to new files; regenerate"
-git push origin main
+npm run docs && git add -A docs/ js/ css/ index.html && git commit -m "docs: add headers to new files; regenerate" && git push origin main
 ```
 
 ---
@@ -847,6 +843,8 @@ git push origin main
 | `template` path set to `node_modules/clean-jsdoc-theme/dist` | v5.2.0 ships `publish.js` in `dist/` not the package root; jsdoc.json must point there or JSDoc throws a FATAL |
 | `"basePath": "/earTrainingJS/docs/"` in `opts` | GitHub Pages serves the repo from `/earTrainingJS/`, not `/`; without basePath the theme generates absolute asset paths (`/_assets/...`) that 404. basePath fixes all asset, island, and search index URLs |
 | GitHub Pages source left on root `/` of `main` | The app (`index.html`) lives at root; docs live at `/docs/` subfolder — both served by the same Pages config with no conflict. No need to change the Pages source setting |
+| `.nojekyll` at repo root AND baked into `npm run docs` script | GitHub Pages' Jekyll ignores folders starting with `_` (`_assets`, `_islands`, `pagefind`). `.nojekyll` at repo root disables Jekyll. JSDoc wipes `docs/` on each run so `docs/.nojekyll` must be recreated — the script `jsdoc -c jsdoc.json && touch docs/.nojekyll` handles this automatically |
+| CSS filename hash changes on every `npm run docs` run | clean-jsdoc-theme 5.2.0 bakes a build timestamp into the main stylesheet filename (e.g. `styles.mu87xxxx-e26f87d4.css`). Always use `git add -A docs/` and commit+push immediately after regenerating — never leave unstaged docs changes |
 
 ---
 
