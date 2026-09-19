@@ -1,39 +1,47 @@
-/* ── MOBILE: phones up to 600px ── */
+/*
+ * mobile.css
+ * Narrow-viewport overrides for screens up to 600px wide. All rules live
+ * inside a single @media (max-width: 600px) block and override values set
+ * in base.css and components.css. Loaded last among the three CSS files.
+ *
+ * Bug fix (Aug 2026): #themeToggleMobile was incorrectly hidden on mobile
+ * (display:none) instead of shown. Corrected to display:inline-flex in
+ * section 2. The redundant #themeToggle sizing block removed — #themeToggle
+ * stays in .header-actions after JS relocates #aboutBtn and #helpBtn into
+ * the score bar, and needs no special mobile sizing.
+ */
+
 @media (max-width: 600px) {
 
-  /* ── 1. Fix body top padding to match slimmer header ── */
+  /* ── 1. Body top padding: matches slimmer single-line mobile header ── */
   body { padding-top: 96px; }
 
-  /* ── 2. Header: logo + title + ℹ + ? + ☀️ all on one row ── */
+  /* ── 2. Header row: logo + title + ☀️ (About/Help moved to score bar by JS) ── */
   #stickyInner { padding: 0 0.625rem; }
   .header { padding: 0.35rem 0; gap: 0.5rem; flex-wrap: nowrap; }
   .site-logo { height: 1.625rem; width: 1.625rem; flex-shrink: 0; }
   .title { font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* ℹ and ? are moved into score bar by JS on mobile — shrink to match score bar pills */
+  /* ℹ and ? are relocated into the score bar by app.js on mobile — size to match score bar pills */
   #aboutBtn, #helpBtn { width: 2rem; height: 2rem; font-size: 0.875rem; }
-  #themeToggle {
-    display: inline-flex;
-    width: 2rem; height: 2rem; font-size: 0.875rem;
-    flex-shrink: 0;
-  }
-  #themeToggleMobile { display: none; }
+  /* Mobile theme toggle lives in the score bar (Row 2) — show it here, hidden at desktop by components.css */
+  #themeToggleMobile { display: inline-flex; }
 
   /* ── 3. Score bar ── */
-  /* Row 1: Streak · Score · New Session (flex-wrap handles overflow) */
+  /* Row 1: Streak · Score · New Session (flex-wrap pushes Row 2 down) */
   .score-bar { flex-wrap: wrap; gap: 0.375rem; padding: 0.15rem 0 0.25rem; }
   .score-pill { font-size: 0.7rem; padding: 0.15rem 0.4rem; min-height: 2rem; }
   .new-session-btn { font-size: 0.7rem; padding: 0.15rem 0.4rem; min-height: 2rem; }
-  /* Row 2: ℹ · ? · Quiz/Dict — pushed to own row, compact not full-width */
+  /* Row 2: ℹ · ? · ☀️ · Quiz/Dict — compact, not full-width */
   .qd-toggle { margin-left: auto; width: auto; border-radius: 10px; }
   .qd-btn { font-size: 0.75rem; padding: 0.2rem 0.75rem; min-height: 2rem; text-align: center; }
 
-  /* ── 4. Mode tabs: tighter ── */
+  /* ── 4. Mode tabs: tighter padding and font ── */
   .mode-tab { font-size: 0.8125rem; padding: 0.45rem 0.25rem; min-height: 2.5rem; }
 
-  /* ── 5. App padding ── */
+  /* ── 5. App content padding ── */
   #app { padding: 0.875rem 0.75rem 1rem; }
 
-  /* ── 6. Root note chips: wrap grid so all chips are visible ── */
+  /* ── 6. Root note chips: wrap so all 18 root + enharmonic chips are visible ── */
   #rootChips {
     display: flex;
     flex-wrap: wrap;
@@ -44,7 +52,7 @@
     padding: 0.3rem 0.5rem;
     min-height: 2.25rem;
   }
-  /* Settings is now first — it gets the top margin; root panel follows */
+  /* Settings renders above root panel on mobile — give it the top margin */
   #settingsPanel { margin-top: 1.25rem; }
   #rootPanel { margin-top: 0; }
 
@@ -52,39 +60,40 @@
   #poolPanel .pool-panel-body,
   #rootPanel .pool-panel-body,
   #settingsPanelBody { display: none; }
-  /* Override: allow JS-toggled .open to show panels (ID specificity fix) */
+  /* ID specificity override: allow JS-toggled .open class to re-show panels */
   #poolPanel .pool-panel-body.open,
   #rootPanel .pool-panel-body.open { display: block; }
-  /* Settings panel — same pattern, same fix */
   #settingsPanelBody.open { display: block; }
 
-  /* ── 8. Play area: compact, no wasted space ── */
+  /* ── 8. Play area: compact ── */
   .play-area { padding: 1rem; }
   .play-btn { width: 4.25rem; height: 4.25rem; font-size: 1.625rem; }
 
-  /* ── 10. Dropdown: taller on mobile ── */
+  /* ── 9. (unused) ── */
+
+  /* ── 10. Answer dropdown: taller on mobile to reduce scrolling ── */
   .ans-dropdown-list { max-height: 52vh; }
 
-  /* ── 11. Controls: full-width buttons ── */
+  /* ── 11. Control buttons: full-width so tap targets fill the row ── */
   .ctrl-btn { flex: 1; min-width: 0; text-align: center; }
 
-  /* ── 12. Breakdown: narrower key label ── */
+  /* ── 12. Breakdown key label: narrower to give value column more room ── */
   .breakdown-key { min-width: 68px; }
 
-  /* ── 13. Tooltip: don't clip off right edge ── */
+  /* ── 13. Riemannian tooltip: anchor to right edge to avoid left-clip ── */
   .bd-riemann-tooltip { left: auto; right: 0; width: 210px; }
 
   /* ── 14. Notation card: tighter padding ── */
   .notation-area { padding: 0.75rem 0.75rem 0.375rem; }
 
-  /* ── 15. Keyboard hint: hide on mobile (Space/Enter less relevant) ── */
+  /* ── 15. Keyboard hint: hidden on mobile (Space/Enter shortcuts not relevant) ── */
   .kbd-hint { display: none; }
 
-  /* ── 16. Footer: YouTube on own row, three LinkedIn badges below ── */
+  /* ── 16. Footer: YouTube badge on own row, LinkedIn badges below ── */
   .app-footer { margin-top: 1.5rem; }
   .app-footer-badges a:first-child { width: 100%; display: flex; justify-content: center; }
 
-  /* ── 17. Chord scales mobile rows: name full-width, tag + note below ── */
+  /* ── 17. Chord scales rows: name full-width, tag + note on second line ── */
   .cs-row-mobile {
     flex-wrap: wrap;
     gap: 0.25rem 0.4rem;
@@ -102,7 +111,7 @@
     font-style: italic;
   }
 
-  /* ── 18. Voice leading mobile: full-width resolves-to label ── */
+  /* ── 18. Voice leading: full-width "Resolves to" label above context cards ── */
   .vl-resolves-label-mobile {
     font-size: 0.75rem;
     font-weight: 600;
@@ -113,7 +122,7 @@
     display: block;
   }
 
-  /* ── 19. Chord scales + voice leading mobile wrappers: full width ── */
+  /* ── 19. Chord scales + voice leading wrappers: stretch to full column width ── */
   .cs-mobile-wrap {
     margin-top: 0.5rem;
   }
@@ -122,3 +131,5 @@
     box-sizing: border-box;
   }
 }
+
+/* end mobile.css — The Sound Travels Ear Training © 2026 */
