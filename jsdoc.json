@@ -1,0 +1,38 @@
+{
+  "source": {
+    "include": ["js/"],
+    "exclude": ["js/vendor/"],
+    "includePattern": ".+\\.js$"
+  },
+  "plugins": ["plugins/markdown"],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  },
+  "theme_opts": {
+    "theme": "dark",
+    "title": "The Sound Travels Ear Training",
+    "homepageTitle": "The Sound Travels Ear Training — Developer Reference",
+    "search": true,
+    "menu": [
+      {
+        "title": "Live App",
+        "link": "https://guitarsai.github.io/earTrainingJS/",
+        "target": "_blank"
+      },
+      {
+        "title": "GitHub",
+        "link": "https://github.com/GuitarsAI/earTrainingJS",
+        "target": "_blank"
+      }
+    ],
+    "footer": "The Sound Travels Ear Training — Renato Fera P. — 2026"
+  },
+  "opts": {
+    "template": "node_modules/clean-jsdoc-theme",
+    "destination": "./docs",
+    "recurse": true,
+    "readme": "./tutorials/getting-started.md",
+    "tutorials": "./tutorials"
+  }
+}
