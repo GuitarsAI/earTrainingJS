@@ -1,12 +1,34 @@
-// ─── Chord quiz ───────────────────────────────────────────────────────────────
+/**
+ * @file chords-mode.js
+ * @description Chord quiz mode: question generation, answer grading, and voice leading
+ *   analysis cache. Handles all four chord families (normal, slash, polychord, UST)
+ *   through dedicated paths in generateChordQuestion().
+ *   Playback lives in controls.js. Notation lives in notation.js.
+ *   Dictionary functions (dict pool panel, dictShowChord) live in app.js.
+ * @layer modes
+ * @requires state.js, defaults.js, helpers.js, spelling.js, voicings.js,
+ *           audio.js, notation.js, controls.js, pool.js, voiceLeading.js
+ */
 
+// ─── Question generation ──────────────────────────────────────────────────────
+
+/**
+ * Picks a random chord from the active pool and sets up all playback state,
+ * then renders the answer dropdown and controls. Handles four families via
+ * early-return paths before falling through to the normal chord path.
+ *
+ * Resets chordKeySigMode to 'C' and clears currentVoiceLeadingAnalysis on
+ * every new question.
+ */
 function generateChordQuestion() {
   const pool = getActivePool();
-  currentChord = pickRandom(pool); // POINT 10: uniform random, no adaptive weighting
-  chordKeySigMode = 'C'; // POINT 32b: reset to C (accidentals inline) each new question
-  currentVoiceLeadingAnalysis = null; // POINT 37: reset cache for each new question
+  currentChord = pickRandom(pool); // uniform random — no adaptive weighting
+  chordKeySigMode = 'C'; // reset to C (accidentals inline) each new question
+  currentVoiceLeadingAnalysis = null; // reset voice leading cache each new question
 
-  // POINT 25: Slash chord path
+  // ── Slash chord path ─────────────────────────────────────────────────────────
+  // Bass note placed below the upper chord; upper root anchored to octave 4.
+  // currentSlashBassMidi is clamped to MIDI 28–48 so it sits convincingly below.
   if (currentChord.family === 'slash') {
     currentSlashBassMidi = null;
     currentUpperRootMidi = null;
@@ -27,7 +49,9 @@ function generateChordQuestion() {
     return;
   }
 
-  // POINT 26: Polychord path
+  // ── Polychord path ───────────────────────────────────────────────────────────
+  // Upper triad anchored to octave 5; lower triad offset by lowerOffset semitones.
+  // Lower root clamped to MIDI 36–48 to keep the two triads clearly separated.
   if (currentChord.family === 'poly') {
     currentSlashBassMidi = null; currentUpperRootMidi = null;
     currentUSTShellMidi = []; currentUSTUpperMidi = []; currentUSTRootMidi = null;
@@ -49,7 +73,10 @@ function generateChordQuestion() {
     return;
   }
 
-  // POINT 26: UST path
+  // ── UST path ─────────────────────────────────────────────────────────────────
+  // Shell voiced in octave 4; shell notes bumped up an octave if below MIDI 48
+  // so the upper triad sits clearly above. Root badge reflects shell quality
+  // (dom7 → '7', minor shell → 'min', Maj7 shell → 'maj').
   if (currentChord.family === 'ust') {
     currentSlashBassMidi = null; currentUpperRootMidi = null;
     currentPolyUpperMidi = []; currentPolyLowerMidi = [];
@@ -65,14 +92,19 @@ function generateChordQuestion() {
     currentVoicingMode = 'full';
     resetQuizUI();
     const rootPc = currentUSTRootMidi % 12;
-    const _ustBadgeSym = currentChord.shellQuality === 'min' ? 'min' : currentChord.shellQuality === 'maj7' ? 'maj' : '7';
-    updateRootBadge(spelledNote(0, rootPc, _ustBadgeSym));
+    const ustBadgeSym = currentChord.shellQuality === 'min' ? 'min'
+      : currentChord.shellQuality === 'maj7' ? 'maj'
+      : '7';
+    updateRootBadge(spelledNote(0, rootPc, ustBadgeSym));
     renderAnswers(pool, submitChordAnswer);
     renderControls(generateChordQuestion, playChord);
     return;
   }
 
-  // Normal chord path
+  // ── Normal chord path (including inversions) ─────────────────────────────────
+  // Root chosen by chooseRootMidi(); voicing resolved by resolveVoicingMode().
+  // For inversions, voiced MIDI notes are sorted and rotated so the correct
+  // bass note (invIndex) is the lowest pitch.
   currentSlashBassMidi = null;
   currentUpperRootMidi = null;
   currentPolyUpperMidi = []; currentPolyLowerMidi = [];
@@ -88,7 +120,7 @@ function generateChordQuestion() {
 
   const voicedMidi = applyVoicing(rootMidi, baseIntervals, currentVoicingMode);
   if (currentChord.invIndex !== undefined) {
-    // Inversion: rotate the voiced MIDI notes so the correct bass note is lowest
+    // Rotate voiced notes so the inversion bass note is the lowest pitch
     const invIdx = Math.min(currentChord.invIndex, voicedMidi.length - 1);
     const sorted = [...voicedMidi].sort((a, b) => a - b);
     for (let i = 0; i < invIdx; i++) {
@@ -106,6 +138,17 @@ function generateChordQuestion() {
   renderControls(generateChordQuestion, playChord);
 }
 
+// ─── Answer grading ───────────────────────────────────────────────────────────
+
+/**
+ * Grades the user's chosen answer against the current chord. Updates score,
+ * streak, and status message; reveals the correct answer in the dropdown;
+ * computes and caches the voice leading analysis; then shows notation and
+ * re-renders controls with the Next button.
+ *
+ * @param {object} chosen - The chord descriptor the user selected.
+ * @param {Element} _el   - The dropdown element (unused; kept for call-site consistency).
+ */
 function submitChordAnswer(chosen, _el) {
   if (answered) return;
   answered = true;
@@ -118,7 +161,8 @@ function submitChordAnswer(chosen, _el) {
 
   if (isCorrect) {
     correct++; streak++;
-    document.getElementById('statusMsg').textContent = streak >= 3 ? `${streak} in a row! \uD83C\uDFB9` : 'Correct!';
+    document.getElementById('statusMsg').textContent =
+      streak >= 3 ? `${streak} in a row! \uD83C\uDFB9` : 'Correct!';
     document.getElementById('statusMsg').className = 'status-msg good';
   } else {
     streak = 0;
@@ -132,20 +176,35 @@ function submitChordAnswer(chosen, _el) {
     document.getElementById('statusMsg').textContent = `It was ${wrongLabel}`;
     document.getElementById('statusMsg').className = 'status-msg bad';
   }
+
   updateScore();
   dictInversionIndex = currentChord.invIndex ?? 0;
 
-  // POINT 37: compute and cache voice leading analysis now, once, before showBreakdown()
-  // uses it. Reset on each new question in generateChordQuestion().
+  // Compute and cache voice leading analysis once at answer-reveal time,
+  // before showBreakdown() consumes it. Reset each new question above.
   currentVoiceLeadingAnalysis = _buildVoiceLeadingAnalysis();
 
   showNotation();
   renderControls(generateChordQuestion, playChord);
 }
 
-// POINT 37: Build the voice leading analysis for the current chord state.
-// Called once at answer-reveal time; result cached in currentVoiceLeadingAnalysis.
-// Returns the result of analyseChord() or null if the engine is unavailable.
+// ─── Voice leading analysis ───────────────────────────────────────────────────
+
+/**
+ * Builds the voice leading analysis for the current chord state and returns it.
+ * Called once at answer-reveal time; result cached in currentVoiceLeadingAnalysis
+ * and consumed by showBreakdown(). Returns null if the engine is unavailable or
+ * state is incomplete.
+ *
+ * Each family uses a different input strategy:
+ * - Slash: upper chord only — bass note is a label modifier, not harmonic identity.
+ * - Poly: upper + lower merged; lower root used; context discovery skipped (polytonal).
+ * - UST: implied intervals reconstructed from shell + upper triad data.
+ * - Normal/inversion: pitch classes derived from canonical intervals, not voiced MIDI
+ *   notes — voicing can omit or alter notes and cause wrong scale matches.
+ *
+ * @returns {object|null} Voice leading analysis object from analyseChord(), or null.
+ */
 function _buildVoiceLeadingAnalysis() {
   if (typeof analyseChord !== 'function') return null;
   if (!currentChord || !currentChordRootMidi) return null;
@@ -153,7 +212,6 @@ function _buildVoiceLeadingAnalysis() {
   const toPc = m => ((m % 12) + 12) % 12;
 
   // ── Slash chord ──────────────────────────────────────────────────────────────
-  // Analyse the upper chord only; bass note is a label modifier, not harmonic identity.
   if (currentChord.family === 'slash' && currentUpperRootMidi !== null) {
     const rootPc = toPc(currentUpperRootMidi);
     const pitchClasses = currentMidiNotes.map(toPc);
@@ -161,7 +219,6 @@ function _buildVoiceLeadingAnalysis() {
   }
 
   // ── Polychord ────────────────────────────────────────────────────────────────
-  // Merge upper + lower; use lower root; skip context discovery (polytonal by design).
   if (currentChord.family === 'poly' && currentPolyLowerRootMidi !== null) {
     const rootPc = toPc(currentPolyLowerRootMidi);
     const allMidi = [...currentPolyLowerMidi, ...currentPolyUpperMidi];
@@ -170,8 +227,8 @@ function _buildVoiceLeadingAnalysis() {
   }
 
   // ── UST ──────────────────────────────────────────────────────────────────────
-  // Construct implied chord pitch classes from shell + upper triad intervals.
-  // All values come directly from the chord data entry — no lookup needed.
+  // Reconstruct implied intervals from shell + upper triad — all from chord data,
+  // no lookup needed.
   if (currentChord.family === 'ust' && currentUSTRootMidi !== null) {
     const rootPc = toPc(currentUSTRootMidi);
     const impliedIntervals = [
@@ -184,11 +241,12 @@ function _buildVoiceLeadingAnalysis() {
   }
 
   // ── Normal chord (including inversions) ──────────────────────────────────────
-  // Derive pitch classes from the chord's canonical intervals, not from voiced
-  // MIDI notes — voicing can omit or alter notes depending on mode/register,
-  // which causes wrong scale matches (e.g. G7 matching F major instead of C major).
+  // Use canonical intervals rather than voiced MIDI notes to avoid scale mismatches
+  // (e.g. a voiced G7 missing the fifth could match F major instead of C major).
   const rootPc = toPc(currentChordRootMidi);
   const baseChord = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
   const pitchClasses = baseChord.intervals.map(i => (rootPc + i) % 12);
   return analyseChord(rootPc, pitchClasses, baseChord.intervals, currentMidiNotes, baseChord.family);
 }
+
+// @file-end — The Sound Travels Ear Training © 2026

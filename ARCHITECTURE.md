@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: js/modes/progressions-mode.js ✅
+> Last updated: js/modes/chords-mode.js ✅
 
 ---
 
@@ -73,7 +73,7 @@ earTrainingJS/
 │   │   ├── pool-scales.js             ✅ production pass complete
 │   │   └── pool-progressions.js       ✅ production pass complete
 │   ├── modes/
-│   │   ├── chords-mode.js             [ ] pending
+│   │   ├── chords-mode.js             ✅ production pass complete
 │   │   ├── intervals-mode.js          [ ] pending
 │   │   ├── scales-mode.js             [ ] pending
 │   │   ├── progressions-mode.js       ✅ production pass complete
@@ -1203,8 +1203,35 @@ Specialised families extend the schema with additional fields:
 
 ---
 
-### js/modes/chords-mode.js
-[ ] — pending production pass
+### ✅ js/modes/chords-mode.js
+
+**Role:** Chord quiz mode: question generation, answer grading, and voice leading analysis cache. Handles all four chord families (normal, slash, polychord, UST) through dedicated early-return paths in `generateChordQuestion()`. Playback lives in `audio.js`; notation in `notation.js`; dictionary functions and the `generateQuestion` dispatcher live in `progressions-mode.js` (which loads last among mode files and overrides the stub).
+
+**Size:** ~195 lines across 3 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `generateChordQuestion()` | `() → void` | Picks a random chord from the active pool and sets up all playback state. Routes through four paths — slash, polychord, UST, and normal (including inversions) — before rendering the answer dropdown and controls. Resets `chordKeySigMode` to `'C'` and clears `currentVoiceLeadingAnalysis` on every call. |
+| `submitChordAnswer(chosen, _el)` | `(Object, Element) → void` | Grades the user's answer, updates score/streak/status, reveals the correct answer in the dropdown, computes and caches the voice leading analysis, then shows notation and re-renders controls with the Next button. |
+
+**Private helpers (not exported, documented for maintainers):**
+
+| Symbol | Description |
+|---|---|
+| `_buildVoiceLeadingAnalysis()` | Builds the voice leading analysis for the current chord state. Called once at answer-reveal time; result cached in `currentVoiceLeadingAnalysis` and consumed by `showBreakdown()`. Each family uses a distinct input strategy: slash analyses the upper chord only; poly merges both triads using the lower root; UST reconstructs implied intervals from shell + upper triad data; normal/inversion uses canonical intervals (not voiced MIDI notes) to avoid scale mismatches from omitted voices. Returns `null` if `analyseChord` is unavailable or state is incomplete. |
+
+**Key design patterns:**
+
+- **Four-path question generation:** `generateChordQuestion()` uses early-return branches for slash, polychord, and UST families before falling through to the normal chord path. Each path clears all state variables belonging to the other families, making the mutual exclusion explicit.
+- **Inversion rotation:** For inverted chords, the normal path sorts the voiced MIDI notes and rotates them so the correct bass note (at `invIndex`) becomes the lowest pitch — it does not re-apply intervals from scratch.
+- **UST badge symbol:** The root badge for UST chords reflects shell quality: `shellQuality === 'min'` → `'min'`; `shellQuality === 'maj7'` → `'maj'`; absent (dom7 default) → `'7'`. Derived inline at question time, not stored separately.
+- **Voice leading from canonical intervals:** `_buildVoiceLeadingAnalysis()` passes `baseChord.intervals` (not `currentMidiNotes`) to `analyseChord()` for normal chords. Voicings can omit or double notes; using voiced notes causes incorrect scale matches (e.g. a rootless G7 voicing matching F major instead of C major).
+
+**Dependencies:** `state.js` (`currentChord`, `currentMidiNotes`, `currentChordRootMidi`, `currentVoiceLeadingAnalysis`, `currentSlashBassMidi`, `currentUpperRootMidi`, `currentPolyUpperMidi`, `currentPolyLowerMidi`, `currentPolyUpperRootMidi`, `currentPolyLowerRootMidi`, `currentUSTShellMidi`, `currentUSTUpperMidi`, `currentUSTRootMidi`, `currentVoicingMode`, `answered`, `correct`, `total`, `streak`, `dictInversionIndex`), `helpers.js` (`getActivePool`, `pickRandom`, `chooseRootMidi`), `voicings.js` (`resolveVoicingMode`, `applyVoicing`), `spelling.js` (`spelledNote`), `notation.js` (`showNotation`, `resetQuizUI`, `updateRootBadge`, `getSlashChordRootLabel`, `getSlashResolvedName`, `getPolyChordLabel`, `getUSTLabel`, `getChordRootName`), `controls.js` (`renderAnswers`, `renderControls`, `revealDropdownAnswer`), `audio.js` (`playChord`), `voiceLeading.js` (`analyseChord`), `helpers.js` (`recordAnswer`, `updateScore`).
+
+**Consumed by:** `progressions-mode.js` (`generateQuestion` dispatcher calls `generateChordQuestion()`), `app.js`.
 
 ---
 

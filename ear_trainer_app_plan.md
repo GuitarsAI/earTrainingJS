@@ -68,10 +68,34 @@
 - **Mobile-3** Mobile breakdown fixes ✓ (Aug 2026) — Settings panel open bug fixed; dark mode now default for new users; Chord Scales and Voice Leading rebuilt as full-width collapsibles on mobile
 - **BUG-9** Notation key sig conflict fix ✓ (Aug 2026) — chord tones conflicting with active key signature now correctly show cancellation accidentals (♮ etc.); verified across all 540 chord/root combinations
 - **BUG-5** Closed (Aug 2026) — resolution notation two-chord layout: cannot reproduce; removed from open bugs
+- **Prod pass** `chords-mode.js` ✓ (Aug 2026) — JSDoc, section banners, comment cleanup; zero logic changes
 
 ---
 
 ## Current Session — Aug 2026
+
+### Production pass — chords-mode.js ✓ COMPLETE
+
+Documentation and cleanup pass only — zero logic changes.
+
+**What was delivered:**
+- JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
+- Section banners: Question generation, Answer grading, Voice leading analysis
+- JSDoc on all three functions — `generateChordQuestion`, `submitChordAnswer`, `_buildVoiceLeadingAnalysis`; `@param`/`@returns` on the latter two
+- All `// POINT X:` comments removed; substance kept as plain inline comments where it added value
+- Duplicate `// POINT 26:` label on the UST path corrected to a plain descriptive banner
+- `_ustBadgeSym` local variable renamed to `ustBadgeSym` (leading underscore is convention for private functions, not local `const` values)
+- `@file-end` footer added
+- `ARCHITECTURE.md` updated: repo tree, full entry for `chords-mode.js`, "Last updated" line
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/modes/chords-mode.js` | JSDoc, section banners, comment cleanup, `@file-end` |
+| `ARCHITECTURE.md` | `chords-mode.js` ✅ in tree; full entry added; Last updated updated |
+
+---
 
 ### Mobile-3 — Mobile breakdown fixes ✓ COMPLETE
 
@@ -454,7 +478,8 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 | Voice leading engine | `js/engine/voiceLeading.js` |
 | Voicing data, algorithms (`VOICING_MODES`, `applyVoicing`, `resolveVoicingMode`) | `js/engine/voicings.js` |
 | Breakdown panel (`showBreakdown`) | `js/breakdown/breakdown.js` |
-| Chord data (`CHORD_TYPES`, `INTERVALS`) | `js/data/chords.js` |
+| Chord data (`CHORD_TYPES`, `CHORD_PLAYBACK_STYLES`) | `js/data/chords.js` |
+| Interval data (`INTERVALS`, `INTERVAL_STYLES`) | `js/data/intervals.js` |
 | Scale data (`SCALES`, `SCALE_DIRECTIONS`) | `js/data/scales.js` |
 | Enharmonic spelling engine | `js/data/spelling.js` |
 | Key signature helpers | `js/data/keysig.js` |
@@ -477,11 +502,13 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 ### Next steps (priority order)
 
-1. **Interval data file split** — extract `INTERVALS` (and related constants) out of `chords.js` into a dedicated `js/data/intervals.js`, consistent with how `scales.js` was split out. `chords.js` should contain chord data only.
+1. ~~**Interval data file split**~~ ✓ Already done. `intervals.js` exists as a complete, production-passed standalone file. `chords.js` contains chord data only (`CHORD_TYPES`, `CHORD_PLAYBACK_STYLES`). No action needed.
 
 2. **Mobile-3 testing** — verify Settings opens in all four modes; verify Chord Scales and Voice Leading render full-width on narrow screens; verify desktop layout unchanged.
 
 3. **`RESOLUTION_TARGETS` cleanup** — retained as live fallback for voice leading; remove once engine is confirmed stable.
+
+4. **Production pass — remaining mode files** — `intervals-mode.js`, `scales-mode.js`, `help-mode.js`, `about-mode.js`, then `app.js`. `chords-mode.js` ✓ complete.
 
 ---
 
