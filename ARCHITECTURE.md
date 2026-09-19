@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: js/modes/chords-mode.js ✅
+> Last updated: js/modes/about-mode.js ✅
 
 ---
 
@@ -74,11 +74,11 @@ earTrainingJS/
 │   │   └── pool-progressions.js       ✅ production pass complete
 │   ├── modes/
 │   │   ├── chords-mode.js             ✅ production pass complete
-│   │   ├── intervals-mode.js          [ ] pending
-│   │   ├── scales-mode.js             [ ] pending
+│   │   ├── intervals-mode.js          ✅ production pass complete
+│   │   ├── scales-mode.js             ✅ production pass complete
 │   │   ├── progressions-mode.js       ✅ production pass complete
-│   │   ├── help-mode.js               [ ] pending
-│   │   └── about-mode.js              [ ] pending
+│   │   ├── help-mode.js               ✅ production pass complete
+│   │   └── about-mode.js              ✅ production pass complete
 │   └── app.js                         [ ] pending
 │
 ├── tests/
@@ -1235,13 +1235,52 @@ Specialised families extend the schema with additional fields:
 
 ---
 
-### js/modes/intervals-mode.js
-[ ] — pending production pass
+### ✅ js/modes/intervals-mode.js
+
+**Role:** Interval quiz mode: question generation and answer grading. Owns no playback, notation, or pool rendering — those live in `audio.js`, `notation.js`, and `pool-intervals.js` respectively. The simplest mode file in the codebase.
+
+**Size:** ~40 lines across 2 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `generateIntervalQuestion()` | `() → void` | Picks a random interval from the active pool, chooses a root via `chooseSimpleRootMidi()`, sets `currentIntervalMidi`, and renders the answer dropdown and controls. Resets `intervalKeySigMode` to `'C'` on every call. The full pool is always offered as answer options — the user identifies from every interval they have selected, not a filtered subset. |
+| `submitIntervalAnswer(chosen, _el)` | `(Object, Element) → void` | Grades the user's answer, updates score/streak/status, reveals the correct answer in the dropdown, then shows notation and re-renders controls with the Next button. |
+
+**Key design patterns:**
+
+- **Full pool as answer options:** `renderAnswers` receives the full active interval pool — not a subset. This is intentional: the answer space always matches the quiz pool exactly.
+- **Key sig default `'C'`:** `intervalKeySigMode` resets to `'C'` each question (accidentals shown inline). Intervals have no parent key, so Key mode would be arbitrary.
+
+**Dependencies:** `state.js` (`currentInterval`, `currentIntervalMidi`, `intervalKeySigMode`, `answered`, `correct`, `total`, `streak`), `helpers.js` (`getActiveIntervalPool`, `pickRandom`, `chooseSimpleRootMidi`, `recordAnswer`, `updateRootBadge`, `updateScore`), `spelling.js` (`spelledNote`), `notation.js` (`showNotation`, `resetQuizUI`), `controls.js` (`renderAnswers`, `renderControls`, `revealDropdownAnswer`), `audio.js` (`playInterval`).
+
+**Consumed by:** `progressions-mode.js` (`generateQuestion` dispatcher calls `generateIntervalQuestion()`).
 
 ---
 
-### js/modes/scales-mode.js
-[ ] — pending production pass
+### ✅ js/modes/scales-mode.js
+
+**Role:** Scale quiz mode: question generation and answer grading. Owns no playback, notation, or pool rendering — those live in `audio.js`, `notation.js`, and `pool-scales.js` respectively.
+
+**Size:** ~40 lines across 2 functions.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `generateScaleQuestion()` | `() → void` | Picks a random scale from the active pool, chooses a root via `chooseSimpleRootMidi()` using the scale's octave span as the range constraint, sets `currentScaleRootMidi`, and renders the answer dropdown and controls. Resets `scaleKeySigMode` to `'key'` on every call. |
+| `submitScaleAnswer(chosen, _el)` | `(Object, Element) → void` | Grades the user's answer, updates score/streak/status, reveals the correct answer in the dropdown, then shows notation and re-renders controls with the Next button. Uses `displayName` over `name` where available for Pentatonic dual labels. Wrong-answer message includes the spelled root name (e.g. "It was D Dorian"). |
+
+**Key design patterns:**
+
+- **Key sig default `'key'`:** `scaleKeySigMode` resets to `'key'` each question — unlike chords and intervals which default to `'C'`. Scales have a natural parent key, so Key mode is the correct and more informative default.
+- **`displayName` fallback:** `scaleLabel = currentScale.displayName || currentScale.name` — Pentatonic scales carry a dual label (e.g. "Major Pentatonic / Ionian Pentatonic") in `displayName` that is more informative than the bare `name`. Used in both `recordAnswer` and the wrong-answer status message.
+- **Root-inclusive wrong-answer label:** The wrong-answer message spells the root at answer time via `spelledNote()` and prepends it to the scale label, giving the user the full answer (e.g. "It was D Dorian") rather than just the scale name.
+
+**Dependencies:** `state.js` (`currentScale`, `currentScaleRootMidi`, `scaleKeySigMode`, `answered`, `correct`, `total`, `streak`), `helpers.js` (`getActiveScalePool`, `pickRandom`, `chooseSimpleRootMidi`, `recordAnswer`, `updateRootBadge`, `updateScore`), `spelling.js` (`spelledNote`), `notation.js` (`showNotation`, `resetQuizUI`), `controls.js` (`renderAnswers`, `renderControls`, `revealDropdownAnswer`), `audio.js` (`playScale`).
+
+**Consumed by:** `progressions-mode.js` (`generateQuestion` dispatcher calls `generateScaleQuestion()`).
 
 ---
 
@@ -1289,13 +1328,63 @@ Specialised families extend the schema with additional fields:
 
 ---
 
-### js/modes/help-mode.js
-[ ] — pending production pass
+### ✅ js/modes/help-mode.js
+
+**Role:** In-app Help system. Owns the show/hide lifecycle for `#helpView`, mutual exclusion with About, keyboard and mode-tab wiring, and lazy rendering of the searchable help panel from `HELP_SECTIONS`. The DOM is built once on first open (`data-rendered` guard); all subsequent opens just toggle display. Contains no music theory logic and no quiz state.
+
+**Size:** ~130 lines across 4 functions plus module-level event wiring.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `showHelp()` | `() → void` | Opens the Help view. Hides all training-UI elements (via `HELP_TRAINING_ELS`), deactivates mode tabs, marks `#helpBtn` active, and closes About if it is currently open. |
+| `hideHelp()` | `() → void` | Closes the Help view and restores all training-UI elements to their default display state. Callers follow up with `switchMode(currentMode)` to return to training. |
+| `renderHelpView()` | `() → void` | Lazily builds the help panel into `#helpView` from `HELP_SECTIONS`. Idempotent — bails immediately if already rendered. Creates one `help-card` per section (collapsible `<details>`), one `help-entry` per term. Body text is line-split: empty line → `<br><br>`; bullet line (•) after non-empty → `<br>` prefix; other → escaped inline. |
+| `helpOpen` | `boolean` | Module-level state flag; `true` when Help is visible. Read by `help-mode.js` event listeners and by `about-mode.js` mutual exclusion patch. |
+
+**Private helpers (not exported, documented for maintainers):**
+
+| Symbol | Description |
+|---|---|
+| `escapeHtml(str)` | Escapes `&`, `<`, `>`, `"` to HTML entities. Used by `renderHelpView()` for safe body text injection. |
+
+**Key design patterns:**
+
+- **Lazy render:** `renderHelpView()` is registered on `#helpBtn` with `{ once: true }`, so the DOM build runs exactly once — before `showHelp()` makes `#helpView` visible. The two listeners on `#helpBtn` (toggle and render) are intentionally separate: the `{ once: true }` listener fires first, then the toggle listener fires every subsequent click.
+- **Mutual exclusion — asymmetric:** `showHelp()` calls `hideAbout()` directly (About is loaded first). The reverse direction — closing Help when About opens — is handled by a patch IIFE at the bottom of this file that adds a listener to `#aboutBtn` after `about-mode.js` has already loaded.
+- **`HELP_TRAINING_ELS`:** The shared list of training-UI element IDs to hide. Mirrors `ABOUT_TRAINING_ELS` in `about-mode.js` — the two lists are intentionally separate constants (not shared) because each file owns its own show/hide lifecycle.
+- **Search filter:** `renderHelpView()` wires a live `input` listener on the search box. Matching entries auto-expand their parent `<details>`; non-matching entries are hidden. Clearing the query collapses all sections.
+
+**Dependencies:** `state.js` (`currentMode`), `help-content.js` (`HELP_SECTIONS`), `about-mode.js` (`aboutOpen`, `hideAbout`).
+
+**Consumed by:** `app.js` (implicit — event listeners self-wire at load time; no direct function calls from `app.js`).
 
 ---
 
-### js/modes/about-mode.js
-[ ] — pending production pass
+### ✅ js/modes/about-mode.js
+
+**Role:** About view lifecycle. Owns the show/hide toggle for `#aboutView`, mode-tab wiring, and the `aboutOpen` flag consumed by `help-mode.js` for mutual exclusion. No dynamic rendering — the About view is static HTML defined in `index.html`. The simplest mode file in the codebase.
+
+**Size:** ~60 lines across 2 functions plus module-level event wiring.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `showAbout()` | `() → void` | Opens the About view. Hides all training-UI elements (via `ABOUT_TRAINING_ELS`), deactivates mode tabs, and marks `#aboutBtn` active. Mutual exclusion with Help is handled by `help-mode.js`, which patches `#aboutBtn` after this file loads. |
+| `hideAbout()` | `() → void` | Closes the About view and restores all training-UI elements to their default display state. Callers follow up with `switchMode(currentMode)` to return to training. |
+| `aboutOpen` | `boolean` | Module-level state flag; `true` when About is visible. Read by `help-mode.js` (`showHelp()` checks `aboutOpen` before calling `hideAbout()`). |
+
+**Key design patterns:**
+
+- **Mutual exclusion — asymmetric:** This file has no knowledge of Help. The reverse direction — closing About when Help opens — is `showHelp()`'s responsibility. The patching of `#aboutBtn` to close Help is done from `help-mode.js` via an IIFE after this file has already loaded.
+- **No Escape key handler:** Unlike `help-mode.js`, `about-mode.js` does not register an Escape key listener. This is intentional — About has no search input or interactive content where Escape would be expected. The omission is by design, not an oversight.
+- **`ABOUT_TRAINING_ELS`:** Mirrors `HELP_TRAINING_ELS` in `help-mode.js`. The two constants are intentionally separate; each file owns its own show/hide lifecycle.
+
+**Dependencies:** `state.js` (`currentMode`, `switchMode`).
+
+**Consumed by:** `help-mode.js` (`aboutOpen`, `hideAbout` — read/called from `showHelp()` and the mutual exclusion IIFE); `app.js` (implicit — event listeners self-wire at load time).
 
 ---
 

@@ -69,10 +69,59 @@
 - **BUG-9** Notation key sig conflict fix ✓ (Aug 2026) — chord tones conflicting with active key signature now correctly show cancellation accidentals (♮ etc.); verified across all 540 chord/root combinations
 - **BUG-5** Closed (Aug 2026) — resolution notation two-chord layout: cannot reproduce; removed from open bugs
 - **Prod pass** `chords-mode.js` ✓ (Aug 2026) — JSDoc, section banners, comment cleanup; zero logic changes
+- **Prod pass** `help-mode.js` ✓ (Aug 2026) — JSDoc header, section banners, function docs, escapeHtml documented, dual-listener design clarified; zero logic changes
+- **Prod pass** `about-mode.js` ✓ (Aug 2026) — JSDoc header, section banners, function docs, mutual exclusion asymmetry documented; zero logic changes
 
 ---
 
 ## Current Session — Aug 2026
+
+### Production pass — about-mode.js ✓ COMPLETE
+
+Documentation and cleanup pass only — zero logic changes.
+
+**What was delivered:**
+- JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
+- Section banners: Constants, State, Show / hide, Event wiring
+- JSDoc on `showAbout` and `hideAbout`; `aboutOpen` flag documented
+- Inline comment on `.kbd-hint` tightened: explains class-vs-id distinction explicitly
+- Mutual exclusion asymmetry documented in both JSDoc and key design patterns: this file has no knowledge of Help; the patch lives in `help-mode.js`
+- Intentional absence of Escape key handler noted as by design
+- `@file-end` footer added
+- `ARCHITECTURE.md` updated: repo tree, full entry for `about-mode.js`, "Last updated" line
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/modes/about-mode.js` | JSDoc, section banners, function docs, `@file-end` |
+| `ARCHITECTURE.md` | `about-mode.js` ✅ in tree; full entry added; Last updated updated |
+
+---
+
+### Production pass — help-mode.js ✓ COMPLETE
+
+Documentation and cleanup pass only — zero logic changes.
+
+**What was delivered:**
+- JSDoc file header (`@file`, `@description`, `@layer`, `@requires`)
+- Section banners: Constants, State, Show / hide, Event wiring, Render
+- JSDoc on `showHelp`, `hideHelp`, `renderHelpView`, `escapeHtml`; `helpOpen` flag documented
+- `renderHelpView` JSDoc documents the body-text rendering rules (empty line, bullet line, other) which were previously implicit
+- The dual `#helpBtn` listener design documented: render listener fires first via `{ once: true }`, toggle listener fires every subsequent click — two separate concerns intentionally attached separately
+- The mutual exclusion IIFE documented: patching `#aboutBtn` after `about-mode.js` has loaded, scoped via IIFE to avoid polluting global scope
+- `escapeHtml` documented with `@param` / `@returns`
+- `@file-end` footer added
+- `ARCHITECTURE.md` updated: `help-mode.js` ✅ in tree; full entry added
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/modes/help-mode.js` | JSDoc, section banners, function docs, `@file-end` |
+| `ARCHITECTURE.md` | `help-mode.js` ✅ in tree; full entry added |
+
+---
 
 ### Production pass — chords-mode.js ✓ COMPLETE
 
@@ -508,7 +557,7 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 3. **`RESOLUTION_TARGETS` cleanup** — retained as live fallback for voice leading; remove once engine is confirmed stable.
 
-4. **Production pass — remaining mode files** — `intervals-mode.js`, `scales-mode.js`, `help-mode.js`, `about-mode.js`, then `app.js`. `chords-mode.js` ✓ complete.
+4. **Production pass — remaining files** — `app.js` is the last mode-layer file outstanding. `chords-mode.js` ✓, `intervals-mode.js` ✓, `scales-mode.js` ✓, `help-mode.js` ✓, `about-mode.js` ✓ complete. After `app.js`: `css/base.css` and `css/mobile.css`.
 
 ---
 

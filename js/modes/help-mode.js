@@ -1,14 +1,34 @@
-// ── Help mode ─────────────────────────────────────────────────────────────────
+/**
+ * @file help-mode.js
+ * @description In-app Help system: show/hide the Help view, mutual exclusion
+ *   with About, keyboard and tab-click wiring, and lazy rendering of the
+ *   searchable help panel from HELP_SECTIONS (defined in help-content.js).
+ *   Rendering is deferred to first open — the DOM is only built once.
+ * @layer modes
+ * @requires state.js (currentMode), help-content.js (HELP_SECTIONS),
+ *           about-mode.js (aboutOpen, hideAbout)
+ */
 
-// Elements to hide while Help is open (same list as About)
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Training-UI element IDs to hide while Help (or About) is open. */
 const HELP_TRAINING_ELS = [
   'rootPanel', 'poolPanel', 'settingsPanel', 'playArea',
   'notationPanel', 'breakdownWrapper', 'statusMsg',
   'answerDropdownWrap', 'controls', 'statsToggle', 'statsPanel'
 ];
 
+// ─── State ────────────────────────────────────────────────────────────────────
+
+/** Whether the Help view is currently open. */
 let helpOpen = false;
 
+// ─── Show / hide ──────────────────────────────────────────────────────────────
+
+/**
+ * Opens the Help view. Hides all training-UI elements, deactivates mode tabs,
+ * marks the Help button active, and closes About if it is currently open.
+ */
 function showHelp() {
   helpOpen = true;
   document.getElementById('helpBtn').classList.add('active');
@@ -25,6 +45,11 @@ function showHelp() {
   if (typeof aboutOpen !== 'undefined' && aboutOpen) hideAbout();
 }
 
+/**
+ * Closes the Help view and restores all training-UI elements to their default
+ * display state. Does not re-render the quiz — callers should follow up with
+ * switchMode(currentMode) when returning to training.
+ */
 function hideHelp() {
   helpOpen = false;
   document.getElementById('helpBtn').classList.remove('active');
@@ -37,7 +62,9 @@ function hideHelp() {
   if (kbdHint) kbdHint.style.display = '';
 }
 
-// ? button — toggle Help open/closed
+// ─── Event wiring ─────────────────────────────────────────────────────────────
+
+// ? button — toggle Help open/closed; restore quiz on close
 document.getElementById('helpBtn').addEventListener('click', () => {
   if (helpOpen) { hideHelp(); switchMode(currentMode); }
   else showHelp();
@@ -50,13 +77,14 @@ document.querySelectorAll('.mode-tab').forEach(tab => {
   });
 });
 
-// Escape key closes Help
+// Escape key closes Help and returns to the current quiz mode
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && helpOpen) { hideHelp(); switchMode(currentMode); }
 });
 
-// ── Patch About's button to close Help when opening ───────────────────────────
-// (runs after about-mode.js is already loaded)
+// Patch the About button to close Help when About is opened.
+// Runs after about-mode.js is already loaded; uses an IIFE to avoid
+// polluting the global scope with a one-off setup variable.
 (function patchAboutMutualExclusion() {
   const aboutBtn = document.getElementById('aboutBtn');
   if (!aboutBtn) return;
@@ -65,8 +93,27 @@ document.addEventListener('keydown', e => {
   });
 })();
 
-// ── Render Help panel from HELP_SECTIONS ──────────────────────────────────────
+// ─── Render ───────────────────────────────────────────────────────────────────
 
+/**
+ * Builds and inserts the Help panel into `#helpView` from the HELP_SECTIONS
+ * data (defined in help-content.js). Idempotent — bails immediately if the
+ * view has already been rendered (guarded by `data-rendered`).
+ *
+ * Structure per section:
+ *   <details class="help-section-details">   ← collapsible section header
+ *     <div class="help-entries">
+ *       <details class="help-entry">          ← collapsible per-term entry
+ *         <div class="help-entry-body">       ← rendered body text
+ *
+ * Body text rendering rules (applied line by line):
+ *   - Empty line            → `<br><br>` (paragraph break)
+ *   - Bullet line (•) after a non-empty line → `<br>` prefix (stays in block)
+ *   - All other text        → HTML-escaped inline text
+ *
+ * The search box filters entries in real time against term and body text.
+ * Matching sections auto-expand; non-matching entries are hidden.
+ */
 function renderHelpView() {
   const view = document.getElementById('helpView');
   if (!view || view.dataset.rendered) return;
@@ -94,7 +141,7 @@ function renderHelpView() {
     card.className = 'help-card';
     card.dataset.sectionId = section.id;
 
-    // Section header is a collapsible <details> — closed by default (no 'open' attribute)
+    // Section header is a collapsible <details> — closed by default
     const sectionDetails = document.createElement('details');
     sectionDetails.className = 'help-section-details';
 
@@ -117,10 +164,6 @@ function renderHelpView() {
 
       const body = document.createElement('div');
       body.className = 'help-entry-body';
-      // Render body text:
-      //   empty line   → paragraph break
-      //   bullet line  → line break before it (within a block)
-      //   other lines  → escaped inline text
       const lines = entry.body.split('\n');
       body.innerHTML = lines.map((line, i) => {
         if (line === '') return '<br><br>';
@@ -167,7 +210,7 @@ function renderHelpView() {
       });
 
       card.style.display = sectionHasMatch ? '' : 'none';
-      // Auto-expand section when search has matches; collapse when no matches or query cleared
+      // Auto-expand section when search has matches; collapse when query is cleared
       if (q) {
         sectionDetails.open = sectionHasMatch;
       } else {
@@ -177,6 +220,13 @@ function renderHelpView() {
   });
 }
 
+/**
+ * Escapes a plain-text string for safe insertion into innerHTML.
+ * Converts &, <, >, and " to their HTML entity equivalents.
+ *
+ * @param {string} str - The raw string to escape.
+ * @returns {string} HTML-safe string.
+ */
 function escapeHtml(str) {
   return str
     .replace(/&/g, '&amp;')
@@ -185,7 +235,11 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// Render on first open
+// Trigger a one-time lazy render on first Help open.
+// Registered separately from the toggle listener above so the render
+// fires before showHelp() makes #helpView visible.
 document.getElementById('helpBtn').addEventListener('click', () => {
   renderHelpView();
 }, { once: true });
+
+// @file-end — The Sound Travels Ear Training © 2026
