@@ -1,4 +1,12 @@
-/* ── POINT 16: CSS custom properties — light mode (default) ── */
+/*
+ * base.css
+ * Design token layer. Defines all CSS custom properties consumed by
+ * components.css and mobile.css. Contains no component styles —
+ * tokens only. Light mode declared on :root; dark mode overrides on
+ * [data-theme="dark"]. Loaded first among the three CSS files.
+ */
+
+/* ── Light mode tokens (default) ────────────────────────────────────────────── */
 :root {
   --bg:              #fafaf8;
   --bg-card:         #ffffff;
@@ -23,7 +31,7 @@
   --shadow-md:       rgba(0,0,0,0.12);
 }
 
-/* ── POINT 16 / 20a: Dark mode overrides — contrast improved in Point 20a ── */
+/* ── Dark mode overrides ─────────────────────────────────────────────────────── */
 [data-theme="dark"] {
   --bg:              #0e0e0f;
   --bg-card:         #18181b;
@@ -48,7 +56,9 @@
   --shadow-md:       rgba(0,0,0,0.55);
 }
 
-/* ── POINT 21: rem base — inherits browser default, respects accessibility prefs ── */
+/* ── Base reset ──────────────────────────────────────────────────────────────── */
+
+/* Inherits browser default font size; respects user accessibility preferences. */
 html { font-size: 100%; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,12 +69,15 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  padding-top: 132px; /* space for two-line sticky header + tabs */
+  /* Initial estimate for sticky header height — overwritten at runtime by
+     app.js syncPadding() so body content stays clear of the header on
+     every viewport size. Value reflects two-line header + mode tabs. */
+  padding-top: 132px;
   transition: background 0.2s, color 0.2s;
 }
 #app { width: 100%; max-width: 580px; margin: 0 auto; padding: 1.75rem 1rem 2rem; }
 
-/* ── App footer ─────────────────────────────────────────────────────────────── */
+/* ── App footer ──────────────────────────────────────────────────────────────── */
 .app-footer {
   margin-top: 2.5rem;
   padding: 1.5rem 0 0.5rem;
@@ -99,3 +112,5 @@ body {
   color: var(--text-muted);
   letter-spacing: 0.04em;
 }
+
+/* end base.css — The Sound Travels Ear Training © 2026 */
