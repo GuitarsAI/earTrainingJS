@@ -1,0 +1,920 @@
+<!doctype html><html lang="en" data-scrollbar="styled"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="generator" content="clean-jsdoc-theme 5.2.0" /><title>engine/voiceLeading.js</title><script>(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme');if(t==='dark'){d.dataset.theme='dark'}else{d.dataset.theme='light'}var fs=localStorage.getItem('clean-font-size');if(fs==='sm'){d.style.fontSize='15px'}else if(fs==='lg'){d.style.fontSize='18px'}var ls=localStorage.getItem('clean-line-spacing');if(ls==='compact'){d.style.setProperty('--clean-line-height','1.4')}else if(ls==='relaxed'){d.style.setProperty('--clean-line-height','1.8')}}catch(_){}}());</script><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Roboto:wght@400;500;600;700&amp;display=swap" /><link rel="stylesheet" href="/earTrainingJS/docs/_assets/styles.mu878wpr-06c54d73.css" /></head><body><div class="flex min-h-screen flex-col bg-background text-(--clean-fg)"><header class="sticky top-0 z-30 border-b border-(--clean-border) bg-background"><div class="mx-auto flex h-16 w-full min-w-0 max-w-screen-2xl items-center gap-4 px-4"><a href="/earTrainingJS/docs" class="flex min-w-0 items-center pl-3 no-underline"><span class="truncate text-lg font-heading font-bold text-(--clean-fg)">Documentation</span></a><div class="ml-auto flex shrink-0 items-center gap-1"><div class="flex items-center gap-1"><div data-island="cmdk" data-island-id="i1"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search" title="Search (Ctrl K)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button></div></div><div class="hidden items-center gap-1 md:flex"><div data-island="theme-toggle" data-island-id="i2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-label="Switch to dark theme" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button></div><div data-island="settings" data-island-id="i3"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="md:hidden"><div data-island="mobile-nav" data-island-id="i4"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg></button></div></div></div></div></header><div class="mx-auto grid w-full max-w-screen-2xl flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[16rem_minmax(0,1fr)]"><aside class="hidden md:block"><div class="sticky overflow-y-auto [scrollbar-gutter:stable] pr-2 top-20 max-h-[calc(100vh-6rem)]"><div data-island="sidebar" data-island-id="i5"><nav aria-label="Documentation navigation" class="text-(--clean-fg)"><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Home</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Modules</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/module/audio" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Audio</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-chords</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-intervals</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-progressions</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-scales</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">chords</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/defaults" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Defaults</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/helpcontent" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">HelpContent</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/helpers" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Helpers</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">intervals</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/keysig" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">KeySig</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/notation" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">notation</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">progressions</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">scales</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/spelling" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Spelling</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/state" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">state</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/stats" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">stats</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/voiceleading" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voiceLeading</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/voicings" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voicings</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Typedefs</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/module/voicings/voicingmode" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">VoicingMode</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/global" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Tutorials</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/css-architecture" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">css-architecture</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/getting-started" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">getting-started</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/html-structure" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">html-structure</span></a></li></ul></div><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/source" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Source Files</span></a></li></ul></div></nav></div></div></aside><main class="min-w-0 px-4 md:px-8 lg:px-12"><div data-island="code-viewer" data-island-id="i0"><div class="my-4 overflow-hidden rounded-lg border border-(--clean-border) bg-(--clean-bg)"><div class="flex items-center justify-between border-b border-(--clean-border) bg-(--clean-bg-muted) px-3 py-2 text-sm"><span class="font-mono text-(--clean-fg)">engine/voiceLeading.js</span><span class="text-xs text-(--clean-fg-muted)">javascript</span></div><div class="h-[calc(100vh-13rem)] min-h-[24rem]"><pre class="m-0 h-full overflow-auto whitespace-pre p-4 text-sm leading-relaxed text-(--clean-fg)"><code class="language-javascript">/**
+ * @file voiceLeading.js
+ * @description Voice leading and harmonic resolution engine for The Sound Travels Ear Training.
+ * Implements a five-stage analysis pipeline that, given any chord, discovers every diatonic
+ * context it fits, scores harmonic tension, derives resolution targets, and computes globally
+ * optimal voice leading to each target via backtracking search.
+ *
+ * Pipeline stages:
+ *   1. Constants &amp; startup index  — `FUNCTION_MAP`, `BASE_TENSION`, `CHORD_SYMBOL_INTERVALS`
+ *   2. Pure helpers               — pitch-class arithmetic, quality detection, alteration counting
+ *   3. Context discovery          — `findDiatonicContexts()` (exact + fuzzy passes)
+ *   4. Tension scoring            — `scoreTension()`
+ *   5. Resolution derivation      — `deriveResolutionTargets()`
+ *   6. Voice leading computation  — `computeVoiceLeadingRules()` and its sub-functions
+ *   7. Public API                 — `analyseChord()`
+ *
+ * All functions are pure and stateless — same input always returns the same output.
+ * No DOM access. No app state mutations.
+ *
+ * Load order: after `helpers.js`, `chords.js`, `scales.js`, and `breakdown.js`.
+ *
+ * @module voiceLeading
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+
+
+// ─── 1. CONSTANTS ────────────────────────────────────────────────────────────
+
+/**
+ * Harmonic function derived from scale degree (semitones from scale root, 0–11).
+ * Used in context discovery (Step 3) and tension scoring (Step 4).
+ *
+ * @type {Object.&lt;number, string>}
+ */
+const FUNCTION_MAP = {
+  0:  'tonic',          // I
+  1:  'tonic',          // ♭II  (Neapolitan — tonic substitute in context)
+  2:  'predominant',    // II
+  3:  'tonic',          // ♭III (mediant)
+  4:  'tonic',          // III  (mediant)
+  5:  'subdominant',    // IV
+  6:  'dominant',       // ♯IV / ♭V (tritone — context-dependent, default dominant)
+  7:  'dominant',       // V
+  8:  'subdominant',    // ♭VI (submediant substitute)
+  9:  'tonic',          // VI  (submediant — tonic substitute)
+  10: 'subdominant',    // ♭VII (subtonic — subdominant in modal contexts)
+  11: 'dominant',       // VII (leading tone)
+};
+
+/**
+ * Base tension value per scale degree (semitones from scale root, 0–11).
+ * Modified by chord content in `scoreTension()`.
+ * Range: 0.0 (completely at rest) to 0.9 (maximum pre-resolution tension).
+ *
+ * @type {Object.&lt;number, number>}
+ */
+const BASE_TENSION = {
+  0:  0.0,   // I   — tonic, at rest
+  1:  0.5,   // ♭II — Neapolitan, unusual, moderate tension
+  2:  0.5,   // II  — supertonic / predominant
+  3:  0.1,   // ♭III — mediant, stable
+  4:  0.15,  // III  — mediant, slightly less stable than I
+  5:  0.4,   // IV  — subdominant
+  6:  0.7,   // ♯IV/♭V — tritone degree, high tension
+  7:  0.8,   // V   — dominant
+  8:  0.3,   // ♭VI — submediant substitute, fairly stable
+  9:  0.2,   // VI  — submediant / tonic substitute
+  10: 0.45,  // ♭VII — subtonic, modal subdominant
+  11: 0.9,   // VII — leading tone, very high tension
+};
+
+/**
+ * Chord qualities whose Roman numerals are lowercased (minor and diminished chords).
+ *
+ * @type {Set.&lt;string>}
+ */
+const LOWERCASE_QUALITIES = new Set(['minor', 'diminished']);
+
+/**
+ * Chord families where the algorithm cannot reliably derive a single resolution target.
+ * These fall back to existing app logic rather than the voice leading engine.
+ * See algorithm plan § 6 Edge Cases.
+ *
+ * @type {Set.&lt;string>}
+ */
+const AMBIGUOUS_FAMILIES = new Set(['aug', 'augmented', 'sus', 'suspended', 'poly', 'ust']);
+
+/**
+ * Core tones used for fuzzy scale matching of altered dominant chords.
+ * Altered dominants (e.g. 7(♭9)(♯11)(♭13)) have extensions that are chromatic by design
+ * and would prevent any exact scale match. Matching on root + M3 + m7 only identifies
+ * the dominant context without requiring the altered tensions to be diatonic.
+ * Intervals are semitones above the chord root.
+ *
+ * @type {number[]}
+ */
+const DOMINANT_CORE_INTERVALS = [0, 4, 10]; // root, M3, m7
+
+
+// ─── 1b. CHORD_SYMBOL_INTERVALS — startup index ──────────────────────────────
+
+/**
+ * Flat symbol-to-intervals lookup built from `CHORD_TYPES` at startup.
+ * Intervals are normalised mod 12, deduplicated, and sorted ascending.
+ * Auto-updates when `CHORD_TYPES` gains new entries — no manual maintenance needed.
+ *
+ * Used by `resolveTargetIntervals()` to map a target symbol (e.g. `'Maj7'`, `'m7'`)
+ * to the pitch-class interval array required by `generateCandidates()`.
+ *
+ * @type {Object.&lt;string, number[]>}
+ */
+const CHORD_SYMBOL_INTERVALS = (() => {
+  const map = {};
+  for (const family of Object.values(CHORD_TYPES)) {
+    for (const entry of family) {
+      if (entry.symbol &amp;&amp; entry.intervals) {
+        map[entry.symbol] = [...new Set(entry.intervals.map(i => i % 12))].sort((a, b) => a - b);
+      }
+    }
+  }
+  return map;
+})();
+
+
+// ─── 2. HELPERS ──────────────────────────────────────────────────────────────
+
+/**
+ * Builds a Set of pitch classes for a scale given its root and interval array.
+ *
+ * @param {number} rootPc - Scale root as a pitch class (0–11).
+ * @param {number[]} intervals - Raw interval array from a `SCALES` entry (e.g. `[0,2,4,5,7,9,11,12]`).
+ * @returns {Set.&lt;number>} Pitch classes contained in the scale.
+ */
+function buildScalePcs(rootPc, intervals) {
+  const pcs = new Set();
+  for (const interval of intervals) {
+    pcs.add((rootPc + interval) % 12);
+  }
+  return pcs;
+}
+
+/**
+ * Returns the scale degree of a chord root within a scale as semitones from the scale root.
+ *
+ * @param {number} scaleRootPc - Scale root pitch class (0–11).
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @returns {number} Semitones from scale root to chord root (0–11).
+ */
+function chordDegreeInScale(scaleRootPc, chordRootPc) {
+  return ((chordRootPc - scaleRootPc) + 12) % 12;
+}
+
+/**
+ * Returns `true` if any two pitch classes in the set are a tritone (6 semitones) apart.
+ *
+ * @param {Iterable.&lt;number>} pitchClasses - Collection of pitch class integers (0–11).
+ * @returns {boolean} Whether a tritone interval exists between any pair.
+ */
+function hasTritone(pitchClasses) {
+  const pcs = [...pitchClasses];
+  for (let i = 0; i &lt; pcs.length; i++) {
+    for (let j = i + 1; j &lt; pcs.length; j++) {
+      if (((pcs[j] - pcs[i] + 12) % 12) === 6) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Counts chromatic alterations in a chord — pitch classes not present in the
+ * natural major scale built on the chord root. Used as a tension modifier in
+ * `scoreTension()` and to detect altered dominants for the fuzzy matching pass.
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @param {Iterable.&lt;number>} chordPitchClasses - Pitch classes in the chord.
+ * @returns {number} Number of non-diatonic pitch classes.
+ */
+function countAlterations(chordRootPc, chordPitchClasses) {
+  const majorIntervals = new Set([0, 2, 4, 5, 7, 9, 11].map(i => (i + chordRootPc) % 12));
+  let count = 0;
+  for (const pc of chordPitchClasses) {
+    if (!majorIntervals.has(pc)) count++;
+  }
+  return count;
+}
+
+/**
+ * Derives a chord quality label from its interval pattern.
+ * Used to determine Roman numeral case and functional description.
+ *
+ * @param {number[]} intervals - Semitone intervals from root (e.g. `[0,4,7,10]`).
+ * @returns {'major'|'minor'|'diminished'|'augmented'|'dominant'|'suspended'} Quality string.
+ */
+function deriveChordQuality(intervals) {
+  const pcs = intervals.map(i => i % 12).filter((v, i, a) => a.indexOf(v) === i).sort((a,b) => a-b);
+  const hasMinorThird = pcs.includes(3);
+  const hasMajorThird = pcs.includes(4);
+  const hasDimFifth   = pcs.includes(6);
+  const hasAugFifth   = pcs.includes(8);
+  const hasMinorSev   = pcs.includes(10);
+  const hasFourth     = pcs.includes(5);
+  const hasSecond     = pcs.includes(2);
+
+  if (!hasMajorThird &amp;&amp; !hasMinorThird &amp;&amp; (hasFourth || hasSecond)) return 'suspended';
+  if (hasMinorThird &amp;&amp; hasDimFifth) return 'diminished';
+  if (hasMajorThird &amp;&amp; hasAugFifth) return 'augmented';
+  if (hasMinorThird) return 'minor';
+  if (hasMajorThird &amp;&amp; hasMinorSev) return 'dominant';
+  if (hasMajorThird) return 'major';
+  return 'major'; // fallback
+}
+
+/**
+ * Builds the set of core pitch classes for a dominant chord (root + M3 + m7).
+ * Used in the fuzzy matching pass to locate altered dominant chords in a tonal context
+ * without requiring their chromatic extensions to be diatonic.
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @returns {Set.&lt;number>} Pitch classes for the three core dominant tones.
+ */
+function buildDominantCorePcs(chordRootPc) {
+  return new Set(DOMINANT_CORE_INTERVALS.map(i => (chordRootPc + i) % 12));
+}
+
+
+// ─── 3. STEP 3 — DIATONIC CONTEXT DISCOVERY ──────────────────────────────────
+
+/**
+ * Assigns a commonality weight to a scale symbol so that more common scales
+ * surface before rare ones when tension is equal. Higher value = more common.
+ *
+ * @param {string} symbol - Scale symbol from `SCALES`.
+ * @returns {number} Commonality weight (default 2 for unknown scales).
+ */
+function scaleCommonality(symbol) {
+  const weights = {
+    major: 10, nat_minor: 9, harm_minor: 8, mel_minor: 7,
+    dorian: 6, mixolydian: 6, phrygian: 5, lydian: 5,
+    locrian: 3, pent_maj: 4, pent_min: 4, blues: 4,
+  };
+  return weights[symbol] || 2;
+}
+
+/**
+ * Finds every diatonic context in which a chord can function — the core of the
+ * voice leading engine. Tests all 46 scales × 12 roots (552 combinations) and
+ * collects every context where all chord pitch classes are contained in the scale.
+ *
+ * For altered dominant chords (dominant quality with 2+ chromatic alterations), a
+ * second fuzzy pass matches against core tones only (root + M3 + m7), since their
+ * extensions are chromatic by design and would prevent any exact match. Fuzzy
+ * matches are tagged `matchQuality: 0.8` and de-duplicated against exact matches.
+ *
+ * Results are sorted by musical relevance (dominant function → diatonic group →
+ * match quality → scale commonality → tension).
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @param {Iterable.&lt;number>} chordPitchClasses - All pitch classes in the chord.
+ * @param {number[]} chordIntervals - Raw intervals from the `CHORD_TYPES` entry (for quality detection).
+ * @returns {Array.&lt;{
+ *   scaleSymbol: string,
+ *   scaleName: string,
+ *   scaleGroup: string,
+ *   scaleRootPc: number,
+ *   degSemitones: number,
+ *   roman: string,
+ *   harmonicFunction: string,
+ *   tension: number,
+ *   matchQuality: number
+ * }>} Context objects sorted by musical relevance, highest first.
+ */
+function findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals) {
+  const chordPcs = new Set([...chordPitchClasses].map(p => ((p % 12) + 12) % 12));
+  const chordQuality = chordIntervals ? deriveChordQuality(chordIntervals) : 'major';
+  const contexts = [];
+
+  // Key used to de-duplicate contexts across exact and fuzzy passes.
+  // Two contexts are the same if they share scale symbol + scale root.
+  const seen = new Set();
+
+  // ── Pass 1: Exact match — all chord pitch classes must fit the scale ──────
+  for (const scale of SCALES) {
+    for (let scaleRootPc = 0; scaleRootPc &lt; 12; scaleRootPc++) {
+
+      const scalePcs = buildScalePcs(scaleRootPc, scale.intervals);
+
+      let fits = true;
+      for (const pc of chordPcs) {
+        if (!scalePcs.has(pc)) { fits = false; break; }
+      }
+      if (!fits) continue;
+
+      if (!scalePcs.has(chordRootPc)) continue;
+
+      const degSemitones    = chordDegreeInScale(scaleRootPc, chordRootPc);
+      const roman           = (typeof semitoneToDegree === 'function')
+        ? semitoneToDegree(degSemitones, chordQuality)
+        : degSemitones.toString();
+      const harmonicFunction = FUNCTION_MAP[degSemitones] || 'tonic';
+      const tension          = scoreTension(degSemitones, chordPcs, chordRootPc);
+
+      const key = `${scale.symbol}:${scaleRootPc}`;
+      seen.add(key);
+
+      contexts.push({
+        scaleSymbol:      scale.symbol,
+        scaleName:        scale.name,
+        scaleGroup:       scale.group || 'diatonic',
+        scaleRootPc,
+        degSemitones,
+        roman,
+        harmonicFunction,
+        tension,
+        matchQuality: 1.0,
+      });
+    }
+  }
+
+  // ── Pass 2: Fuzzy match for altered dominant chords ───────────────────────
+  // An altered dominant has dominant quality (M3 + m7) plus 2 or more
+  // chromatic alterations (♭9, ♯9, ♯11, ♭13, etc.). Its extensions are
+  // deliberately non-diatonic, so no single scale contains all its notes.
+  // Fix: match scales against core tones only (root + M3 + m7). If the scale
+  // accepts those three tones AND the chord root sits at a dominant scale degree,
+  // the chord still resolves to that key's tonic.
+  // matchQuality is set to 0.8 to distinguish fuzzy entries from exact ones.
+  // Contexts already found in Pass 1 are skipped via the `seen` set.
+  const alterationCount = countAlterations(chordRootPc, chordPcs);
+  const isDominantQualityForFuzzy = chordQuality === 'dominant';
+
+  if (isDominantQualityForFuzzy &amp;&amp; alterationCount >= 2) {
+    const corePcs = buildDominantCorePcs(chordRootPc);
+
+    for (const scale of SCALES) {
+      for (let scaleRootPc = 0; scaleRootPc &lt; 12; scaleRootPc++) {
+
+        const key = `${scale.symbol}:${scaleRootPc}`;
+        if (seen.has(key)) continue;
+
+        const scalePcs = buildScalePcs(scaleRootPc, scale.intervals);
+
+        let coreFits = true;
+        for (const pc of corePcs) {
+          if (!scalePcs.has(pc)) { coreFits = false; break; }
+        }
+        if (!coreFits) continue;
+
+        if (!scalePcs.has(chordRootPc)) continue;
+
+        const degSemitones     = chordDegreeInScale(scaleRootPc, chordRootPc);
+        const harmonicFunction = FUNCTION_MAP[degSemitones] || 'tonic';
+
+        // Only keep dominant-function contexts from the fuzzy pass.
+        // A dominant chord with altered extensions at, say, degree I of a Mixolydian
+        // scale carries no functional resolution — the V → I reading is what matters.
+        if (harmonicFunction !== 'dominant') continue;
+
+        const roman   = (typeof semitoneToDegree === 'function')
+          ? semitoneToDegree(degSemitones, chordQuality)
+          : degSemitones.toString();
+
+        const tension = scoreTension(degSemitones, chordPcs, chordRootPc);
+
+        seen.add(key);
+
+        contexts.push({
+          scaleSymbol:      scale.symbol,
+          scaleName:        scale.name,
+          scaleGroup:       scale.group || 'diatonic',
+          scaleRootPc,
+          degSemitones,
+          roman,
+          harmonicFunction,
+          tension,
+          matchQuality: 0.8,
+        });
+      }
+    }
+  }
+
+  // ── Sort by musical relevance ─────────────────────────────────────────────
+  // Priority order (Berklee functional harmony — most musically relevant first):
+  //   1. Dominant function first — for dominant-quality chords, V contexts always
+  //      surface before any other reading, regardless of scale fit quality.
+  //   2. Diatonic group before all others — only diatonic scales imply a functional
+  //      tonic to resolve to. Non-diatonic exact matches are less meaningful.
+  //   3. Match quality — exact before fuzzy within the same group.
+  //   4. Scale commonality — more common scales surface before rare ones.
+  //   5. Tension — higher tension listed first within the same commonality band.
+  const isDominantQuality = chordIntervals
+    ? (deriveChordQuality(chordIntervals) === 'dominant')
+    : false;
+
+  function groupPriority(group) {
+    return group === 'diatonic' ? 1 : 0;
+  }
+
+  contexts.sort((a, b) => {
+    if (isDominantQuality) {
+      const aIsDom = a.harmonicFunction === 'dominant' ? 1 : 0;
+      const bIsDom = b.harmonicFunction === 'dominant' ? 1 : 0;
+      if (bIsDom !== aIsDom) return bIsDom - aIsDom;
+    }
+    const gDiff = groupPriority(b.scaleGroup) - groupPriority(a.scaleGroup);
+    if (gDiff !== 0) return gDiff;
+    const mDiff = b.matchQuality - a.matchQuality;
+    if (mDiff !== 0) return mDiff;
+    const cDiff = scaleCommonality(b.scaleSymbol) - scaleCommonality(a.scaleSymbol);
+    if (cDiff !== 0) return cDiff;
+    return b.tension - a.tension;
+  });
+
+  return contexts;
+}
+
+
+// ─── 4. STEP 4 — TENSION SCORING ─────────────────────────────────────────────
+
+/**
+ * Computes a tension score for a chord in a given diatonic context.
+ * Combines the base tension of the chord's scale degree with modifiers
+ * for tritone presence and chromatic alterations. Capped at 1.0.
+ *
+ * @param {number} degSemitones - Semitones from scale root to chord root (0–11).
+ * @param {Set.&lt;number>} chordPcs - Pitch classes in the chord.
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @returns {number} Tension score in the range 0.0–1.0.
+ */
+function scoreTension(degSemitones, chordPcs, chordRootPc) {
+  let tension = BASE_TENSION[degSemitones] ?? 0.3;
+  if (hasTritone(chordPcs)) tension += 0.08;
+  const alterations = countAlterations(chordRootPc, chordPcs);
+  tension += alterations * 0.04;
+  return Math.min(tension, 1.0);
+}
+
+
+// ─── 5. STEP 5 — RESOLUTION TARGET DERIVATION ────────────────────────────────
+
+/**
+ * Derives all resolution targets, departure paths, and reharmonisation
+ * substitutions for a chord in a given diatonic context.
+ *
+ * Returns three arrays ranked by strength:
+ * - `resolutions`   — true harmonic resolutions (tension → rest); get voice leading pre-computed.
+ * - `departures`    — motion away from a stable tonic chord; get voice leading pre-computed.
+ * - `substitutions` — reharmonisation alternatives (e.g. tritone sub, related ii);
+ *                     no voice leading computed (they are not resolution targets).
+ *
+ * Resolution types:
+ * - Tonic:       departures only (I → IV, I → V, I → ii, I → vi)
+ * - Dominant:    authentic (V → I), authentic minor (V → i), deceptive (V → vi);
+ *                substitutions: tritone sub, related ii
+ * - Subdominant: to dominant (IV → V), plagal (IV → I)
+ * - Predominant: to dominant (ii → V), direct (ii → I)
+ *
+ * @param {{
+ *   degSemitones: number,
+ *   scaleRootPc: number,
+ *   harmonicFunction: string
+ * }} context - One context object from `findDiatonicContexts()`.
+ * @param {number} chordRootPc - Chord root pitch class (0–11); used for tritone sub calculation.
+ * @returns {{
+ *   resolutions: Array.&lt;Object>,
+ *   departures: Array.&lt;Object>,
+ *   substitutions: Array.&lt;Object>
+ * }}
+ */
+function deriveResolutionTargets(context, chordRootPc) {
+  const { degSemitones, scaleRootPc, harmonicFunction } = context;
+
+  const resolutions   = [];
+  const departures    = [];
+  const substitutions = [];
+
+  // ── TONIC — stable chord; provide departure paths only ───────────────────
+  if (harmonicFunction === 'tonic') {
+    departures.push({
+      targetRootPc:   (scaleRootPc + 5) % 12,
+      targetSymbol:   'Maj7',
+      targetQuality:  'major',
+      resolutionType: 'departure',
+      cadenceName:    'I → IV',
+      strength:       0.7,
+    });
+    departures.push({
+      targetRootPc:   (scaleRootPc + 7) % 12,
+      targetSymbol:   '7',
+      targetQuality:  'dominant',
+      resolutionType: 'departure',
+      cadenceName:    'I → V',
+      strength:       0.6,
+    });
+    departures.push({
+      targetRootPc:   (scaleRootPc + 2) % 12,
+      targetSymbol:   'm7',
+      targetQuality:  'minor',
+      resolutionType: 'departure',
+      cadenceName:    'I → ii',
+      strength:       0.5,
+    });
+    departures.push({
+      targetRootPc:   (scaleRootPc + 9) % 12,
+      targetSymbol:   'm7',
+      targetQuality:  'minor',
+      resolutionType: 'departure',
+      cadenceName:    'I → vi',
+      strength:       0.4,
+    });
+
+    return { resolutions, departures, substitutions };
+  }
+
+  // ── DOMINANT — V7, VII°, ♭V (tritone degree) → resolves to tonic ─────────
+  // Standard order per tonal harmony (Berklee, Aldwell &amp; Schachter):
+  //   1. Authentic cadence V → I  (strongest)
+  //   2. Authentic cadence V → i  (to minor tonic)
+  //   3. Deceptive cadence V → vi (interrupted resolution)
+  // Substitutions (not resolutions):
+  //   - Tritone sub: D♭7 substitutes FOR G7; both resolve TO C.
+  //   - Related ii:  Dm7 precedes G7 in ii–V–I; not a resolution target of G7.
+  if (harmonicFunction === 'dominant') {
+    const tonicRootPc = scaleRootPc;
+
+    resolutions.push({
+      targetRootPc:   tonicRootPc,
+      targetSymbol:   'Maj7',
+      targetQuality:  'major',
+      resolutionType: 'authentic',
+      cadenceName:    'V → I',
+      strength:       1.0,
+    });
+    resolutions.push({
+      targetRootPc:   tonicRootPc,
+      targetSymbol:   'm7',
+      targetQuality:  'minor',
+      resolutionType: 'authentic_minor',
+      cadenceName:    'V → i',
+      strength:       0.9,
+    });
+    resolutions.push({
+      targetRootPc:   (tonicRootPc + 9) % 12,
+      targetSymbol:   'm7',
+      targetQuality:  'minor',
+      resolutionType: 'deceptive',
+      cadenceName:    'V → vi',
+      strength:       0.6,
+    });
+
+    const ttSubRootPc = ((chordRootPc !== undefined ? chordRootPc : (scaleRootPc + 7)) + 6) % 12;
+    substitutions.push({
+      targetRootPc:   ttSubRootPc,
+      targetSymbol:   '7',
+      targetQuality:  'dominant',
+      resolutionType: 'tritone_sub',
+      cadenceName:    'Tritone sub',
+      strength:       0.8,
+    });
+
+    const relatedIiRootPc = (context.scaleRootPc + 2) % 12;
+    substitutions.push({
+      targetRootPc:   relatedIiRootPc,
+      targetSymbol:   'm7',
+      targetQuality:  'm7',
+      resolutionType: 'related_ii',
+      cadenceName:    'Related ii7',
+      strength:       0.7,
+    });
+  }
+
+  // ── SUBDOMINANT — IV, ♭VI, ♭VII → moves to dominant, then resolves ───────
+  if (harmonicFunction === 'subdominant') {
+    const tonicRootPc = scaleRootPc;
+
+    resolutions.push({
+      targetRootPc:   (tonicRootPc + 7) % 12,
+      targetSymbol:   '7',
+      targetQuality:  'dominant',
+      resolutionType: 'to_dominant',
+      cadenceName:    'IV → V',
+      strength:       0.8,
+    });
+    resolutions.push({
+      targetRootPc:   tonicRootPc,
+      targetSymbol:   'Maj7',
+      targetQuality:  'major',
+      resolutionType: 'plagal',
+      cadenceName:    'IV → I',
+      strength:       0.5,
+    });
+  }
+
+  // ── PREDOMINANT — II, ii → moves to V, then to I ─────────────────────────
+  if (harmonicFunction === 'predominant') {
+    const tonicRootPc = scaleRootPc;
+
+    resolutions.push({
+      targetRootPc:   (tonicRootPc + 7) % 12,
+      targetSymbol:   '7',
+      targetQuality:  'dominant',
+      resolutionType: 'to_dominant',
+      cadenceName:    'ii → V',
+      strength:       0.9,
+    });
+    resolutions.push({
+      targetRootPc:   tonicRootPc,
+      targetSymbol:   'Maj7',
+      targetQuality:  'major',
+      resolutionType: 'direct',
+      cadenceName:    'ii → I',
+      strength:       0.3,
+    });
+  }
+
+  return { resolutions, departures, substitutions };
+}
+
+
+// ─── 6. STEP 6 — VOICE LEADING COMPUTATION ───────────────────────────────────
+//
+// Globally optimal, cost-function-driven voice leading assignment.
+// A backtracking search minimises total semitone cost across all voices simultaneously.
+//
+// Design: the cost function IS the theory. Leading tones rise and sevenths fall
+// not because rules say so, but because those moves have cost 1 — the minimum
+// possible. No note names are detected anywhere in this section.
+
+/**
+ * Leap penalty added to raw semitone distance for any move larger than a major third (4 st).
+ * A perfect fifth leap (7 st) costs 7 + 8 = 15 — more than five stepwise moves.
+ * Bass leap penalty is halved to allow natural bass motion by fourth or fifth.
+ *
+ * @type {number}
+ */
+const LEAP_PENALTY = 8;
+
+/**
+ * Looks up the pitch-class interval array for a `CHORD_TYPES` symbol string.
+ * Falls back to `[0,4,7]` (major triad) for unrecognised symbols — indicates
+ * a programming error upstream if triggered.
+ *
+ * @param {string} targetSymbol - A `CHORD_TYPES` symbol string (e.g. `'Maj7'`, `'m7'`, `'7'`).
+ * @returns {number[]} Pitch-class intervals mod 12, sorted ascending, deduplicated.
+ */
+function resolveTargetIntervals(targetSymbol) {
+  return CHORD_SYMBOL_INTERVALS[targetSymbol] || [0, 4, 7];
+}
+
+/**
+ * Enumerates every reachable MIDI note for each target pitch class within ±12 semitones
+ * of the source range. Guarantees the nearest instance of every target PC is always
+ * available to every source voice.
+ *
+ * @param {number} targetRootPc - Pitch class of the resolution target root (0–11).
+ * @param {number[]} targetIntervals - Interval array from `resolveTargetIntervals()`.
+ * @param {number[]} sourceMidi - MIDI note numbers of the sounding chord.
+ * @returns {Array.&lt;{ midi: number, pc: number, intervalIndex: number }>} Candidate notes.
+ */
+function generateCandidates(targetRootPc, targetIntervals, sourceMidi) {
+  const lo = Math.min(...sourceMidi) - 12;
+  const hi = Math.max(...sourceMidi) + 12;
+  const candidates = [];
+
+  targetIntervals.forEach((interval, intervalIndex) => {
+    const pc        = (targetRootPc + interval) % 12;
+    const remainder = ((pc - lo) % 12 + 12) % 12;
+    const first     = lo + remainder;
+    for (let midi = first; midi &lt;= hi; midi += 12) {
+      candidates.push({ midi, pc, intervalIndex });
+    }
+  });
+
+  return candidates;
+}
+
+/**
+ * Cost of moving a single voice by `delta` semitones.
+ * Common tones are free; steps and thirds cost their distance; leaps incur a penalty.
+ * Bass voice leap penalty is halved to permit natural bass motion by fourth or fifth.
+ *
+ * @param {number} delta - Absolute semitone distance of the move (0 = common tone).
+ * @param {boolean} isBass - Whether this is the lowest source voice.
+ * @returns {number} Non-negative cost value.
+ */
+function moveCost(delta, isBass) {
+  if (delta === 0) return 0;
+  if (delta &lt;= 4)  return delta;
+  return delta + (isBass ? LEAP_PENALTY / 2 : LEAP_PENALTY);
+}
+
+/**
+ * Finds the globally optimal voice leading assignment from source notes to candidate
+ * target notes via backtracking search with branch pruning.
+ *
+ * Constraints:
+ * - No two voices may share the same MIDI note (no exact unison doubling).
+ * - Total cost across all voices is minimised globally (not greedily per voice).
+ *
+ * Pruning: any branch whose partial cost meets or exceeds the current best is abandoned.
+ * For N ≤ 7 voices, exhaustive search with pruning is trivially fast.
+ *
+ * @param {number[]} sourceMidi - MIDI note numbers of the sounding chord (sorted ascending).
+ * @param {Array.&lt;{ midi: number, pc: number, intervalIndex: number }>} candidates - From `generateCandidates()`.
+ * @returns {Array.&lt;{ fromMidi: number, toMidi: number }>} Optimal assignment, one entry per source voice.
+ */
+function assignByMinCost(sourceMidi, candidates) {
+  const sorted = [...sourceMidi].sort((a, b) => a - b);
+  const n      = sorted.length;
+
+  let bestAssignment = null;
+  let bestTotalCost  = Infinity;
+
+  function search(voiceIdx, assignment, usedMidi, currentCost) {
+    if (currentCost >= bestTotalCost) return;
+
+    if (voiceIdx === n) {
+      bestTotalCost  = currentCost;
+      bestAssignment = assignment.slice();
+      return;
+    }
+
+    const src    = sorted[voiceIdx];
+    const isBass = voiceIdx === 0;
+
+    const sortedCands = candidates
+      .filter(c => !usedMidi.has(c.midi))
+      .sort((a, b) =>
+        moveCost(Math.abs(a.midi - src), isBass) -
+        moveCost(Math.abs(b.midi - src), isBass)
+      );
+
+    for (const cand of sortedCands) {
+      const cost = moveCost(Math.abs(cand.midi - src), isBass);
+      usedMidi.add(cand.midi);
+      assignment.push({ fromMidi: src, toMidi: cand.midi });
+      search(voiceIdx + 1, assignment, usedMidi, currentCost + cost);
+      assignment.pop();
+      usedMidi.delete(cand.midi);
+    }
+  }
+
+  search(0, [], new Set(), 0);
+
+  // Fallback: if no assignment found (shouldn't happen with a ±12 window),
+  // each voice stays on its current pitch. Indicates a candidate generation error.
+  if (!bestAssignment) {
+    return sorted.map(midi => ({ fromMidi: midi, toMidi: midi }));
+  }
+
+  return bestAssignment;
+}
+
+/**
+ * Post-processes a voice leading assignment to eliminate voice crossings where doing
+ * so strictly reduces total cost. Uses strict `&lt;` in the swap guard to guarantee
+ * termination — each accepted swap strictly reduces total cost, so the loop converges
+ * in at most O(N²) passes with no risk of cycling.
+ *
+ * @param {Array.&lt;{ fromMidi: number, toMidi: number }>} assignments - Sorted by `fromMidi` ascending.
+ * @returns {Array.&lt;{ fromMidi: number, toMidi: number }>} The same array with crossings resolved in-place.
+ */
+function repairVoiceCrossing(assignments) {
+  assignments.sort((a, b) => a.fromMidi - b.fromMidi);
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i &lt; assignments.length - 1; i++) {
+      const a = assignments[i];
+      const b = assignments[i + 1];
+      if (a.toMidi > b.toMidi) {
+        const isBassA = i === 0;
+        const isBassB = false;
+        const costBefore = moveCost(Math.abs(a.toMidi - a.fromMidi), isBassA)
+                         + moveCost(Math.abs(b.toMidi - b.fromMidi), isBassB);
+        const costAfter  = moveCost(Math.abs(b.toMidi - a.fromMidi), isBassA)
+                         + moveCost(Math.abs(a.toMidi - b.fromMidi), isBassB);
+        if (costAfter &lt; costBefore) {
+          [assignments[i].toMidi, assignments[i + 1].toMidi] =
+            [assignments[i + 1].toMidi, assignments[i].toMidi];
+          changed = true;
+        }
+      }
+    }
+  }
+  return assignments;
+}
+
+/**
+ * Converts final voice leading assignments into the UI move objects consumed by `breakdown.js`.
+ *
+ * @param {Array.&lt;{ fromMidi: number, toMidi: number }>} assignments - Final optimised assignments.
+ * @returns {Array.&lt;{
+ *   fromMidi: number,
+ *   toMidi: number,
+ *   fromPc: number,
+ *   toPc: number,
+ *   semitones: number,
+ *   direction: 'up'|'down'|'none',
+ *   reason: 'common_tone'|'stepwise'
+ * }>} Move objects ready for UI rendering.
+ */
+function buildMoves(assignments) {
+  return assignments.map(({ fromMidi, toMidi }) => {
+    const delta = toMidi - fromMidi;
+    return {
+      fromMidi,
+      toMidi,
+      fromPc:    ((fromMidi % 12) + 12) % 12,
+      toPc:      ((toMidi   % 12) + 12) % 12,
+      semitones: Math.abs(delta),
+      direction: delta === 0 ? 'none' : delta > 0 ? 'up' : 'down',
+      reason:    delta === 0 ? 'common_tone' : 'stepwise',
+    };
+  });
+}
+
+/**
+ * Orchestrates the five-stage voice leading pipeline for a single resolution target.
+ *
+ * Stages:
+ *   1. Resolve target intervals from `CHORD_SYMBOL_INTERVALS`
+ *   2. Generate all reachable candidate MIDI notes within ±12 of the source range
+ *   3. Global minimum-cost assignment via backtracking search
+ *   4. Voice crossing repair
+ *   5. Build UI move objects
+ *
+ * @param {number[]} sourceMidi - MIDI note numbers of the sounding chord.
+ * @param {number} targetRootPc - Pitch class of the resolution target root (0–11).
+ * @param {string} targetSymbol - `CHORD_TYPES` symbol string (e.g. `'Maj7'`, `'m7'`, `'7'`).
+ * @param {Object} context - Context object (accepted for signature compatibility; not used internally).
+ * @returns {Array.&lt;{
+ *   fromMidi: number,
+ *   toMidi: number,
+ *   fromPc: number,
+ *   toPc: number,
+ *   semitones: number,
+ *   direction: 'up'|'down'|'none',
+ *   reason: 'common_tone'|'stepwise'
+ * }>} Voice leading move objects.
+ */
+function computeVoiceLeadingRules(sourceMidi, targetRootPc, targetSymbol, context) {
+  const targetIntervals = resolveTargetIntervals(targetSymbol);
+  const candidates      = generateCandidates(targetRootPc, targetIntervals, sourceMidi);
+  const raw             = assignByMinCost(sourceMidi, candidates);
+  const repaired        = repairVoiceCrossing(raw);
+  return buildMoves(repaired);
+}
+
+
+// ─── 7. PUBLIC API ───────────────────────────────────────────────────────────
+
+/**
+ * Main entry point for the voice leading engine. Given a chord's root, pitch classes,
+ * interval pattern, sounding MIDI notes, and family, returns the full harmonic analysis:
+ * all diatonic contexts, resolution targets per context, and pre-computed voice leading.
+ *
+ * Voice leading is pre-computed for every entry in `ctx.resolutions` and `ctx.departures`.
+ * Substitutions carry no voice leading — they are chord alternatives, not resolution targets.
+ *
+ * @param {number} chordRootPc - Chord root pitch class (0–11).
+ * @param {number[]|Set.&lt;number>} chordPitchClasses - All pitch classes in the chord.
+ * @param {number[]} chordIntervals - Raw intervals from the `CHORD_TYPES` entry (e.g. `[0,4,7,10]`).
+ * @param {number[]} sourceMidi - MIDI note numbers currently sounding.
+ * @param {string} chordFamily - Family string from `CHORD_TYPES` (e.g. `'major'`, `'dominant'`).
+ * @returns {{
+ *   contexts: Array.&lt;{
+ *     scaleSymbol: string,
+ *     scaleName: string,
+ *     scaleGroup: string,
+ *     scaleRootPc: number,
+ *     degSemitones: number,
+ *     roman: string,
+ *     harmonicFunction: string,
+ *     tension: number,
+ *     matchQuality: number,
+ *     resolutions: Array.&lt;Object>,
+ *     departures: Array.&lt;Object>,
+ *     substitutions: Array.&lt;Object>
+ *   }>,
+ *   isAmbiguous: boolean
+ * }}
+ */
+function analyseChord(chordRootPc, chordPitchClasses, chordIntervals, sourceMidi, chordFamily) {
+  const isAmbiguous = AMBIGUOUS_FAMILIES.has(chordFamily);
+
+  const contexts = findDiatonicContexts(chordRootPc, chordPitchClasses, chordIntervals);
+
+  for (const ctx of contexts) {
+    const derived = deriveResolutionTargets(ctx, chordRootPc);
+
+    ctx.resolutions   = derived.resolutions;
+    ctx.departures    = derived.departures;
+    ctx.substitutions = derived.substitutions;
+
+    if (sourceMidi &amp;&amp; sourceMidi.length) {
+      for (const res of ctx.resolutions) {
+        res.voiceLeading = computeVoiceLeadingRules(
+          sourceMidi, res.targetRootPc, res.targetSymbol, ctx
+        );
+      }
+      for (const dep of ctx.departures) {
+        dep.voiceLeading = computeVoiceLeadingRules(
+          sourceMidi, dep.targetRootPc, dep.targetSymbol, ctx
+        );
+      }
+      // Substitutions do not get voice leading — they are not resolution targets.
+    }
+  }
+
+  return { contexts, isAmbiguous };
+}
+
+// =============================================================================
+// The Sound Travels Ear Training — js/engine/voiceLeading.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================
+</code></pre></div></div></div></main></div><footer class="border-t border-(--clean-border) bg-background py-6 text-sm text-muted-foreground"><div class="mx-auto flex w-full max-w-screen-2xl flex-col items-start justify-between gap-2 px-4 md:flex-row md:items-center"><div class="flex items-center gap-1.5"><span>Documentation</span><span>© 2026</span></div></div></footer></div><script type="application/json" data-island-props>{"i0":{"language":"javascript","filename":"engine/voiceLeading.js"},"i1":{"basePath":"/earTrainingJS/docs","searchIndexUrl":"/earTrainingJS/docs/_assets/search-index.mu878wpr-06c54d73.json"},"i2":{},"i3":{},"i4":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/engine/voiceleading-js","basePath":"/earTrainingJS/docs","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]},"i5":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/engine/voiceleading-js","basePath":"/earTrainingJS/docs","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]}}</script><script type="module">(function(){var map={"theme-toggle":"/earTrainingJS/docs/_islands/theme-toggle-QZPD445E.js","settings":"/earTrainingJS/docs/_islands/settings-2ZS2MIWU.js","code-viewer":"/earTrainingJS/docs/_islands/code-viewer-YGLLC5W5.js","embed":"/earTrainingJS/docs/_islands/embed-GCSKGDO4.js","playground":"/earTrainingJS/docs/_islands/playground-JBUGQGEY.js","tabs":"/earTrainingJS/docs/_islands/tabs-NRSQKCSU.js","sidebar":"/earTrainingJS/docs/_islands/sidebar-M4J6M54A.js","mobile-nav":"/earTrainingJS/docs/_islands/mobile-nav-R4OP7AYN.js","toc":"/earTrainingJS/docs/_islands/toc-QITK6TVX.js","toc-mobile":"/earTrainingJS/docs/_islands/toc-mobile-ZE37NIO6.js","cmdk":"/earTrainingJS/docs/_islands/cmdk-H5ACX54N.js","code-tabs":"/earTrainingJS/docs/_islands/code-tabs-WQQJWQOG.js","copy-btn":"/earTrainingJS/docs/_islands/copy-btn-FOLNJ4VF.js","copy-page":"/earTrainingJS/docs/_islands/copy-page-EJSALNJL.js"};var seen=new Set();document.querySelectorAll('[data-island]').forEach(function(el){seen.add(el.getAttribute('data-island'));});seen.forEach(function(name){var src=map[name];if(src){import(src);}});})();</script><script>(function(){function flash(h){var b=h.querySelector('[data-heading-anchor]');if(!b)return;b.setAttribute('data-copied','');window.setTimeout(function(){b.removeAttribute('data-copied');},3000);}function onClick(e){var t=e.target;if(!t||!t.closest)return;if(t.closest('a'))return;var h=t.closest('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');if(!h)return;var id=h.id;if(!id)return;var iconOnly=!!t.closest('[data-heading-anchor]');if(!iconOnly){if(location.hash.slice(1)===id){h.scrollIntoView();}else{location.hash=id;}}try{var url=location.origin+location.pathname+location.search+'#'+id;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){flash(h);}).catch(function(){});}}catch(_){}}document.addEventListener('click',onClick);}());</script><script>(function(){var IDLE=700;var timers=new WeakMap();function onScroll(e){var el=e.target;if(el===document||el===window)el=document.documentElement;if(!el||!el.classList)return;el.classList.add('clean-scrolling');var prev=timers.get(el);if(prev)window.clearTimeout(prev);timers.set(el,window.setTimeout(function(){el.classList.remove('clean-scrolling');},IDLE));}document.addEventListener('scroll',onScroll,true);}());</script></body></html>

@@ -1,0 +1,875 @@
+<!doctype html><html lang="en" data-scrollbar="styled"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="generator" content="clean-jsdoc-theme 5.2.0" /><title>breakdown/breakdown.js</title><script>(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme');if(t==='dark'){d.dataset.theme='dark'}else{d.dataset.theme='light'}var fs=localStorage.getItem('clean-font-size');if(fs==='sm'){d.style.fontSize='15px'}else if(fs==='lg'){d.style.fontSize='18px'}var ls=localStorage.getItem('clean-line-spacing');if(ls==='compact'){d.style.setProperty('--clean-line-height','1.4')}else if(ls==='relaxed'){d.style.setProperty('--clean-line-height','1.8')}}catch(_){}}());</script><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Roboto:wght@400;500;600;700&amp;display=swap" /><link rel="stylesheet" href="/earTrainingJS/docs/_assets/styles.mu878wpr-06c54d73.css" /></head><body><div class="flex min-h-screen flex-col bg-background text-(--clean-fg)"><header class="sticky top-0 z-30 border-b border-(--clean-border) bg-background"><div class="mx-auto flex h-16 w-full min-w-0 max-w-screen-2xl items-center gap-4 px-4"><a href="/earTrainingJS/docs" class="flex min-w-0 items-center pl-3 no-underline"><span class="truncate text-lg font-heading font-bold text-(--clean-fg)">Documentation</span></a><div class="ml-auto flex shrink-0 items-center gap-1"><div class="flex items-center gap-1"><div data-island="cmdk" data-island-id="i1"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search" title="Search (Ctrl K)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button></div></div><div class="hidden items-center gap-1 md:flex"><div data-island="theme-toggle" data-island-id="i2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-label="Switch to dark theme" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button></div><div data-island="settings" data-island-id="i3"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="md:hidden"><div data-island="mobile-nav" data-island-id="i4"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg></button></div></div></div></div></header><div class="mx-auto grid w-full max-w-screen-2xl flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[16rem_minmax(0,1fr)]"><aside class="hidden md:block"><div class="sticky overflow-y-auto [scrollbar-gutter:stable] pr-2 top-20 max-h-[calc(100vh-6rem)]"><div data-island="sidebar" data-island-id="i5"><nav aria-label="Documentation navigation" class="text-(--clean-fg)"><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Home</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Modules</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/module/audio" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Audio</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-chords</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-intervals</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-progressions</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-scales</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">chords</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/defaults" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Defaults</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/helpcontent" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">HelpContent</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/helpers" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Helpers</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">intervals</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/keysig" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">KeySig</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/notation" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">notation</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">progressions</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">scales</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/spelling" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Spelling</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/state" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">state</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/stats" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">stats</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/voiceleading" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voiceLeading</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/voicings" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voicings</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Typedefs</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/module/voicings/voicingmode" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">VoicingMode</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/global" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Tutorials</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/css-architecture" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">css-architecture</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/getting-started" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">getting-started</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/html-structure" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">html-structure</span></a></li></ul></div><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/source" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Source Files</span></a></li></ul></div></nav></div></div></aside><main class="min-w-0 px-4 md:px-8 lg:px-12"><div data-island="code-viewer" data-island-id="i0"><div class="my-4 overflow-hidden rounded-lg border border-(--clean-border) bg-(--clean-bg)"><div class="flex items-center justify-between border-b border-(--clean-border) bg-(--clean-bg-muted) px-3 py-2 text-sm"><span class="font-mono text-(--clean-fg)">breakdown/breakdown.js</span><span class="text-xs text-(--clean-fg-muted)">javascript</span></div><div class="h-[calc(100vh-13rem)] min-h-[24rem]"><pre class="m-0 h-full overflow-auto whitespace-pre p-4 text-sm leading-relaxed text-(--clean-fg)"><code class="language-javascript">/**
+ * @file breakdown.js
+ * @description Shared foundation for the post-answer breakdown panel in The Sound Travels
+ * Ear Training. Provides lookup tables, pure theory helpers, reusable DOM builders,
+ * chord-scales analysis, resolution state management, and the main `showBreakdown()` /
+ * `hideBreakdown()` entry points.
+ *
+ * Responsibilities:
+ *   - Lookup tables: `SEMITONE_TO_NUMERAL`, `SEMITONE_TO_ROMAN`, `INTERVAL_ABBR`, `SCALE_REF`
+ *   - Theory helpers: `semitonesToNumeral()`, `semitoneToDegree()`, `intervalAbbr()`, `ordinal()`
+ *   - DOM builders:  `makePill()`, `makeBDRow()`, `makeCSGroup()`, `makeNameHeader()`, `joinSep()`
+ *   - Chord scales:  `getChordScales()`, `makeChordScalesRow()`
+ *   - Resolution UI: `resolutionActive`, `resolutionRootMidi`, `selectedResolution` state;
+ *                    `playResolution()`, `renderResolutionNotation()`, `updateResolveBtn()`,
+ *                    `getSourceMidi()`, `showCurrentView()`
+ *   - Breakdown dispatcher: `showBreakdown()`, `hideBreakdown()`
+ *
+ * Out of scope for this file:
+ *   - Per-mode breakdown rendering → `breakdown-intervals.js`, `breakdown-chords.js`,
+ *     `breakdown-scales.js`, `breakdown-progressions.js`
+ *   - Voice leading table, `getResolutionInfo()`, `makeVoiceLeadingRow()` → `breakdown-chords.js`
+ *   - `_buildVoiceLeadingAnalysis()` → `chords-mode.js`
+ *
+ * Load order: after `voiceLeading.js`, before `breakdown-intervals.js`.
+ *
+ * @module breakdown
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+
+
+// ─── Lookup tables ────────────────────────────────────────────────────────────
+
+/**
+ * Semitone offset → Roman numeral string. Covers simple (0–11) and compound (12–21)
+ * intervals. Used by `semitonesToNumeral()` for interval degree and chord interval labels.
+ *
+ * @type {Object.&lt;number, string>}
+ */
+const SEMITONE_TO_NUMERAL = {
+  0:'I', 1:'♭II', 2:'II', 3:'♭III', 4:'III', 5:'IV',
+  6:'♯IV', 7:'V', 8:'♭VI', 9:'VI', 10:'♭VII', 11:'VII',
+  12:'I', 13:'♭IX', 14:'IX', 15:'♯IX', 17:'XI', 18:'♯XI', 20:'♭XIII', 21:'XIII',
+};
+/**
+ * Context-aware Roman numeral lookup. Resolves ambiguous semitone counts
+ * (tritone, augmented fifth, diminished seventh) to the correct degree label
+ * for the chord or scale in question using the symbol-keyed exception sets.
+ *
+ * @param {number} semitones - Semitone interval from root (mod 12 applied internally).
+ * @param {string} [symbol] - Optional chord/interval symbol for context-aware overrides.
+ * @returns {string} Roman numeral string (e.g. `'V'`, `'♭VII'`, `'♭V'`), or `'—'` if unmapped.
+ */
+function semitonesToNumeral(semitones, symbol) {
+  const s = ((semitones % 12) + 12) % 12;
+  if (symbol) {
+    if (s === 6 &amp;&amp; TRITONE_AS_D5.has(symbol)) return '♭V';
+    if (s === 8 &amp;&amp; EIGHT_AS_A5.has(symbol))   return '♯V';
+    if (s === 9 &amp;&amp; NINE_AS_D7.has(symbol))    return '°VII';
+  }
+  return SEMITONE_TO_NUMERAL[s] || '—';
+}
+
+/**
+ * Returns the ordinal string for a positive integer (e.g. `1 → '1st'`, `4 → '4th'`).
+ * Used for inversion labels in the breakdown panel.
+ *
+ * @param {number} n - Positive integer.
+ * @returns {string} Ordinal string.
+ */
+function ordinal(n) {
+  if (n === 1) return '1st'; if (n === 2) return '2nd'; if (n === 3) return '3rd';
+  return n + 'th';
+}
+
+/**
+ * Maps semitones-from-root (0–11) to a qualified Roman numeral descriptor.
+ * Each entry carries the base numeral and an accidental prefix.
+ * Reference: major scale degrees 0=I, 2=II, 4=III, 5=IV, 7=V, 9=VI, 11=VII.
+ * Chromatic deviations receive a ♭ or ♯ prefix; the numeral reflects the
+ * closest diatonic position. Case (upper/lower) is applied by `semitoneToDegree()`.
+ *
+ * @type {Object.&lt;number, { roman: string, prefix: string }>}
+ */
+const SEMITONE_TO_ROMAN = {
+   0: { roman: 'I',   prefix: ''  },  // P1
+   1: { roman: 'II',  prefix: '\u266d' }, // ♭II
+   2: { roman: 'II',  prefix: ''  },  // M2
+   3: { roman: 'III', prefix: '\u266d' }, // ♭III
+   4: { roman: 'III', prefix: ''  },  // M3
+   5: { roman: 'IV',  prefix: ''  },  // P4
+   6: { roman: 'IV',  prefix: '\u266f' }, // ♯IV / ♭V
+   7: { roman: 'V',   prefix: ''  },  // P5
+   8: { roman: 'VI',  prefix: '\u266d' }, // ♭VI
+   9: { roman: 'VI',  prefix: ''  },  // M6
+  10: { roman: 'VII', prefix: '\u266d' }, // ♭VII
+  11: { roman: 'VII', prefix: ''  },  // M7
+};
+
+/**
+ * Returns the qualified Roman numeral for a semitone interval from the root.
+ * Used by `voiceLeading.js` to label chord degrees within a diatonic context.
+ *
+ * @param {number} semi - Semitone interval from root (mod 12 applied internally).
+ * @param {string} quality - Chord quality: `'major'`|`'augmented'` → uppercase numeral;
+ *                           `'minor'`|`'diminished'` → lowercase numeral.
+ * @returns {string} Qualified Roman numeral (e.g. `'♭VII'`, `'iv'`, `'III'`), or `'?'` if unmapped.
+ */
+function semitoneToDegree(semi, quality) {
+  const entry = SEMITONE_TO_ROMAN[((semi % 12) + 12) % 12];
+  if (!entry) return '?';
+  const roman = (quality === 'minor' || quality === 'diminished')
+    ? entry.roman.toLowerCase()
+    : entry.roman;
+  return entry.prefix + roman;
+}
+
+/**
+ * Builds a labelled pill element for use in the breakdown panel.
+ *
+ * @param {string|null} label - Left-side label text, or `null` to omit the label span.
+ * @param {string} value - Right-side value text.
+ * @returns {HTMLElement} A `div.breakdown-pill` element.
+ */
+function makePill(label, value) {
+  const pill = document.createElement('div');
+  pill.className = 'breakdown-pill';
+  if (label) {
+    const lEl = document.createElement('span');
+    lEl.className = 'breakdown-pill-label';
+    lEl.textContent = label;
+    pill.appendChild(lEl);
+  }
+  const vEl = document.createElement('span');
+  vEl.className = 'breakdown-pill-value';
+  vEl.textContent = value;
+  pill.appendChild(vEl);
+  return pill;
+}
+
+
+// ─── Interval helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Semitone count → interval abbreviation string, always ascending.
+ * Covers simple (0–12) and compound (13–21) intervals.
+ * Used by `intervalAbbr()` as its primary lookup table.
+ *
+ * @type {Object.&lt;number, string>}
+ */
+const INTERVAL_ABBR = {
+  0:'P1', 1:'m2', 2:'M2', 3:'m3', 4:'M3', 5:'P4',
+  6:'A4', 7:'P5', 8:'m6', 9:'M6', 10:'m7', 11:'M7', 12:'P8',
+  13:'m9', 14:'M9', 15:'A9', 17:'P11', 18:'A11', 20:'m13', 21:'M13',
+};
+/**
+ * Returns the interval abbreviation for a semitone count, with optional context-aware
+ * overrides for ambiguous intervals (tritone, augmented fifth, diminished seventh).
+ *
+ * @param {number} semitones - Semitone distance (sign ignored; absolute value used).
+ * @param {string} [symbol] - Optional chord symbol for context-aware overrides.
+ * @returns {string} Abbreviation string (e.g. `'M3'`, `'d5'`, `'A5'`).
+ */
+function intervalAbbr(semitones, symbol) {
+  const s = Math.abs(semitones);
+  if (symbol) {
+    if (s === 6 &amp;&amp; TRITONE_AS_D5.has(symbol)) return 'd5';
+    if (s === 8 &amp;&amp; EIGHT_AS_A5.has(symbol))   return 'A5';
+    if (s === 9 &amp;&amp; NINE_AS_D7.has(symbol))    return 'd7';
+  }
+  return INTERVAL_ABBR[s] || (s + 'st');
+}
+
+/**
+ * Appends a key–value row to a breakdown panel element.
+ *
+ * @param {HTMLElement} panel - The panel to append the row into.
+ * @param {string} label - Row label text (rendered as `span.breakdown-key`).
+ * @param {string} content - Row value HTML (rendered as `span.breakdown-val` via `innerHTML`).
+ */
+function makeBDRow(panel, label, content) {
+  const row = document.createElement('div');
+  row.className = 'breakdown-row';
+  const k = document.createElement('span');
+  k.className = 'breakdown-key';
+  k.textContent = label;
+  const v = document.createElement('span');
+  v.className = 'breakdown-val';
+  v.innerHTML = content;
+  row.appendChild(k);
+  row.appendChild(v);
+  panel.appendChild(row);
+}
+
+/**
+ * Builds a collapsible group section using the existing `cs-section` / `cs-header` /
+ * `cs-body` / `cs-arrow` CSS classes. No new styles are required.
+ *
+ * @param {string} label - Text shown on the toggle header.
+ * @param {boolean} [open=false] - Whether the group starts expanded.
+ * @returns {{ section: HTMLElement, body: HTMLElement }} Append `section` to the panel;
+ *   insert content rows into `body`.
+ */
+function makeCSGroup(label, open = false) {
+  const section = document.createElement('div');
+  section.className = 'cs-section';
+  section.style.margin = '0.35rem 0';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'cs-header';
+
+  const hdrText = document.createElement('span');
+  hdrText.textContent = label;
+
+  const arrow = document.createElement('span');
+  arrow.className = 'cs-arrow';
+  arrow.textContent = open ? '▾' : '▸';
+
+  hdr.appendChild(hdrText);
+  hdr.appendChild(arrow);
+
+  const body = document.createElement('div');
+  body.className = open ? 'cs-body open' : 'cs-body';
+  body.style.padding = '0.4rem 0.625rem';
+
+  hdr.addEventListener('click', () => {
+    const isOpen = body.classList.toggle('open');
+    arrow.textContent = isOpen ? '▾' : '▸';
+  });
+
+  section.appendChild(hdr);
+  section.appendChild(body);
+  return { section, body };
+}
+
+/**
+ * Builds and appends a Level-1 collapsible name header to the panel.
+ * The header element is appended to `panel` immediately; all breakdown content
+ * should be inserted into the returned `body`.
+ *
+ * @param {HTMLElement} panel - The panel to append the header and body into.
+ * @param {string|HTMLElement} labelEl_or_text - Either a plain string or a pre-built
+ *   element to use as the header label.
+ * @returns {{ body: HTMLElement }} The collapsible body element for content insertion.
+ */
+function makeNameHeader(panel, labelEl_or_text) {
+  const hdr = document.createElement('div');
+  hdr.className = 'breakdown-header';
+  hdr.style.cursor = 'pointer';
+  hdr.style.userSelect = 'none';
+  hdr.style.display = 'flex';
+  hdr.style.justifyContent = 'space-between';
+  hdr.style.alignItems = 'center';
+
+  if (typeof labelEl_or_text === 'string') {
+    const span = document.createElement('span');
+    span.textContent = labelEl_or_text;
+    hdr.appendChild(span);
+  } else {
+    hdr.appendChild(labelEl_or_text);
+  }
+
+  const arrow = document.createElement('span');
+  arrow.className = 'cs-arrow';
+  arrow.textContent = '▸';
+  arrow.style.fontSize = '0.75rem';
+  hdr.appendChild(arrow);
+
+  const body = document.createElement('div');
+  body.className = 'cs-body'; // closed by default
+  body.style.padding = '0.4rem 0 0';
+  body.style.borderTop = 'none';
+
+  hdr.addEventListener('click', () => {
+    const isOpen = body.classList.toggle('open');
+    arrow.textContent = isOpen ? '▾' : '▸';
+  });
+
+  panel.appendChild(hdr);
+  panel.appendChild(body);
+  return { body };
+}
+
+/**
+ * Joins an array of HTML strings with an en-dash separator span between each element.
+ *
+ * @param {string[]} arr - Array of HTML strings to join.
+ * @returns {string} Combined HTML string with `span.breakdown-sep` separators.
+ */
+function joinSep(arr) {
+  return arr.map((n, i) =>
+    i === 0 ? n : '&lt;span class=&quot;breakdown-sep&quot;>\u2013&lt;/span>' + n
+  ).join('');
+}
+
+// ─── Chord scales ─────────────────────────────────────────────────────────────
+
+/**
+ * Reference list of every scale tested by `getChordScales()`. Built once at load
+ * time from the `SCALES` array (octave note stripped). Each entry stores the scale's
+ * pitch classes as a `Set` of mod-12 intervals from root, plus display metadata.
+ *
+ * @type {Array&lt;{ name: string, symbol: string, pcs: Set&lt;number>, tag: string, note: string }>}
+ */
+const SCALE_REF = (() => {
+  // Tag and note data keyed by symbol
+  const META = {
+    // Pentatonic
+    pent_maj:     { tag: 'open',    note: 'no semitones, very consonant' },
+    pent_min:     { tag: 'open',    note: 'blues-adjacent, no semitones' },
+    pent_dorian:  { tag: 'modal',   note: 'dorian without 2nd and 6th' },
+    pent_phrygian:{ tag: 'dark',    note: 'phrygian without 4th and 7th' },
+    pent_lydian:  { tag: 'bright',  note: 'lydian without 3rd and 7th' },
+    pent_mixo:    { tag: 'neutral', note: 'mixolydian without 3rd and 6th' },
+    pent_locrian: { tag: 'tense',   note: 'locrian without 4th and 7th' },
+    // Hexatonic
+    blues:        { tag: 'bluesy',  note: '♭5 blue note adds grit' },
+    whole_tone:   { tag: 'dreamy',  note: 'all whole steps, no leading tone' },
+    augmented_scale:{ tag: 'sym',   note: 'symmetrical, augmented colour' },
+    prometheus:   { tag: 'mystic',  note: 'Scriabin mystic chord scale' },
+    // Diatonic / Modal
+    major:        { tag: 'neutral', note: 'the home scale' },
+    nat_minor:    { tag: 'dark',    note: 'natural minor / Aeolian' },
+    harm_minor:   { tag: 'exotic',  note: 'raised 7th, classical minor feel' },
+    mel_minor:    { tag: 'hybrid',  note: 'minor with major 6th and 7th' },
+    dorian:       { tag: 'neutral', note: 'minor with major 6th' },
+    phrygian:     { tag: 'dark',    note: 'minor with ♭2, Spanish flavour' },
+    lydian:       { tag: 'bright',  note: '♯4 lifts the mood' },
+    mixolydian:   { tag: 'neutral', note: 'major with ♭7' },
+    locrian:      { tag: 'tense',   note: '♭2 and ♭5, very unstable' },
+    phryg_dom:    { tag: 'exotic',  note: 'harmonic minor V, Spanish/Jewish feel' },
+    lyd_dom:      { tag: 'bright',  note: 'Mixolydian ♯4, lydian-dominant tension' },
+    altered:      { tag: 'tense',   note: '♭9 ♯9 ♭5/♯11 ♭13, maximum alteration' },
+    // Octatonic
+    dim_wh:       { tag: 'sym',     note: 'symmetrical, W-H pattern' },
+    dim_hw:       { tag: 'dense',   note: 'H-W pattern, dom7♭9 colour' },
+  };
+
+  return SCALES.map(s => {
+    const pcs = new Set(s.intervals.map(i => i % 12));
+    const m   = META[s.symbol] || { tag: '', note: '' };
+    return { name: s.name, symbol: s.symbol, pcs, tag: m.tag, note: m.note };
+  });
+})();
+
+/**
+ * Returns all scales from `SCALE_REF` that contain every pitch class in the chord.
+ *
+ * @param {number} rootPc - Root pitch class of the chord (0–11).
+ * @param {Set&lt;number>} chordPcs - Set of pitch classes present in the chord.
+ * @returns {Array&lt;{ name: string, symbol: string, tag: string, note: string }>}
+ *   Matching scale entries in `SCALE_REF` order.
+ */
+function getChordScales(rootPc, chordPcs) {
+  const results = [];
+  for (const sc of SCALE_REF) {
+    // Build this scale's pitch classes transposed to rootPc
+    const scalePcs = new Set(
+      [...sc.pcs].map(i => (i + rootPc) % 12)
+    );
+    // Every chord pitch class must be in the scale
+    let fits = true;
+    for (const pc of chordPcs) {
+      if (!scalePcs.has(pc)) { fits = false; break; }
+    }
+    if (fits) results.push(sc);
+  }
+  return results;
+}
+
+// ─── Mobile layout helper ────────────────────────────────────────────────────
+
+/**
+ * Returns `true` when the viewport is at or below the mobile breakpoint (≤ 600 px).
+ * Used to switch between the desktop `breakdown-row` layout and the full-width
+ * mobile stack layout for Chord Scales and Voice Leading rows.
+ *
+ * @returns {boolean}
+ */
+function isMobile() { return window.innerWidth &lt;= 600; }
+
+/**
+ * Renders a collapsible Chord Scales sub-section into the breakdown panel.
+ * On mobile (≤ 600 px) renders a full-width stack; on desktop renders as a
+ * `breakdown-row` with the label on the left and the collapsible on the right.
+ * Each scale row is clickable and navigates to that scale in Dictionary mode.
+ *
+ * @param {HTMLElement} panel - The breakdown panel to append into.
+ * @param {number} rootPc - Tonal centre pitch class (0–11).
+ * @param {Iterable&lt;number>} chordPcs - Pitch classes of the chord to match.
+ */
+function makeChordScalesRow(panel, rootPc, chordPcs) {
+  const matches = getChordScales(rootPc, new Set([...chordPcs].map(p => ((p % 12) + 12) % 12)));
+  if (!matches.length) return;
+
+  const countLabel = matches.length + ' scale' + (matches.length === 1 ? '' : 's') + ' fit';
+
+  function buildScaleRows(body, mobile) {
+    matches.forEach(sc => {
+      const row = document.createElement('div');
+      row.className = mobile ? 'cs-row cs-row-link cs-row-mobile' : 'cs-row cs-row-link';
+      row.title = 'Open in Dictionary';
+      row.addEventListener('click', () => {
+        if (currentMode !== 'scales') {
+          switchMode('scales', sc.symbol);
+        } else {
+          dictSymbol = sc.symbol;
+          setAppMode('dict');
+        }
+      });
+      const nameEl = document.createElement('span');
+      nameEl.className = 'cs-name';
+      nameEl.textContent = sc.name;
+      row.appendChild(nameEl);
+      if (sc.tag) {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'cs-tag';
+        tagEl.textContent = sc.tag;
+        row.appendChild(tagEl);
+      }
+      if (sc.note) {
+        const noteEl = document.createElement('span');
+        noteEl.className = 'cs-note';
+        noteEl.textContent = sc.note;
+        row.appendChild(noteEl);
+      }
+      body.appendChild(row);
+    });
+  }
+
+  if (isMobile()) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cs-mobile-wrap';
+    const sec = document.createElement('div');
+    sec.className = 'cs-section';
+    const hdr = document.createElement('div');
+    hdr.className = 'cs-header';
+    const hdrLabel = document.createElement('span');
+    hdrLabel.style.cssText = 'font-size:0.7rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-right:0.4rem;';
+    hdrLabel.textContent = 'Chord Scales';
+    const hdrCount = document.createElement('span');
+    hdrCount.style.cssText = 'flex:1;font-size:0.75rem;color:var(--text-faint);';
+    hdrCount.textContent = '— ' + countLabel;
+    const arrow = document.createElement('span');
+    arrow.className = 'cs-arrow';
+    arrow.textContent = '▸';
+    hdr.appendChild(hdrLabel);
+    hdr.appendChild(hdrCount);
+    hdr.appendChild(arrow);
+    const body = document.createElement('div');
+    body.className = 'cs-body';
+    hdr.addEventListener('click', () => {
+      const open = body.classList.toggle('open');
+      arrow.textContent = open ? '▾' : '▸';
+    });
+    buildScaleRows(body, true);
+    sec.appendChild(hdr);
+    sec.appendChild(body);
+    wrap.appendChild(sec);
+    panel.appendChild(wrap);
+  } else {
+    const rowWrap = document.createElement('div');
+    rowWrap.className = 'breakdown-row';
+    const keyEl = document.createElement('span');
+    keyEl.className = 'breakdown-key';
+    keyEl.textContent = 'Chord scales';
+    rowWrap.appendChild(keyEl);
+    const valEl = document.createElement('span');
+    valEl.className = 'breakdown-val';
+    valEl.style.flex = '1';
+    const sec = document.createElement('div');
+    sec.className = 'cs-section';
+    const hdr = document.createElement('div');
+    hdr.className = 'cs-header';
+    const hdrText = document.createElement('span');
+    hdrText.textContent = countLabel;
+    const arrow = document.createElement('span');
+    arrow.className = 'cs-arrow';
+    arrow.textContent = '▸';
+    hdr.appendChild(hdrText);
+    hdr.appendChild(arrow);
+    const body = document.createElement('div');
+    body.className = 'cs-body';
+    hdr.addEventListener('click', () => {
+      const open = body.classList.toggle('open');
+      arrow.textContent = open ? '▾' : '▸';
+    });
+    buildScaleRows(body, false);
+    sec.appendChild(hdr);
+    sec.appendChild(body);
+    valEl.appendChild(sec);
+    rowWrap.appendChild(valEl);
+    panel.appendChild(rowWrap);
+  }
+}
+
+// ─── Resolution state &amp; playback ─────────────────────────────────────────────
+//
+// Voice leading helpers consumed exclusively by the chords breakdown path —
+// `getResolutionInfo()`, `makeVoiceLeadingRow()`, and related utilities — live
+// in `breakdown-chords.js`. Progression data and state live in `progressions.js`.
+
+
+/** @type {boolean} Whether the resolution view is currently active for the displayed chord. */
+let resolutionActive = false;
+
+/**
+ * MIDI note number of the resolution target root. Stored once when the user first
+ * triggers resolution — derived from the full chord at answer time and never
+ * re-derived mid-session so that voicing changes do not shift the target root.
+ *
+ * @type {number|null}
+ */
+let resolutionRootMidi = null;
+
+/**
+ * User-selected resolution from the Voice Leading panel. `null` means use the
+ * default (first context / first resolution). Set when the user taps a resolution
+ * card; cleared on every new chord.
+ *
+ * @type {Object|null}
+ */
+let selectedResolution = null;
+
+/**
+ * Toggles between the chord view and the resolution view. On the first entry into
+ * resolution view, stores the resolution target root and plays audio (source chord →
+ * pause → resolution chord). Subsequent toggles silently swap notation only; audio
+ * plays exclusively when entering resolution view.
+ */
+function playResolution() {
+  if (!piano) return;
+
+  if (resolutionActive) {
+    // ── Currently in resolution view → go back to chord view ──────────────────
+    resolutionActive = false;
+    updateResolveBtn();
+    showNotation();
+    return;
+  }
+
+  // ── Entering resolution view ──────────────────────────────────────────────
+  // Store resolution root once from the full chord (never re-derived)
+  if (resolutionRootMidi === null) {
+    const info0 = getResolutionInfo();
+    if (!info0) return;
+    resolutionRootMidi = info0.targetRootMidi;
+  }
+
+  resolutionActive = true;
+  updateResolveBtn();
+
+  // Play audio: source chord → pause → resolution chord
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const sourceMidi = getSourceMidi().sort((a, b) => a - b);
+  const info = getResolutionInfo();
+  if (!info) return;
+
+  setPlayingState(true);
+  const now = audioCtx.currentTime;
+  const srcDuration = 1.5, pause = 0.4;
+
+  sourceMidi.forEach(m => piano.play(midiToSoundFontName(m), now, { duration: srcDuration, gain: 1.4 }));
+  const tgtStart = now + srcDuration + pause;
+  info.targetMidi.forEach(m => piano.play(midiToSoundFontName(m), tgtStart, { duration: 2.2, gain: 1.4 }));
+
+  const totalMs = (srcDuration + pause + 2.2) * 1000;
+  setTimeout(() => setPlayingState(false), totalMs);
+
+  renderResolutionNotation();
+}
+
+/**
+ * Returns the source MIDI note array for the currently displayed chord, handling
+ * all chord families (polychord, UST, slash, standard).
+ *
+ * @returns {number[]} Array of MIDI note numbers for the source chord.
+ */
+function getSourceMidi() {
+  if (currentChord?.family === 'poly')  return [...currentPolyLowerMidi, ...currentPolyUpperMidi];
+  if (currentChord?.family === 'ust')   return [...currentMidiNotes];
+  if (currentChord?.family === 'slash') return [currentSlashBassMidi, ...currentMidiNotes];
+  return [...currentMidiNotes];
+}
+
+/**
+ * Syncs the Resolve button label with the current `resolutionActive` state:
+ * `'Resolve →'` when in chord view; `'← Chord'` when in resolution view.
+ */
+function updateResolveBtn() {
+  const btn = document.getElementById('resolveBtn');
+  if (btn) btn.textContent = resolutionActive ? '← Chord' : 'Resolve →';
+}
+
+/**
+ * Dispatches to the correct notation view based on `resolutionActive`:
+ * renders resolution notation when active, chord notation otherwise.
+ */
+function showCurrentView() {
+  if (resolutionActive) renderResolutionNotation();
+  else showNotation();
+}
+
+/**
+ * Renders a two-chord grand-staff layout (source chord | barline | resolution chord)
+ * into `#notation-svg`. Fully derived from current app state on every call — no cached
+ * arguments — so voicing changes are always reflected. Honours `chordKeySigMode`
+ * (Key / C chip) for accidental rendering on both staves.
+ */
+function renderResolutionNotation() {
+  if (!resolutionRootMidi) return;
+
+  const VF = (typeof Vex !== 'undefined' &amp;&amp; Vex.Flow) ? Vex.Flow
+           : (typeof VexFlow !== 'undefined') ? VexFlow : null;
+  if (!VF) return;
+  const { Renderer, Stave, StaveNote, StaveConnector, Voice, Formatter, BarNote } = VF;
+
+  // ── Recompute resolution info from stored root + current voicing ─────────────
+  const info = getResolutionInfo();
+  if (!info) return;
+
+  // ── Recompute source midi from current state (voicing may have changed) ───────
+  const sourceMidi = getSourceMidi().sort((a, b) => a - b);
+
+  // ── BUG-4: Key sig — honour chordKeySigMode ──────────────────────────────────
+  const sym = currentChord?.invIndex !== undefined ? currentChord.baseChord.symbol : (currentChord?.symbol || 'maj');
+  let srcRootPc;
+  if (currentChord?.family === 'poly')  srcRootPc = (currentPolyLowerRootMidi % 12 + 12) % 12;
+  else if (currentChord?.family === 'ust') srcRootPc = (currentUSTRootMidi % 12 + 12) % 12;
+  else if (currentChord?.family === 'slash') srcRootPc = (currentUpperRootMidi % 12 + 12) % 12;
+  else srcRootPc = ((currentChordRootMidi || 0) % 12 + 12) % 12;
+
+  const keySigStr = chordKeySigMode === 'key' ? getChordKeyStr(sym, srcRootPc) : null;
+  const coveredLetters = keySigStr ? keySigCoveredLetters(keySigStr) : new Set();
+
+  // ── Update notation panel header ──────────────────────────────────────────────
+  const nameEl = document.getElementById('notationChordName');
+  if (nameEl) {
+    let srcLabel = '';
+    if (currentChord?.family === 'poly') srcLabel = getPolyChordLabel();
+    else if (currentChord?.family === 'ust') srcLabel = getUSTLabel().split(' → ')[0];
+    else if (currentChord?.family === 'slash') srcLabel = getSlashResolvedName();
+    else srcLabel = getChordRootName() + ' ' + (currentChord?.name || '');
+    nameEl.textContent = srcLabel + '  →  ' + info.targetName;
+  }
+
+  // ── Show Key/C chip row, sync active state ────────────────────────────────────
+  const chipRow = document.getElementById('keysigChipRow');
+  chipRow.style.display = 'flex';
+  document.getElementById('keysigChipC').classList.toggle('active', chordKeySigMode === 'C');
+  document.getElementById('keysigChipKey').classList.toggle('active', chordKeySigMode === 'key');
+
+  // ── Spell helpers ──────────────────────────────────────────────────────────────
+  function spellMidiWithKeySig(midi, rootPc, symbol) {
+    const raw = midiToVexKeySpelled(midi, pcInterval(midi % 12, rootPc), rootPc, symbol);
+    if (!keySigStr) return { key: raw, forcedAcc: false };
+    const respelled = respellForKeySig(midi, raw, coveredLetters, keySigStr);
+    const rawLetter       = raw.split('/')[0];
+    const respelledLetter = respelled.split('/')[0];
+    const wasDouble   = rawLetter.endsWith('##') || (rawLetter.endsWith('bb') &amp;&amp; rawLetter.length > 2);
+    const isSameLetter = rawLetter[0] === respelledLetter[0];
+    const forcedAcc   = wasDouble &amp;&amp; isSameLetter &amp;&amp; respelled !== raw;
+    return { key: respelled, forcedAcc };
+  }
+
+  function addAccFiltered(sn, spells) {
+    spells.forEach(({ key, forcedAcc }, i) => {
+      if (!forcedAcc &amp;&amp; keySigStr &amp;&amp; isCoveredByKeySig(key, coveredLetters)) return;
+      const acc = vexAccidental(key);
+      if (acc) sn.addModifier(new VF.Accidental(acc), i);
+    });
+  }
+
+  // ── Layout ───────────────────────────────────────────────────────────────────
+  const svg = document.getElementById('notation-svg');
+  svg.innerHTML = '';
+
+  const allMidi = [...sourceMidi, ...info.targetMidi];
+  const lowestMidi  = Math.min(...allMidi);
+  const highestMidi = Math.max(...allMidi);
+  const needsBass   = lowestMidi &lt; 55;
+  const needsTreble = highestMidi >= 55;
+  const grandStaff  = needsBass &amp;&amp; needsTreble;
+
+  const MEASURE_W = 150;
+  const HEADER_W  = keySigStr ? 90 : 70;
+  const W = HEADER_W + MEASURE_W * 2 + 30;
+  let H, trebleY, bassY;
+  if (grandStaff)     { H = 240; trebleY = 20; bassY = 120; }
+  else if (needsBass) { H = 140; bassY = 30; trebleY = undefined; }
+  else                { H = 140; trebleY = 30; bassY = undefined; }
+
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  const renderer = new Renderer(svg, Renderer.Backends.SVG);
+  renderer.resize(W, H);
+  const ctx = renderer.getContext();
+
+  const STAVE_X = 15;
+  const STAVE_W = W - 25;
+
+  function splitTrebleBass(midiArr) {
+    const sorted = [...midiArr].sort((a, b) => a - b);
+    return {
+      treble: sorted.filter(m => m >= 55 || (!needsBass &amp;&amp; !grandStaff)),
+      bass:   sorted.filter(m => m &lt;  55 || (!needsTreble &amp;&amp; !grandStaff)),
+    };
+  }
+
+  function makeChordNote(midiArr, clef, rootPc, symbol, noteType) {
+    if (!midiArr.length) {
+      const restKey = clef === 'bass' ? 'd/3' : 'b/4';
+      return new StaveNote({ keys: [restKey], duration: noteType + 'r', clef });
+    }
+    const spells = midiArr.map(m => spellMidiWithKeySig(m, rootPc, symbol));
+    const keys = spells.map(s => s.key);
+    const sn = new StaveNote({ keys, duration: noteType, clef });
+    addAccFiltered(sn, spells);
+    return sn;
+  }
+
+  try {
+    let trebleStave, bassStave;
+    if (needsTreble || grandStaff) {
+      trebleStave = new Stave(STAVE_X, trebleY, STAVE_W);
+      trebleStave.addClef('treble');
+      if (keySigStr) trebleStave.addKeySignature(keySigStr);
+      trebleStave.setContext(ctx).draw();
+    }
+    if (needsBass || grandStaff) {
+      bassStave = new Stave(STAVE_X, bassY, STAVE_W);
+      bassStave.addClef('bass');
+      if (keySigStr) bassStave.addKeySignature(keySigStr);
+      bassStave.setContext(ctx).draw();
+    }
+    if (grandStaff &amp;&amp; trebleStave &amp;&amp; bassStave) {
+      try {
+        new StaveConnector(trebleStave, bassStave).setType('brace').setContext(ctx).draw();
+        new StaveConnector(trebleStave, bassStave).setType('singleLeft').setContext(ctx).draw();
+      } catch(e) {}
+    }
+
+    const tgtRootPc = (resolutionRootMidi % 12 + 12) % 12;
+    const srcSplit = splitTrebleBass(sourceMidi);
+    const tgtSplit = splitTrebleBass(info.targetMidi);
+
+    function drawClef(clef, stave, srcMidi, tgtMidi) {
+      if (!stave) return;
+      const srcNote = makeChordNote(srcMidi, clef, srcRootPc, sym, 'h');
+      const bar     = new BarNote();
+      const tgtNote = makeChordNote(tgtMidi, clef, tgtRootPc, 'maj', 'h');
+      const voice = new Voice({ num_beats: 4, beat_value: 4 }).setMode(Voice.Mode.SOFT);
+      voice.addTickables([srcNote, bar, tgtNote]);
+      new Formatter().joinVoices([voice]).format([voice], STAVE_W - HEADER_W);
+      voice.draw(ctx, stave);
+    }
+
+    if (grandStaff) {
+      drawClef('treble', trebleStave, srcSplit.treble, tgtSplit.treble);
+      drawClef('bass',   bassStave,   srcSplit.bass,   tgtSplit.bass);
+    } else if (needsBass) {
+      drawClef('bass', bassStave, sourceMidi, info.targetMidi);
+    } else {
+      drawClef('treble', trebleStave, sourceMidi, info.targetMidi);
+    }
+
+    // ── Chord name labels above the stave ─────────────────────────────────────
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const labelY = (trebleY !== undefined ? trebleY : bassY) - 4;
+
+    let srcLabel = '';
+    if (currentChord?.family === 'poly') srcLabel = getPolyChordLabel();
+    else if (currentChord?.family === 'ust') srcLabel = getUSTLabel().split(' → ')[0];
+    else if (currentChord?.family === 'slash') srcLabel = getSlashResolvedName();
+    else srcLabel = getChordRootName() + ' ' + (currentChord?.name || '');
+
+    const srcLabelX = STAVE_X + HEADER_W + MEASURE_W * 0.3;
+    const srcLabelEl = document.createElementNS(svgNS, 'text');
+    srcLabelEl.setAttribute('x', srcLabelX);
+    srcLabelEl.setAttribute('y', labelY);
+    srcLabelEl.setAttribute('text-anchor', 'middle');
+    srcLabelEl.setAttribute('font-size', '11');
+    srcLabelEl.setAttribute('fill', '#4a9e8e');
+    srcLabelEl.setAttribute('font-family', 'Inter, sans-serif');
+    srcLabelEl.setAttribute('font-weight', '600');
+    srcLabelEl.textContent = srcLabel.length > 16 ? srcLabel.slice(0, 15) + '…' : srcLabel;
+    svg.appendChild(srcLabelEl);
+
+    const tgtLabelX = STAVE_X + HEADER_W + MEASURE_W + MEASURE_W * 0.5;
+    const tgtLabelEl = document.createElementNS(svgNS, 'text');
+    tgtLabelEl.setAttribute('x', tgtLabelX);
+    tgtLabelEl.setAttribute('y', labelY);
+    tgtLabelEl.setAttribute('text-anchor', 'middle');
+    tgtLabelEl.setAttribute('font-size', '11');
+    tgtLabelEl.setAttribute('fill', '#357a6c');
+    tgtLabelEl.setAttribute('font-family', 'Inter, sans-serif');
+    tgtLabelEl.setAttribute('font-weight', '600');
+    tgtLabelEl.textContent = info.targetName;
+    svg.appendChild(tgtLabelEl);
+
+  } catch(e) { console.error('VexFlow resolution render error:', e); }
+
+  // ── Show the notation panel ───────────────────────────────────────────────────
+  document.getElementById('notationArea').style.display = 'block';
+  document.getElementById('notationPanel').style.display = 'block';
+}
+
+/**
+ * Maps a chord symbol to its full English quality name for use in breakdown labels.
+ * Falls back to the symbol itself for any unrecognised entry.
+ *
+ * @param {string} sym - Chord symbol (e.g. `'maj7'`, `'m7b5'`).
+ * @returns {string} Full quality name (e.g. `'major 7th'`, `'half-diminished (ø7)'`).
+ */
+function qualityFullName(sym) {
+  const map = {
+    'maj':   'major',
+    'm':     'minor',
+    '7':     'dominant 7th',
+    'maj7':  'major 7th',
+    'm7':    'minor 7th',
+    'dim':   'diminished',
+    'm7b5':  'half-diminished (ø7)',
+    'o7':    'diminished 7th',
+    'aug':   'augmented',
+    'sus4':  'suspended 4th',
+  };
+  return map[sym] || sym;
+}
+
+/**
+ * Main breakdown dispatcher. Lazily builds the voice leading analysis if not yet
+ * computed, clears the panel, then delegates to the correct per-mode renderer:
+ * `showBreakdownIntervals`, `showBreakdownScales`, `showBreakdownProgressions`,
+ * or `showBreakdownChords`.
+ */
+function showBreakdown() {
+  if (!currentVoiceLeadingAnalysis &amp;&amp; typeof _buildVoiceLeadingAnalysis === 'function') {
+    currentVoiceLeadingAnalysis = _buildVoiceLeadingAnalysis();
+  }
+
+  const panel = document.getElementById('breakdownPanel');
+  panel.innerHTML = '';
+
+  function addDivider() {
+    const hr = document.createElement('hr');
+    hr.className = 'breakdown-divider';
+    panel.appendChild(hr);
+  }
+
+  if (currentMode === 'intervals')    return showBreakdownIntervals(panel);
+  if (currentMode === 'scales')       return showBreakdownScales(panel);
+  if (currentMode === 'progressions') return showBreakdownProgressions(panel);
+  showBreakdownChords(panel);
+}
+
+/**
+ * Hides and clears the breakdown panel and its wrapper element.
+ * Called when the user dismisses the breakdown or a new question is generated.
+ */
+function hideBreakdown() {
+  const panel = document.getElementById('breakdownPanel');
+  panel.style.display = 'none';
+  panel.innerHTML = '';
+  document.getElementById('breakdownWrapper').style.display = 'none';
+}
+
+// ─── End of breakdown.js ──────────────────────────────────────────────────────
+/**
+ * @file breakdown.js — End of file.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+</code></pre></div></div></div></main></div><footer class="border-t border-(--clean-border) bg-background py-6 text-sm text-muted-foreground"><div class="mx-auto flex w-full max-w-screen-2xl flex-col items-start justify-between gap-2 px-4 md:flex-row md:items-center"><div class="flex items-center gap-1.5"><span>Documentation</span><span>© 2026</span></div></div></footer></div><script type="application/json" data-island-props>{"i0":{"language":"javascript","filename":"breakdown/breakdown.js"},"i1":{"basePath":"/earTrainingJS/docs","searchIndexUrl":"/earTrainingJS/docs/_assets/search-index.mu878wpr-06c54d73.json"},"i2":{},"i3":{},"i4":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/breakdown/breakdown-js","basePath":"/earTrainingJS/docs","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]},"i5":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/breakdown/breakdown-js","basePath":"/earTrainingJS/docs","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]}}</script><script type="module">(function(){var map={"theme-toggle":"/earTrainingJS/docs/_islands/theme-toggle-QZPD445E.js","settings":"/earTrainingJS/docs/_islands/settings-2ZS2MIWU.js","code-viewer":"/earTrainingJS/docs/_islands/code-viewer-YGLLC5W5.js","embed":"/earTrainingJS/docs/_islands/embed-GCSKGDO4.js","playground":"/earTrainingJS/docs/_islands/playground-JBUGQGEY.js","tabs":"/earTrainingJS/docs/_islands/tabs-NRSQKCSU.js","sidebar":"/earTrainingJS/docs/_islands/sidebar-M4J6M54A.js","mobile-nav":"/earTrainingJS/docs/_islands/mobile-nav-R4OP7AYN.js","toc":"/earTrainingJS/docs/_islands/toc-QITK6TVX.js","toc-mobile":"/earTrainingJS/docs/_islands/toc-mobile-ZE37NIO6.js","cmdk":"/earTrainingJS/docs/_islands/cmdk-H5ACX54N.js","code-tabs":"/earTrainingJS/docs/_islands/code-tabs-WQQJWQOG.js","copy-btn":"/earTrainingJS/docs/_islands/copy-btn-FOLNJ4VF.js","copy-page":"/earTrainingJS/docs/_islands/copy-page-EJSALNJL.js"};var seen=new Set();document.querySelectorAll('[data-island]').forEach(function(el){seen.add(el.getAttribute('data-island'));});seen.forEach(function(name){var src=map[name];if(src){import(src);}});})();</script><script>(function(){function flash(h){var b=h.querySelector('[data-heading-anchor]');if(!b)return;b.setAttribute('data-copied','');window.setTimeout(function(){b.removeAttribute('data-copied');},3000);}function onClick(e){var t=e.target;if(!t||!t.closest)return;if(t.closest('a'))return;var h=t.closest('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');if(!h)return;var id=h.id;if(!id)return;var iconOnly=!!t.closest('[data-heading-anchor]');if(!iconOnly){if(location.hash.slice(1)===id){h.scrollIntoView();}else{location.hash=id;}}try{var url=location.origin+location.pathname+location.search+'#'+id;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){flash(h);}).catch(function(){});}}catch(_){}}document.addEventListener('click',onClick);}());</script><script>(function(){var IDLE=700;var timers=new WeakMap();function onScroll(e){var el=e.target;if(el===document||el===window)el=document.documentElement;if(!el||!el.classList)return;el.classList.add('clean-scrolling');var prev=timers.get(el);if(prev)window.clearTimeout(prev);timers.set(el,window.setTimeout(function(){el.classList.remove('clean-scrolling');},IDLE));}document.addEventListener('scroll',onScroll,true);}());</script></body></html>

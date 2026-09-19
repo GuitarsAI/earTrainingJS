@@ -1,0 +1,429 @@
+<!doctype html><html lang="en" data-scrollbar="styled"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="generator" content="clean-jsdoc-theme 5.2.0" /><title>data/keysig.js</title><script>(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme');if(t==='dark'){d.dataset.theme='dark'}else{d.dataset.theme='light'}var fs=localStorage.getItem('clean-font-size');if(fs==='sm'){d.style.fontSize='15px'}else if(fs==='lg'){d.style.fontSize='18px'}var ls=localStorage.getItem('clean-line-spacing');if(ls==='compact'){d.style.setProperty('--clean-line-height','1.4')}else if(ls==='relaxed'){d.style.setProperty('--clean-line-height','1.8')}}catch(_){}}());</script><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Roboto:wght@400;500;600;700&amp;display=swap" /><link rel="stylesheet" href="/earTrainingJS/docs/_assets/styles.mu878wpr-06c54d73.css" /></head><body><div class="flex min-h-screen flex-col bg-background text-(--clean-fg)"><header class="sticky top-0 z-30 border-b border-(--clean-border) bg-background"><div class="mx-auto flex h-16 w-full min-w-0 max-w-screen-2xl items-center gap-4 px-4"><a href="/earTrainingJS/docs" class="flex min-w-0 items-center pl-3 no-underline"><span class="truncate text-lg font-heading font-bold text-(--clean-fg)">Documentation</span></a><div class="ml-auto flex shrink-0 items-center gap-1"><div class="flex items-center gap-1"><div data-island="cmdk" data-island-id="i1"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search" title="Search (Ctrl K)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button></div></div><div class="hidden items-center gap-1 md:flex"><div data-island="theme-toggle" data-island-id="i2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-label="Switch to dark theme" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button></div><div data-island="settings" data-island-id="i3"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="md:hidden"><div data-island="mobile-nav" data-island-id="i4"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg></button></div></div></div></div></header><div class="mx-auto grid w-full max-w-screen-2xl flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[16rem_minmax(0,1fr)]"><aside class="hidden md:block"><div class="sticky overflow-y-auto [scrollbar-gutter:stable] pr-2 top-20 max-h-[calc(100vh-6rem)]"><div data-island="sidebar" data-island-id="i5"><nav aria-label="Documentation navigation" class="text-(--clean-fg)"><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Home</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Modules</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/module/audio" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Audio</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-chords</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-intervals</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-progressions</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/breakdown-scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-scales</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">chords</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/defaults" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Defaults</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/helpcontent" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">HelpContent</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/helpers" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Helpers</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">intervals</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/keysig" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">KeySig</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/notation" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">notation</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">progressions</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">scales</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/spelling" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Spelling</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/state" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">state</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/stats" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">stats</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/voiceleading" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voiceLeading</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/module/voicings" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voicings</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Typedefs</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/module/voicings/voicingmode" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">VoicingMode</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/global" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Tutorials</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/css-architecture" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">css-architecture</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/getting-started" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">getting-started</span></a></li><li class="my-0.5"><a href="/earTrainingJS/docs/tutorials/html-structure" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">html-structure</span></a></li></ul></div><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/earTrainingJS/docs/source" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Source Files</span></a></li></ul></div></nav></div></div></aside><main class="min-w-0 px-4 md:px-8 lg:px-12"><div data-island="code-viewer" data-island-id="i0"><div class="my-4 overflow-hidden rounded-lg border border-(--clean-border) bg-(--clean-bg)"><div class="flex items-center justify-between border-b border-(--clean-border) bg-(--clean-bg-muted) px-3 py-2 text-sm"><span class="font-mono text-(--clean-fg)">data/keysig.js</span><span class="text-xs text-(--clean-fg-muted)">javascript</span></div><div class="h-[calc(100vh-13rem)] min-h-[24rem]"><pre class="m-0 h-full overflow-auto whitespace-pre p-4 text-sm leading-relaxed text-(--clean-fg)"><code class="language-javascript">/**
+ * @file keysig.js
+ * @description Key signature helpers: chip toggling, VexFlow key string
+ *   resolution, best-fit key inference for complex chords, and key-signature
+ *   coverage tracking used by the notation engine to suppress redundant
+ *   accidentals on notes already covered by the active key signature.
+ *
+ * Coverage model: a key signature covers specific LETTER+ACCIDENTAL
+ *   combinations, not raw pitch classes. E♭ major covers the letter E with a
+ *   flat — it does NOT cover D♯ even though D♯ and E♭ share pitch class 3.
+ *   Coverage is therefore tracked as a Set of VexFlow letter strings
+ *   (e.g. {'bb','eb','ab','db','gb'}) and matched by letter identity, not
+ *   pitch class.
+ *
+ * Dependencies:
+ *   pinnedRootSpelling (state.js) — resolves enharmonic key ambiguity.
+ *   currentMode, currentProgression, progAnswered, answered, appMode (state.js)
+ *   showProgressionNotation(), showCurrentView(), showNotation(),
+ *   showBreakdown() — rendering functions called after chip state changes.
+ *
+ * @module KeySig
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+
+/**
+ * Handles a Key/C chip tap: updates the per-mode key-signature display
+ * preference in state and re-renders the current notation and breakdown.
+ *
+ * Each mode stores its keySigMode independently so switching modes does not
+ * reset the chip selection. Progressions mode re-renders mini staves directly;
+ * chords mode uses the view dispatcher to correctly handle both the main chord
+ * view and the resolution view.
+ *
+ * @param {'C'|'key'} mode - 'key' renders the staff with a key signature;
+ *   'C' shows all accidentals explicitly with no key signature.
+ */
+function setKeySig(mode) {
+  if (currentMode === 'scales')          scaleKeySigMode    = mode;
+  else if (currentMode === 'chords')     chordKeySigMode    = mode;
+  else if (currentMode === 'intervals')  intervalKeySigMode = mode;
+  else if (currentMode === 'progressions') progKeySigMode   = mode;
+  document.getElementById('keysigChipC').classList.toggle('active', mode === 'C');
+  document.getElementById('keysigChipKey').classList.toggle('active', mode === 'key');
+  // For progressions, re-render the mini staves directly
+  if (currentMode === 'progressions' &amp;&amp; currentProgression &amp;&amp; progAnswered) {
+    showProgressionNotation();
+    if (appMode === 'dict' || answered) showBreakdown();
+  } else if (currentMode === 'chords') {
+    // BUG-4: use dispatcher so Key/C chip works in both chord and resolution views
+    showCurrentView();
+    if (appMode === 'dict' || answered) showBreakdown();
+  } else {
+    showNotation();
+    if (appMode === 'dict' || answered) showBreakdown();
+  }
+}
+
+/**
+ * VexFlow major key signature strings indexed by pitch class (0–11), flat side.
+ * Enharmonic pitch classes (1,3,6,8,10) use the flat-preferred spelling:
+ * Db, Eb, Gb, Ab, Bb. Used when pinnedRootSpelling is 'flat' or unset.
+ * @type {string[]}
+ */
+const VEX_KEY_MAJOR_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+
+/**
+ * VexFlow major key signature strings indexed by pitch class (0–11), sharp side.
+ * Enharmonic pitch classes use the sharp-preferred spelling: C#, D#, F#, G#, A#.
+ * Used when pinnedRootSpelling is 'sharp'.
+ * @type {string[]}
+ */
+const VEX_KEY_MAJOR_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+/**
+ * VexFlow minor key signature strings indexed by pitch class (0–11), flat side.
+ * @type {string[]}
+ */
+const VEX_KEY_MINOR_FLAT  = ['Am','Bbm','Bm','Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m'];
+
+/**
+ * VexFlow minor key signature strings indexed by pitch class (0–11), sharp side.
+ * @type {string[]}
+ */
+const VEX_KEY_MINOR_SHARP = ['Am','A#m','Bm','Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m'];
+
+/**
+ * Returns the VexFlow major key signature string for the given pitch class,
+ * respecting pinnedRootSpelling. Defaults to the flat side for enharmonic pcs.
+ *
+ * @param {number} pc - Pitch class (0–11).
+ * @returns {string} VexFlow key string, e.g. 'Eb' | 'D#' | 'G'.
+ */
+function vexKeyMajor(pc) {
+  if (pinnedRootSpelling === 'sharp') return VEX_KEY_MAJOR_SHARP[pc];
+  if (pinnedRootSpelling === 'flat')  return VEX_KEY_MAJOR_FLAT[pc];
+  return VEX_KEY_MAJOR_FLAT[pc]; // conventional default = flat side
+}
+
+/**
+ * Returns the VexFlow minor key signature string for the given pitch class,
+ * respecting pinnedRootSpelling. Defaults to the flat side for enharmonic pcs.
+ *
+ * @param {number} pc - Pitch class (0–11).
+ * @returns {string} VexFlow key string, e.g. 'Ebm' | 'D#m' | 'Gm'.
+ */
+function vexKeyMinor(pc) {
+  if (pinnedRootSpelling === 'sharp') return VEX_KEY_MINOR_SHARP[pc];
+  if (pinnedRootSpelling === 'flat')  return VEX_KEY_MINOR_FLAT[pc];
+  return VEX_KEY_MINOR_FLAT[pc]; // conventional default
+}
+
+/**
+ * Returns the VexFlow key signature string implied by a scale's parent key at
+ * the given root pitch class, or null if the scale has no parent key.
+ *
+ * Modal scales are notated in their parent key's key signature rather than the
+ * mode root's &quot;key&quot;, because the parent key defines the actual accidentals in
+ * use. For example, D Dorian is notated with C major's key signature (no sharps
+ * or flats), not D major's (two sharps).
+ *
+ * @param {{ parentKey?: { offset: number, quality: 'major'|'minor' } }} scale
+ *   - Scale data object; parentKey.offset is semitones from mode root to parent root.
+ * @param {number} rootPc - Pitch class of the mode's root note (0–11).
+ * @returns {string|null} VexFlow key string (e.g. 'C', 'Bb', 'F#m') or null.
+ */
+function getScaleParentKeyStr(scale, rootPc) {
+  if (!scale.parentKey) return null;
+  const { offset, quality } = scale.parentKey;
+  const parentPc = ((rootPc + offset) % 12 + 12) % 12;
+  return quality === 'minor' ? vexKeyMinor(parentPc) : vexKeyMajor(parentPc);
+}
+
+/**
+ * Returns the VexFlow key signature string implied by a chord symbol and root
+ * pitch class. Minor-quality chords use a minor key signature; all others use
+ * a major key signature rooted on the chord's root.
+ *
+ * Used by the notation engine to place an appropriate key signature behind a
+ * chord so that chord tones covered by the key are displayed without individual
+ * accidentals.
+ *
+ * @param {string} sym - Chord symbol key (e.g. 'm7', 'Maj7', 'dim').
+ * @param {number} rootPc - Pitch class of the chord root (0–11).
+ * @returns {string} VexFlow key string, e.g. 'Am' | 'C' | 'Bb'.
+ */
+function getChordKeyStr(sym, rootPc) {
+  const minorFamilies = ['m', 'm7', 'mM7', 'm6', 'm9', 'm11', 'm13', 'hdim', 'hdim7', 'dim', 'dim7'];
+  const quality = minorFamilies.includes(sym) ? 'minor' : 'major';
+  return quality === 'minor' ? vexKeyMinor(rootPc) : vexKeyMajor(rootPc);
+}
+
+/**
+ * Infers the best-fit VexFlow key signature string for a set of MIDI notes by
+ * finding the major or minor key whose scale shares the most pitch classes with
+ * the chord. Ties are broken by fewest accidentals (proximity to C major /
+ * A minor), minimising clutter on the staff.
+ *
+ * Used for polychords, Upper Structure Triads, and slash chords, where there is
+ * no single unambiguous root key — the notation engine needs a key signature
+ * that reduces accidentals without imposing an incorrect harmonic reading.
+ *
+ * @param {number[]} midiNotes - Array of MIDI note numbers in the chord.
+ * @returns {string} VexFlow key string for the best-fitting key, e.g. 'Bb' | 'F#m'.
+ */
+function getBestFitKeyStr(midiNotes) {
+  const chordPcs = new Set(midiNotes.map(m => ((m % 12) + 12) % 12));
+  const MAJOR_SCALE = [0,2,4,5,7,9,11];
+  const MINOR_SCALE = [0,2,3,5,7,8,10];
+  // Accidental counts per root pc for major and minor (used as tiebreaker — fewer = closer to C)
+  const MAJOR_ACC = [0,5,2,3,4,1,6,1,4,3,2,5]; // C Db D Eb E F Gb G Ab A Bb B
+  const MINOR_ACC = [0,4,2,3,1,3,2,1,4,3,2,5]; // Am Bbm Bm Cm C#m Dm D#m Em Fm F#m Gm G#m
+  let bestKey = null, bestScore = -1, bestAcc = 99, bestMinor = false;
+  for (let pc = 0; pc &lt; 12; pc++) {
+    for (const [scale, acc, isMinor] of [
+      [MAJOR_SCALE, MAJOR_ACC[pc], false],
+      [MINOR_SCALE, MINOR_ACC[pc], true],
+    ]) {
+      const scalePcs = new Set(scale.map(i => (i + pc) % 12));
+      let score = 0;
+      for (const cp of chordPcs) if (scalePcs.has(cp)) score++;
+      if (score > bestScore || (score === bestScore &amp;&amp; acc &lt; bestAcc)) {
+        bestScore = score; bestAcc = acc; bestKey = pc; bestMinor = isMinor;
+      }
+    }
+  }
+  return bestMinor ? vexKeyMinor(bestKey) : vexKeyMajor(bestKey);
+}
+
+/**
+ * Returns the VexFlow key signature string for an interval question, using the
+ * lower note's pitch class as the root. Intervals are always contextualised as
+ * major keys — there is no minor-quality distinction at the interval level.
+ *
+ * @param {number} rootPc - Pitch class of the lower (root) note (0–11).
+ * @returns {string} VexFlow major key string, e.g. 'G' | 'Bb' | 'F#'.
+ */
+function getIntervalKeyStr(rootPc) {
+  return vexKeyMajor(rootPc);
+}
+
+// ── Key-signature coverage helpers ───────────────────────────────────────────
+
+/**
+ * Number of sharps in each major key's key signature.
+ * Keys not present here are flat keys (see MAJOR_FLATS_COUNT).
+ * @type {Object.&lt;string, number>}
+ */
+const MAJOR_SHARPS_COUNT = { C:0, G:1, D:2, A:3, E:4, B:5, 'F#':6, 'C#':7 };
+
+/**
+ * Number of flats in each major key's key signature.
+ * C appears in both tables with count 0 — it is the neutral key.
+ * @type {Object.&lt;string, number>}
+ */
+const MAJOR_FLATS_COUNT  = { C:0, F:1, Bb:2, Eb:3, Ab:4, Db:5, Gb:6, Cb:7 };
+
+/**
+ * Maps VexFlow minor key strings to their relative major key string.
+ * Used to look up accidental counts for minor keys via their relative major.
+ * @type {Object.&lt;string, string>}
+ */
+const MINOR_TO_REL_MAJOR = {
+  Am:'C', Bm:'D', Cm:'Eb', 'C#m':'E', Dm:'F', 'D#m':'F#', Em:'G',
+  Fm:'Ab', 'F#m':'A', Gm:'Bb', 'G#m':'B', Bbm:'Db', Ebm:'Gb',
+};
+
+/**
+ * The order in which sharps appear in key signatures, as VexFlow letter strings.
+ * F♯ is always first (one-sharp keys); B♯ is last (seven-sharp keys).
+ * @type {string[]}
+ */
+const SHARP_ORDER_LETTERS = ['f#','c#','g#','d#','a#','e#','b#'];
+
+/**
+ * The order in which flats appear in key signatures, as VexFlow letter strings.
+ * B♭ is always first (one-flat keys); F♭ is last (seven-flat keys).
+ * @type {string[]}
+ */
+const FLAT_ORDER_LETTERS  = ['bb','eb','ab','db','gb','cb','fb'];
+
+/**
+ * Resolves a VexFlow key string (major or minor) to its major key equivalent
+ * for accidental-count lookups. Minor keys are converted to their relative
+ * major; major keys are returned unchanged; null/undefined returns 'C'.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string, e.g. 'Bb' | 'F#m' | null.
+ * @returns {string} Major key string, e.g. 'Bb' | 'A' | 'C'.
+ * @private
+ */
+function _getMajorKey(vexKeyStr) {
+  if (!vexKeyStr) return 'C';
+  if (vexKeyStr.endsWith('m')) return MINOR_TO_REL_MAJOR[vexKeyStr] ?? 'C';
+  return vexKeyStr;
+}
+
+/**
+ * Returns the set of VexFlow letter strings covered by the given key signature.
+ *
+ * Each string in the returned Set is a letter+accidental combination that the
+ * key signature makes implicit — e.g. {'bb','eb','ab','db','gb'} for D♭ major.
+ * The notation engine uses this set to decide whether to suppress an accidental
+ * (if covered) or force it to appear (if not).
+ *
+ * Coverage is letter-based, not pitch-class based: 'eb' in the set means the
+ * letter E with a flat is covered, but 'D#' (same pitch class) is not.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string (e.g. 'Eb' | 'F#m' | null).
+ * @returns {Set&lt;string>} Set of covered VexFlow letter strings, e.g. {'bb','eb'}.
+ */
+function keySigCoveredLetters(vexKeyStr) {
+  if (!vexKeyStr) return new Set();
+  const majorKey = _getMajorKey(vexKeyStr);
+  const covered = new Set();
+  if (MAJOR_SHARPS_COUNT[majorKey] !== undefined) {
+    const n = MAJOR_SHARPS_COUNT[majorKey];
+    for (let i = 0; i &lt; n; i++) covered.add(SHARP_ORDER_LETTERS[i]);
+  } else if (MAJOR_FLATS_COUNT[majorKey] !== undefined) {
+    const n = MAJOR_FLATS_COUNT[majorKey];
+    for (let i = 0; i &lt; n; i++) covered.add(FLAT_ORDER_LETTERS[i]);
+  }
+  return covered;
+}
+
+/**
+ * Returns true if the given VexFlow key string is covered by the provided
+ * coverage set, meaning the key signature already implies this accidental and
+ * it should not be drawn explicitly on the note.
+ *
+ * @param {string} vexKey - VexFlow key string including octave, e.g. 'eb/4' | 'f#/5'.
+ * @param {Set&lt;string>} coveredLetters - Set returned by keySigCoveredLetters().
+ * @returns {boolean} True if the note's accidental is covered by the key signature.
+ */
+function isCoveredByKeySig(vexKey, coveredLetters) {
+  const letterAcc = vexKey.split('/')[0]; // e.g. 'eb', 'f#', 'c'
+  return coveredLetters.has(letterAcc);
+}
+
+/**
+ * Re-spells a VexFlow key string enharmonically when the interval engine has
+ * produced a double accidental and a simpler spelling exists within the context
+ * of the active key signature.
+ *
+ * The function is conservative: it only acts on double accidentals (♭♭ or ##).
+ * Single accidentals and naturals are always returned unchanged. When a simpler
+ * spelling is found, it is chosen in the following priority order:
+ *
+ *   1. Cross-letter candidate covered by the key signature (e.g. E♭♭ → D when
+ *      D is in key — genuinely simpler and harmonically consistent).
+ *   2. Same-letter one-step strip, preserving staff position (e.g. E♭♭ → E♭).
+ *      This takes priority over a cross-letter natural to avoid staff collisions
+ *      when another note already occupies that letter's staff position.
+ *   3. Cross-letter natural (last resort — may create staff collisions).
+ *
+ * The notation engine sets forcedAcc=true for the resulting note so the
+ * remaining single accidental is always drawn explicitly.
+ *
+ * @param {number} midi - MIDI note number of the note being re-spelled.
+ * @param {string} vexKey - Current VexFlow key string, e.g. 'ebb/4'.
+ * @param {Set&lt;string>} coveredLetters - Set returned by keySigCoveredLetters().
+ * @param {string} keySigStr - Active VexFlow key signature string (unused directly
+ *   but kept for potential future context expansion).
+ * @returns {string} Re-spelled VexFlow key string, or the original if no change needed.
+ */
+function respellForKeySig(midi, vexKey, coveredLetters, keySigStr) {
+  const letterAcc = vexKey.split('/')[0];
+  const oct = vexKey.split('/')[1];
+
+  // Only re-spell if current spelling has a double accidental
+  const isDoubleSharp = letterAcc.endsWith('##');
+  const isDoubleFlat  = letterAcc.endsWith('bb') &amp;&amp; letterAcc.length > 2; // 'bb' alone = B-flat
+
+  if (!isDoubleSharp &amp;&amp; !isDoubleFlat) return vexKey; // single acc or natural — keep
+
+  // Enharmonic pitch class
+  const pc = midi % 12;
+
+  // Step 1: try cross-letter enharmonic respell (existing logic).
+  // e.g. c## → d, b## → c#, etc. — only when a simpler spelling at the same
+  // pitch class exists and is covered by the key sig or is a natural note.
+  // We allow letter changes here because in these cases the cross-letter spelling
+  // is musically correct and there is no staff-position collision risk.
+  const candidates = [];
+  for (let li = 0; li &lt; 7; li++) {
+    const naturalPc = LETTER_PCS[li];
+    const letter = LETTER_NAMES[li].toLowerCase();
+    for (const [accSuffix, delta] of [['',0],['#',1],['b',-1]]) {
+      const candidate_pc = ((naturalPc + delta) % 12 + 12) % 12;
+      if (candidate_pc === pc) {
+        const candidateKey = letter + accSuffix;
+        let candOct = parseInt(oct);
+        if (letter === 'c' &amp;&amp; pc >= 9) candOct += 1;
+        if (letter === 'b' &amp;&amp; pc &lt;= 2) candOct -= 1;
+        candidates.push(candidateKey + '/' + candOct);
+      }
+    }
+  }
+
+  // Priority 1: cross-letter candidate covered by the key sig — genuinely simpler
+  const covered = candidates.find(k => isCoveredByKeySig(k, coveredLetters));
+  if (covered) return covered;
+
+  // Priority 2: same-letter one-step strip — preserves staff position.
+  // Must come BEFORE the cross-letter natural fallback, because a natural note
+  // on a different letter (e.g. D natural for Ebb) causes a staff collision
+  // with any other note already on that letter (e.g. Db).
+  // E.g. ebb → eb (different pc, same letter E, correct staff position).
+  // The forcedAcc flag in spellMidi ensures the single remaining accidental is
+  // drawn explicitly, correctly communicating the double accidental to the reader.
+  const originalLetter = letterAcc[0].toLowerCase();
+  if (isDoubleFlat)  return originalLetter + 'b/' + oct;
+  if (isDoubleSharp) return originalLetter + '#/' + oct;
+
+  // Priority 3: cross-letter natural — last resort only
+  const natural = candidates.find(k => !k.split('/')[0].match(/[#b]/));
+  if (natural) return natural;
+
+  return candidates[0] ?? vexKey; // absolute last resort
+}
+
+/**
+ * Returns the set of pitch classes covered by the given key signature.
+ *
+ * @deprecated Prefer keySigCoveredLetters() for new code. This pitch-class
+ *   based approach cannot distinguish enharmonic pairs (e.g. E♭ vs D♯) and
+ *   may suppress or force accidentals incorrectly on enharmonically spelled
+ *   notes. Retained for legacy callers only.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string or null.
+ * @returns {Set&lt;number>} Set of covered pitch classes (0–11).
+ */
+function keySigCoveredPcs(vexKeyStr) {
+  if (!vexKeyStr) return new Set();
+  const SHARP_ORDER_PCS = [6, 1, 8, 3, 10, 5, 0];
+  const FLAT_ORDER_PCS  = [10, 3, 8, 1, 6, 11, 4];
+  const majorKey = _getMajorKey(vexKeyStr);
+  const covered = new Set();
+  if (MAJOR_SHARPS_COUNT[majorKey] !== undefined) {
+    const n = MAJOR_SHARPS_COUNT[majorKey];
+    for (let i = 0; i &lt; n; i++) covered.add(SHARP_ORDER_PCS[i]);
+  } else if (MAJOR_FLATS_COUNT[majorKey] !== undefined) {
+    const n = MAJOR_FLATS_COUNT[majorKey];
+    for (let i = 0; i &lt; n; i++) covered.add(FLAT_ORDER_PCS[i]);
+  }
+  return covered;
+}
+
+/**
+ * Returns the total number of accidental symbols in the given key signature.
+ * Used by the notation engine to calculate extra canvas width needed to
+ * accommodate the key signature glyphs at the start of the staff.
+ *
+ * @param {string|null} vexKeyStr - VexFlow key string, e.g. 'Eb' | 'F#m' | null.
+ * @returns {number} Number of accidentals in the key signature (0–7).
+ */
+function keySigAccidentalCount(vexKeyStr) {
+  if (!vexKeyStr) return 0;
+  const majorKey = _getMajorKey(vexKeyStr);
+  if (MAJOR_SHARPS_COUNT[majorKey] !== undefined) return MAJOR_SHARPS_COUNT[majorKey];
+  if (MAJOR_FLATS_COUNT[majorKey]  !== undefined) return MAJOR_FLATS_COUNT[majorKey];
+  return 0;
+}
+
+// =============================================================================
+// The Sound Travels Ear Training — keysig.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================
+</code></pre></div></div></div></main></div><footer class="border-t border-(--clean-border) bg-background py-6 text-sm text-muted-foreground"><div class="mx-auto flex w-full max-w-screen-2xl flex-col items-start justify-between gap-2 px-4 md:flex-row md:items-center"><div class="flex items-center gap-1.5"><span>Documentation</span><span>© 2026</span></div></div></footer></div><script type="application/json" data-island-props>{"i0":{"language":"javascript","filename":"data/keysig.js"},"i1":{"basePath":"/earTrainingJS/docs","searchIndexUrl":"/earTrainingJS/docs/_assets/search-index.mu878wpr-06c54d73.json"},"i2":{},"i3":{},"i4":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/data/keysig-js","basePath":"/earTrainingJS/docs","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]},"i5":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/data/keysig-js","basePath":"/earTrainingJS/docs","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]}}</script><script type="module">(function(){var map={"theme-toggle":"/earTrainingJS/docs/_islands/theme-toggle-QZPD445E.js","settings":"/earTrainingJS/docs/_islands/settings-2ZS2MIWU.js","code-viewer":"/earTrainingJS/docs/_islands/code-viewer-YGLLC5W5.js","embed":"/earTrainingJS/docs/_islands/embed-GCSKGDO4.js","playground":"/earTrainingJS/docs/_islands/playground-JBUGQGEY.js","tabs":"/earTrainingJS/docs/_islands/tabs-NRSQKCSU.js","sidebar":"/earTrainingJS/docs/_islands/sidebar-M4J6M54A.js","mobile-nav":"/earTrainingJS/docs/_islands/mobile-nav-R4OP7AYN.js","toc":"/earTrainingJS/docs/_islands/toc-QITK6TVX.js","toc-mobile":"/earTrainingJS/docs/_islands/toc-mobile-ZE37NIO6.js","cmdk":"/earTrainingJS/docs/_islands/cmdk-H5ACX54N.js","code-tabs":"/earTrainingJS/docs/_islands/code-tabs-WQQJWQOG.js","copy-btn":"/earTrainingJS/docs/_islands/copy-btn-FOLNJ4VF.js","copy-page":"/earTrainingJS/docs/_islands/copy-page-EJSALNJL.js"};var seen=new Set();document.querySelectorAll('[data-island]').forEach(function(el){seen.add(el.getAttribute('data-island'));});seen.forEach(function(name){var src=map[name];if(src){import(src);}});})();</script><script>(function(){function flash(h){var b=h.querySelector('[data-heading-anchor]');if(!b)return;b.setAttribute('data-copied','');window.setTimeout(function(){b.removeAttribute('data-copied');},3000);}function onClick(e){var t=e.target;if(!t||!t.closest)return;if(t.closest('a'))return;var h=t.closest('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');if(!h)return;var id=h.id;if(!id)return;var iconOnly=!!t.closest('[data-heading-anchor]');if(!iconOnly){if(location.hash.slice(1)===id){h.scrollIntoView();}else{location.hash=id;}}try{var url=location.origin+location.pathname+location.search+'#'+id;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){flash(h);}).catch(function(){});}}catch(_){}}document.addEventListener('click',onClick);}());</script><script>(function(){var IDLE=700;var timers=new WeakMap();function onScroll(e){var el=e.target;if(el===document||el===window)el=document.documentElement;if(!el||!el.classList)return;el.classList.add('clean-scrolling');var prev=timers.get(el);if(prev)window.clearTimeout(prev);timers.set(el,window.setTimeout(function(){el.classList.remove('clean-scrolling');},IDLE));}document.addEventListener('scroll',onScroll,true);}());</script></body></html>
