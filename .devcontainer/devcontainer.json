@@ -1,0 +1,19 @@
+{
+  "name": "The Sound Travels Ear Training",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ritwickdey.LiveServer"
+      ],
+      "settings": {
+        "editor.formatOnSave": false,
+        "editor.tabSize": 2
+      }
+    }
+  },
+  "forwardPorts": [8080]
+}

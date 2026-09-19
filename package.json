@@ -1,0 +1,26 @@
+{
+  "name": "eartrainingjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs": "jsdoc -c jsdoc.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GuitarsAI/earTrainingJS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GuitarsAI/earTrainingJS/issues"
+  },
+  "homepage": "https://github.com/GuitarsAI/earTrainingJS#readme",
+  "devDependencies": {
+    "clean-jsdoc-theme": "^5.2.0",
+    "jsdoc": "^4.0.5"
+  }
+}
