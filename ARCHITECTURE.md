@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: js/app.js ✅
+> Last updated: css/mobile.css ✅
 
 ---
 
@@ -34,9 +34,9 @@ earTrainingJS/
 │   └── og-image.png                   1200×630px social share image
 │
 ├── css/
-│   ├── base.css                       [ ] production pass pending
+│   ├── base.css                       ✅ production pass complete
 │   ├── components.css                 ✅ production pass complete
-│   └── mobile.css                     [ ] production pass pending
+│   └── mobile.css                     ✅ production pass complete
 │
 ├── js/
 │   ├── vendor/
@@ -202,8 +202,56 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 
 ---
 
-### css/base.css
-[ ] — pending production pass
+### ✅ css/base.css
+
+**Role:** Design token layer. Defines all CSS custom properties consumed by `components.css` and `mobile.css`. Contains no component styles — tokens only. Loaded first among the three CSS files.
+
+**Size:** ~90 lines across 3 sections.
+
+**Structure:**
+
+| § | Section | Contents |
+|---|---|---|
+| 1 | Light mode tokens | `:root` — 22 custom properties covering backgrounds, borders, text, accent, correct/wrong feedback, and shadows |
+| 2 | Dark mode overrides | `[data-theme="dark"]` — same 22 properties with dark-palette values. Contrast lifted in Point 20a for WCAG AA compliance |
+| 3 | Base reset | `html`, `*`, `body`, `#app`, `.app-footer` and child elements |
+
+**Token reference:**
+
+| Token | Purpose |
+|---|---|
+| `--bg` | Page background |
+| `--bg-card` | Card / panel surface |
+| `--bg-chip` | Unselected chip background |
+| `--bg-chip-active` | Selected chip background (teal tint) |
+| `--bg-hover` | Hover state for interactive surfaces |
+| `--border` | Default border colour |
+| `--border-active` | Teal active/focus border |
+| `--text` | Primary text |
+| `--text-muted` | Secondary text (labels, hints) |
+| `--text-faint` | Tertiary text (annotations, fine print) |
+| `--accent` | Primary teal accent (`#4a9e8e`) — same in both themes |
+| `--accent-dark` | Darker teal for hover states |
+| `--accent-text` | Teal text on white surface (light); lighter teal (dark) |
+| `--correct` | Correct-answer feedback colour |
+| `--correct-bg` | Correct-answer feedback background |
+| `--correct-border` | Correct-answer feedback border |
+| `--wrong` | Wrong-answer feedback colour |
+| `--wrong-bg` | Wrong-answer feedback background |
+| `--wrong-border` | Wrong-answer feedback border |
+| `--shadow` | Subtle box shadow |
+| `--shadow-md` | Medium box shadow (cards, panels) |
+
+**Key design decisions:**
+
+- **`html { font-size: 100%; }`** — inherits the browser's default (typically 16px) rather than setting an explicit pixel value. Respects user accessibility preferences (browser font-size settings) and is the correct base for a rem-unit layout.
+- **`body { padding-top: 132px; }`** — static initial estimate for the sticky header height. Overwritten at runtime by `app.js` `syncPadding()` so body content stays clear of the header at every viewport size. Value reflects the two-line desktop header (title row + score bar) plus mode tabs.
+- **`--accent` is identical in both themes** — teal `#4a9e8e` meets WCAG AA contrast against both `--bg-card` values. No dark-mode override needed.
+- **Footer styles here, not `components.css`** — `.app-footer` and its children are structural layout (margins, flex, badge sizing) rather than component styling, so they sit in the base layer alongside `body` and `#app`.
+
+**Dependencies:** none — pure declarations and resets.
+
+**Consumed by:** `components.css`, `mobile.css` (all `var(--...)` references).
 
 ---
 
@@ -263,7 +311,7 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 **Design decisions recorded:**
 
 - **Notation card hardcoded white** — `.notation-area` uses `background: #ffffff` (not `var(--bg-card)`) because VexFlow renders black ink; the card must remain white regardless of active theme. `.notation-label`, `.notation-chord-name`, and all `.keysig-chip` colours are also hardcoded to light-palette hex values for the same reason — they sit on a white surface, not the themed background.
-- **`#themeToggleMobile` hidden here** — `display:none` is set in this file; `mobile.css` overrides to `display:inline-flex` at the narrow breakpoint. The desktop instance `#themeToggle` is always visible via `.header-actions`.
+- **`#themeToggleMobile` hidden here** — `display:none` is set in this file; `mobile.css` overrides to `display:inline-flex` at the narrow breakpoint so the score-bar instance shows on mobile. The desktop instance `#themeToggle` is always visible via `.header-actions`. Note: `mobile.css` previously contained a duplicate `display:none` rule that re-hid the mobile toggle — corrected to `display:inline-flex` in the Aug 2026 production pass.
 - **Chip alias pattern** — `.option-chip`, `.chord-style-chip`, `.voicing-chip`, `.style-chip`, `.scale-dir-chip` all share one ruleset via a grouped selector. This allows JS in each mode file to use semantically meaningful class names without any style duplication.
 - **Riemannian tooltip is CSS-only** — shown via `:hover` and `:focus-within` on `.bd-riemann-wrap`. The only `@media` query in this file (`max-width: 479px`) exists solely to prevent this tooltip clipping off the left edge on the smallest viewports.
 - **`.vl-selected` uses `!important`** — overrides the `.cs-section` border and background to create the visual link between the voice leading engine output and the harmonic field panel. Intentional; no other `!important` in the file.
