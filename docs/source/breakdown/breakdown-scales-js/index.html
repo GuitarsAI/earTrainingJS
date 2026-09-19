@@ -1,0 +1,570 @@
+<!doctype html><html lang="en" data-scrollbar="styled"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="generator" content="clean-jsdoc-theme 5.2.0" /><title>breakdown/breakdown-scales.js</title><script>(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme');if(t==='dark'){d.dataset.theme='dark'}else{d.dataset.theme='light'}var fs=localStorage.getItem('clean-font-size');if(fs==='sm'){d.style.fontSize='15px'}else if(fs==='lg'){d.style.fontSize='18px'}var ls=localStorage.getItem('clean-line-spacing');if(ls==='compact'){d.style.setProperty('--clean-line-height','1.4')}else if(ls==='relaxed'){d.style.setProperty('--clean-line-height','1.8')}}catch(_){}}());</script><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Roboto:wght@400;500;600;700&amp;display=swap" /><link rel="stylesheet" href="/_assets/styles.mu8704my-06c54d73.css" /></head><body><div class="flex min-h-screen flex-col bg-background text-(--clean-fg)"><header class="sticky top-0 z-30 border-b border-(--clean-border) bg-background"><div class="mx-auto flex h-16 w-full min-w-0 max-w-screen-2xl items-center gap-4 px-4"><a href="/" class="flex min-w-0 items-center pl-3 no-underline"><span class="truncate text-lg font-heading font-bold text-(--clean-fg)">Documentation</span></a><div class="ml-auto flex shrink-0 items-center gap-1"><div class="flex items-center gap-1"><div data-island="cmdk" data-island-id="i1"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search" title="Search (Ctrl K)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button></div></div><div class="hidden items-center gap-1 md:flex"><div data-island="theme-toggle" data-island-id="i2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-label="Switch to dark theme" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button></div><div data-island="settings" data-island-id="i3"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="md:hidden"><div data-island="mobile-nav" data-island-id="i4"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg></button></div></div></div></div></header><div class="mx-auto grid w-full max-w-screen-2xl flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[16rem_minmax(0,1fr)]"><aside class="hidden md:block"><div class="sticky overflow-y-auto [scrollbar-gutter:stable] pr-2 top-20 max-h-[calc(100vh-6rem)]"><div data-island="sidebar" data-island-id="i5"><nav aria-label="Documentation navigation" class="text-(--clean-fg)"><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Home</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Modules</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/audio" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Audio</span></a></li><li class="my-0.5"><a href="/module/breakdown" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown</span></a></li><li class="my-0.5"><a href="/module/breakdown-chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-chords</span></a></li><li class="my-0.5"><a href="/module/breakdown-intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-intervals</span></a></li><li class="my-0.5"><a href="/module/breakdown-progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-progressions</span></a></li><li class="my-0.5"><a href="/module/breakdown-scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-scales</span></a></li><li class="my-0.5"><a href="/module/chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">chords</span></a></li><li class="my-0.5"><a href="/module/defaults" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Defaults</span></a></li><li class="my-0.5"><a href="/module/helpcontent" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">HelpContent</span></a></li><li class="my-0.5"><a href="/module/helpers" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Helpers</span></a></li><li class="my-0.5"><a href="/module/intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">intervals</span></a></li><li class="my-0.5"><a href="/module/keysig" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">KeySig</span></a></li><li class="my-0.5"><a href="/module/notation" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">notation</span></a></li><li class="my-0.5"><a href="/module/progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">progressions</span></a></li><li class="my-0.5"><a href="/module/scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">scales</span></a></li><li class="my-0.5"><a href="/module/spelling" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Spelling</span></a></li><li class="my-0.5"><a href="/module/state" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">state</span></a></li><li class="my-0.5"><a href="/module/stats" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">stats</span></a></li><li class="my-0.5"><a href="/module/voiceleading" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voiceLeading</span></a></li><li class="my-0.5"><a href="/module/voicings" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voicings</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Typedefs</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/voicings/voicingmode" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">VoicingMode</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/global" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Tutorials</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/tutorials/css-architecture" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">css-architecture</span></a></li><li class="my-0.5"><a href="/tutorials/getting-started" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">getting-started</span></a></li><li class="my-0.5"><a href="/tutorials/html-structure" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">html-structure</span></a></li></ul></div><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/source" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Source Files</span></a></li></ul></div></nav></div></div></aside><main class="min-w-0 px-4 md:px-8 lg:px-12"><div data-island="code-viewer" data-island-id="i0"><div class="my-4 overflow-hidden rounded-lg border border-(--clean-border) bg-(--clean-bg)"><div class="flex items-center justify-between border-b border-(--clean-border) bg-(--clean-bg-muted) px-3 py-2 text-sm"><span class="font-mono text-(--clean-fg)">breakdown/breakdown-scales.js</span><span class="text-xs text-(--clean-fg-muted)">javascript</span></div><div class="h-[calc(100vh-13rem)] min-h-[24rem]"><pre class="m-0 h-full overflow-auto whitespace-pre p-4 text-sm leading-relaxed text-(--clean-fg)"><code class="language-javascript">/**
+ * @file breakdown-scales.js
+ * @description Scales branch of the post-answer breakdown panel for The Sound Travels
+ * Ear Training. Renders all scale theory information — note names, degree numerals,
+ * interval rows, step pattern, triad map, modal character, parent scale, and the
+ * harmonic field analysis — into the shared breakdown panel.
+ *
+ * Responsibilities:
+ *   - Lookup tables:  `SCALE_CHARACTER`, `SCALE_MODAL_PARENT`
+ *   - Theory helpers: `computeDegreeNumerals()`, `computeTriadMap()`,
+ *                     `harmonicFieldSymbolSuffix()`, `harmonicFieldQuality()`,
+ *                     `harmonicFieldSeventh()`, `buildHarmonicField()`
+ *   - DOM builder:    `makeHarmonicFieldRow()`
+ *   - Renderer:       `showBreakdownScales()`
+ *
+ * Dependencies (globals from earlier layers):
+ *   `makeNameHeader`, `makeBDRow`, `makeCSGroup`, `joinSep`, `intervalAbbr`,
+ *   `semitoneToDegree`, `SEMITONE_TO_ROMAN`, `spelledRoot`, `spelledNote`,
+ *   `pcInterval`, `ordinal`, `TRITONE_AS_D5`, `EIGHT_AS_A5`, `NINE_AS_D7`,
+ *   `currentScale`, `currentScaleRootMidi`, `currentScaleDir`
+ *
+ * Load order: after `breakdown-chords.js`, before `breakdown-progressions.js`.
+ *
+ * @module breakdown-scales
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+
+// ─── Lookup tables ────────────────────────────────────────────────────────────
+
+/**
+ * Modal character string for each scale symbol — a single-line mood and
+ * brightness description shown in the Character collapsible of the breakdown.
+ *
+ * @type {Object.&lt;string, string>}
+ */
+const SCALE_CHARACTER = {
+  major:            'Bright, stable — the default &quot;happy&quot; Western sound',
+  nat_minor:        'Dark, introspective — the natural &quot;sad&quot; counterpart to major',
+  harm_minor:       'Exotic, tense — raised 7th creates a dramatic leading tone',
+  mel_minor:        'Fluid, bittersweet — ascending brightness, descending shadow',
+  dorian:           'Minor with a bright 6th — soulful, funky, used heavily in jazz &amp; blues',
+  phrygian:         'Dark, Spanish/Flamenco flavour — distinctive ♭2 gives it edge',
+  lydian:           'Dreamy, ethereal — raised 4th lifts it above standard major',
+  mixolydian:       'Major with a bluesy ♭7 — the backbone of rock, blues &amp; funk',
+  locrian:          'Unstable, dissonant — diminished tonic triad makes resolution elusive',
+  phryg_dom:        'Intense, Middle-Eastern/Spanish — the V chord of harmonic minor',
+  lyd_dom:          'Sophisticated tension — dominant 7th with a Lydian lift; Bartók sound',
+  altered:          'Maximum tension — all alterations on a dominant; resolves dramatically',
+  whole_tone:       'Ambiguous, floating — no leading tone, no tonic pull; Debussy territory',
+  dim_wh:           'Symmetrical, angular — repeats every minor 3rd; diminished chord scale',
+  dim_hw:           'Symmetrical, dense — dominant 7th(♭9) scale; bebop / jazz tension',
+  pent_maj:         'Open, folk/country — removes the two &quot;tension&quot; notes of major',
+  pent_min:         'Raw, bluesy — the pentatonic workhorse of rock guitar',
+  blues:            'Expressive, gritty — minor pentatonic plus the chromatic ♭5 &quot;blue note&quot;',
+  augmented_scale:  'Symmetrical, ambiguous — alternates m3 and semitone; three embedded augmented triads',
+  prometheus:       'Mystic, impressionistic — Scriabin\'s &quot;mystic chord&quot; scale; bright and otherworldly',
+  pent_dorian:      'Minor-flavoured with a bright 6th — jazz/fusion pentatonic',
+  pent_phrygian:    'Dark, Spanish edge — ♭2 gives it an exotic, tense quality',
+  pent_lydian:      'Bright and floating — ♯4 lifts it above the standard major pentatonic',
+  pent_mixo:        'Bluesy and open — sus flavour with a dominant ♭7',
+  pent_locrian:     'Unstable, chromatic — the darkest pentatonic, rarely used melodically',
+  pent_dom:         'Bright, dominant-flavoured — major 3rd and ♭7 give it a funky, bluesy confidence; favoured by John McLaughlin',
+  pent_sus:         'Open, floating — built on a sus4 chord with no 3rd; ancient Egyptian/Chinese character, works over major or minor',
+  pent_hirajoshi:   'Melancholic, contemplative — traditional koto tuning; minor 3rd and ♭6 create a wistful Japanese character',
+  pent_iwato:       'Ominous, ceremonial — the darkest Japanese pentatonic; Locrian-like tension from ♭2 and ♭5, no resolution',
+  pent_insen:       'Mysterious, somber — koto scale with a half-step above the root; deep and introspective Japanese colour',
+  pent_yo:          'Bright, folk-like — traditional Japanese major pentatonic with no semitones; festive and accessible to Western ears',
+  blues_maj:        'Warm, gospel-inflected — major pentatonic with a chromatic ♭3 passing tone; brighter and more resolved than minor blues',
+  prometheus_liszt: 'Dense, chromatic — Liszt\'s variant of the Prometheus/mystic sound; darker and more dissonant than Scriabin\'s version',
+  tritone_hex:      'Symmetrical, bitonal — two major triads a tritone apart; angular and unstable, used in jazz for dominant substitution',
+  messiaen_5:       'Sparse, otherworldly — only 6 transpositions; Messiaen\'s most severe mode, stark and ritualistic',
+  harm_major:       'Lush, bittersweet — major scale with a ♭6; combines major brightness with a haunting chromatic pull, common in jazz',
+  neap_minor:       'Dramatic, Romantic — Neapolitan minor with ♭2 and raised 7th; operatic tension, rich in leading-tone drive',
+  dbl_harmonic:     'Intense, exotic — two augmented 2nds create a striking Middle Eastern/Byzantine colour; also called Arabic or Hijaz Kar',
+  spanish:          'Passionate, Flamenco — Phrygian Dominant family with raised 7th; the sound of cante jondo and classical guitar',
+  hung_minor:       'Dramatic, Gypsy — harmonic minor with ♯4; two augmented 2nds give it a fiery Eastern European intensity',
+  romanian_minor:   'Exotic, Eastern — Dorian with ♯4 (tritone); used in Jewish, Greek, and Romanian folk music; also called Ukrainian Dorian or Mi Shebeirach',
+  dorian_s4:        'Mysterious, fusion — Dorian with a ♯4 tritone substitution; adds Lydian brightness to a minor context',
+  phrygian_n6:      'Dark with a lift — Phrygian\'s ♭2 tension softened by a natural 6th; second mode of melodic minor, also called Dorian ♭2',
+  messiaen_6:       'Shimmering, colouristic — Messiaen\'s mode 6, a whole-tone scale with added chromatic neighbour tones; luminous and ambiguous',
+  messiaen_3:       'Joyful, exuberant — Messiaen\'s most colourful mode; 9 notes, 4 transpositions; evokes birdsong and natural vitality',
+  messiaen_4:       'Dense, angular — 8 notes, 6 transpositions; Messiaen\'s most chromatic mode; unsettled and mysterious',
+};
+
+/**
+ * Modal parent data for scales that are modes of a parent scale. Each entry
+ * provides the parent scale name and the scale degree at which this mode starts.
+ * Scales not listed here are treated as root / non-derived scales and receive
+ * no Parent collapsible in the breakdown.
+ *
+ * @type {Object.&lt;string, { parent: string, degree: number }>}
+ */
+const SCALE_MODAL_PARENT = {
+  dorian:     { parent: 'Major',         degree: 2 },
+  phrygian:   { parent: 'Major',         degree: 3 },
+  lydian:     { parent: 'Major',         degree: 4 },
+  mixolydian: { parent: 'Major',         degree: 5 },
+  locrian:    { parent: 'Major',         degree: 7 },
+  phryg_dom:  { parent: 'Harmonic Minor', degree: 5 },
+  lyd_dom:    { parent: 'Melodic Minor',  degree: 4 },
+  altered:    { parent: 'Melodic Minor',  degree: 7 },
+};
+
+// ─── Theory helpers ───────────────────────────────────────────────────────────
+
+/**
+ * Builds the degree-numeral array for a scale across all note counts. The final
+ * entry (the octave) always returns `'I'`. Enharmonically ambiguous semitone
+ * counts (6, 8, 9) are resolved via the scale symbol using the same exception
+ * sets used throughout the app (`TRITONE_AS_D5`, `EIGHT_AS_A5`, `NINE_AS_D7`).
+ *
+ * @param {number[]} intervals - Scale intervals array including the octave as
+ *   the last entry (e.g. `[0, 2, 4, 5, 7, 9, 11, 12]`).
+ * @param {string}   symbol    - Scale symbol key (e.g. `'major'`, `'whole_tone'`),
+ *   used for enharmonic context overrides.
+ * @returns {string[]} Qualified Roman numeral strings, one per interval entry
+ *   (e.g. `['I', 'II', '♭III', 'IV', 'V', '♯V', '♭VII', 'I']`).
+ */
+function computeDegreeNumerals(intervals, symbol) {
+  return intervals.map((semi, i) => {
+    if (i === intervals.length - 1) return 'I';
+    const s = semi % 12;
+    if (symbol) {
+      if (s === 8 &amp;&amp; EIGHT_AS_A5.has(symbol))   return '♯V';
+      if (s === 9 &amp;&amp; NINE_AS_D7.has(symbol))    return '°VII';
+      if (s === 6 &amp;&amp; TRITONE_AS_D5.has(symbol)) return '♭V';
+    }
+    const entry = SEMITONE_TO_ROMAN[s];
+    return entry ? entry.prefix + entry.roman : '?';
+  });
+}
+
+/**
+ * Builds a triad map for a 7-note scale. Stacks diatonic thirds from each
+ * scale degree and classifies the resulting triad quality. Each entry is an
+ * HTML `&lt;span>` with a `title` attribute showing the note name, used by
+ * `joinSep()` to render the Triad map row in the breakdown.
+ *
+ * Returns `null` for non-heptatonic scales (i.e. when `intervals.length !== 8`).
+ *
+ * @param {number[]} intervals - Scale intervals array (8 entries including octave).
+ * @param {string}   sym       - Scale symbol, passed to `spelledNote()` for enharmonic spelling.
+ * @param {number}   rootPc    - Root pitch class (0–11).
+ * @returns {string[]|null} Array of HTML span strings (7 entries), or `null` if
+ *   the scale is not heptatonic.
+ */
+function computeTriadMap(intervals, sym, rootPc) {
+  if (intervals.length !== 8) return null;
+  const degrees = intervals.slice(0, 7);
+  const map = [];
+  const QUALITY_LABEL = { major: '\u25b3', minor: 'm', diminished: '\u00b0', augmented: '+' };
+
+  for (let d = 0; d &lt; 7; d++) {
+    const r  = degrees[d];
+    const t  = degrees[(d + 2) % 7];
+    const fi = degrees[(d + 4) % 7];
+    const third = ((t  - r) + 12) % 12;
+    const fifth = ((fi - r) + 12) % 12;
+
+    let quality;
+    if      (third === 4 &amp;&amp; fifth === 7) quality = 'major';
+    else if (third === 3 &amp;&amp; fifth === 7) quality = 'minor';
+    else if (third === 3 &amp;&amp; fifth === 6) quality = 'diminished';
+    else if (third === 4 &amp;&amp; fifth === 8) quality = 'augmented';
+    else quality = null;
+
+    const roman    = semitoneToDegree(r, quality || 'major');
+    const suffix   = quality ? QUALITY_LABEL[quality] : '?';
+    const noteName = spelledNote(r, rootPc, sym);
+    map.push(`&lt;span title=&quot;${noteName}&quot;>${roman}${suffix}&lt;/span>`);
+  }
+  return map;
+}
+
+/**
+ * Maps an internal chord symbol to its display suffix string, consistent with
+ * the notation used throughout the app. Used for both the Roman numeral suffix
+ * and the root-plus-quality label inside harmonic field pills.
+ *
+ * Returns `null` for unrecognised symbols, signalling the pill renderer to fall
+ * back to an interval-only display.
+ *
+ * @param {string} sym - Internal chord symbol (e.g. `'maj'`, `'m7b5'`, `'o7'`).
+ * @returns {string|null} Display suffix string, or `null` if unrecognised.
+ */
+function harmonicFieldSymbolSuffix(sym) {
+  const map = {
+    'maj':    '',
+    'm':      'm',
+    'dim':    '°',
+    'aug':    '+',
+    '7':      '7',
+    'Maj7':   'Maj7',
+    'm7':     'm7',
+    'mMaj7':  'mMaj7',
+    'm7b5':   'm7♭5',
+    'o7':     '°7',
+    'aug7':   '+7',
+    'Maj7s5': 'Maj7♯5',
+  };
+  return map[sym] ?? null;
+}
+
+/**
+ * Classifies a triad built on a scale degree from its third and fifth intervals.
+ * Returns a descriptor object used by `buildHarmonicField()` to determine the
+ * chord symbol, Roman numeral case, and quality suffix; returns `null` when the
+ * interval pair does not form a standard triad.
+ *
+ * @param {number} third - Semitones from the degree root to the third (mod 12).
+ * @param {number} fifth - Semitones from the degree root to the fifth (mod 12).
+ * @returns {{ sym: string, suffix: string, case: 'upper'|'lower' }|null}
+ */
+function harmonicFieldQuality(third, fifth) {
+  if (third === 4 &amp;&amp; fifth === 7)  return { sym: 'maj',  suffix: '',  case: 'upper' };
+  if (third === 3 &amp;&amp; fifth === 7)  return { sym: 'm',    suffix: '',  case: 'lower' };
+  if (third === 3 &amp;&amp; fifth === 6)  return { sym: 'dim',  suffix: '°', case: 'lower' };
+  if (third === 4 &amp;&amp; fifth === 8)  return { sym: 'aug',  suffix: '+', case: 'upper' };
+  return null;
+}
+
+/**
+ * Classifies the seventh chord built on a scale degree from its third, fifth,
+ * and seventh intervals. Returns an internal chord symbol string when the
+ * combination matches a known seventh-chord type; returns `null` otherwise.
+ *
+ * @param {number} third   - Semitones from degree root to third (mod 12).
+ * @param {number} fifth   - Semitones from degree root to fifth (mod 12).
+ * @param {number} seventh - Semitones from degree root to seventh (mod 12).
+ * @returns {string|null} Internal chord symbol (e.g. `'Maj7'`, `'m7b5'`, `'o7'`),
+ *   or `null` if no match.
+ */
+function harmonicFieldSeventh(third, fifth, seventh) {
+  if (third === 4 &amp;&amp; fifth === 7  &amp;&amp; seventh === 11) return 'Maj7';
+  if (third === 4 &amp;&amp; fifth === 7  &amp;&amp; seventh === 10) return '7';
+  if (third === 3 &amp;&amp; fifth === 7  &amp;&amp; seventh === 10) return 'm7';
+  if (third === 3 &amp;&amp; fifth === 7  &amp;&amp; seventh === 11) return 'mMaj7';
+  if (third === 3 &amp;&amp; fifth === 6  &amp;&amp; seventh === 10) return 'm7b5';
+  if (third === 3 &amp;&amp; fifth === 6  &amp;&amp; seventh === 9)  return 'o7';
+  if (third === 4 &amp;&amp; fifth === 8  &amp;&amp; seventh === 10) return 'aug7';
+  if (third === 4 &amp;&amp; fifth === 8  &amp;&amp; seventh === 11) return 'Maj7s5';
+  return null;
+}
+
+/**
+ * Builds the harmonic field for a scale — the set of chords obtained by stacking
+ * diatonic thirds on each scale degree. For heptatonic and larger scales, seventh
+ * chords are attempted first; triads are used as fallback. For pentatonic and
+ * hexatonic scales, only triads are attempted. Degrees that yield no standard
+ * chord structure are included with `chordSym: null` so the pill renders gracefully.
+ *
+ * @param {number[]} intervals - Scale intervals array including the octave as the
+ *   last entry (e.g. `[0, 2, 4, 5, 7, 9, 11, 12]`).
+ * @param {number}   rootMidi  - MIDI note number of the scale root.
+ * @param {string}   sym       - Scale symbol, used for enharmonic spelling of degree names.
+ * @returns {Array&lt;{ roman: string, rootName: string, chordSym: string|null }>}
+ *   One entry per scale degree (excluding the octave).
+ */
+function buildHarmonicField(intervals, rootMidi, sym) {
+  const rootPc = rootMidi % 12;
+  const pcs = intervals.slice(0, -1).map(i => (rootPc + i) % 12);
+  const n = pcs.length;
+  const result = [];
+
+  for (let d = 0; d &lt; n; d++) {
+    const degPc   = pcs[d];
+    const degSemi = intervals[d];
+    const rootName = spelledNote(degSemi % 12, rootPc, sym);
+
+    const pc1  = pcs[(d + 2) % n];
+    const pc2  = pcs[(d + 4) % n];
+    const third = ((pc1 - degPc) + 12) % 12;
+    const fifth = ((pc2 - degPc) + 12) % 12;
+
+    let chordSym, roman;
+
+    if (n >= 7) {
+      const pc3     = pcs[(d + 6) % n];
+      const seventh = ((pc3 - degPc) + 12) % 12;
+      const sevSym  = harmonicFieldSeventh(third, fifth, seventh);
+      const triQ    = harmonicFieldQuality(third, fifth);
+
+      if (sevSym) {
+        chordSym = sevSym;
+        const romanBase = triQ
+          ? (triQ.case === 'lower'
+              ? SEMITONE_TO_ROMAN[degSemi % 12].roman.toLowerCase()
+              : SEMITONE_TO_ROMAN[degSemi % 12].roman)
+          : SEMITONE_TO_ROMAN[degSemi % 12].roman;
+        const prefix         = SEMITONE_TO_ROMAN[degSemi % 12]?.prefix || '';
+        const triadSuffix    = triQ ? triQ.suffix : '';
+        const sevSuffix      = harmonicFieldSymbolSuffix(sevSym) ?? '';
+        const combinedSuffix = (sevSym === 'o7' || sevSym === 'm7b5')
+          ? sevSuffix
+          : triadSuffix + sevSuffix.replace(/^m/, '').replace(/^°/, '');
+        roman = prefix + romanBase + combinedSuffix;
+      } else if (triQ) {
+        chordSym = triQ.sym;
+        const romanBase = triQ.case === 'lower'
+          ? SEMITONE_TO_ROMAN[degSemi % 12].roman.toLowerCase()
+          : SEMITONE_TO_ROMAN[degSemi % 12].roman;
+        const prefix = SEMITONE_TO_ROMAN[degSemi % 12]?.prefix || '';
+        roman = prefix + romanBase + triQ.suffix;
+      } else {
+        chordSym = null;
+        const entry = SEMITONE_TO_ROMAN[degSemi % 12];
+        roman = entry ? entry.prefix + entry.roman : '?';
+      }
+    } else if (n >= 5) {
+      const triQ = harmonicFieldQuality(third, fifth);
+      if (triQ) {
+        chordSym = triQ.sym;
+        const romanBase = triQ.case === 'lower'
+          ? SEMITONE_TO_ROMAN[degSemi % 12].roman.toLowerCase()
+          : SEMITONE_TO_ROMAN[degSemi % 12].roman;
+        const prefix = SEMITONE_TO_ROMAN[degSemi % 12]?.prefix || '';
+        roman = prefix + romanBase + triQ.suffix;
+      } else {
+        chordSym = null;
+        const entry = SEMITONE_TO_ROMAN[degSemi % 12];
+        roman = entry ? entry.prefix + entry.roman : '?';
+      }
+    } else {
+      chordSym = null;
+      const entry = SEMITONE_TO_ROMAN[degSemi % 12];
+      roman = entry ? entry.prefix + entry.roman : '?';
+    }
+
+    result.push({ roman, rootName, chordSym });
+  }
+
+  return result;
+}
+
+// ─── DOM builder ──────────────────────────────────────────────────────────────
+
+/**
+ * Renders the Harmonic Field collapsible row into the given panel element.
+ * Builds the field via `buildHarmonicField()`, then renders one pill per scale
+ * degree inside a collapsed `cs-section`. Each pill shows three lines: Roman
+ * numeral with quality suffix, root name with chord shorthand, and full quality
+ * name. Degrees with no recognisable chord (`chordSym: null`) render with just
+ * the Roman numeral and root name.
+ *
+ * Rendered as a standard `breakdown-row` (label left, collapsible right) on all
+ * viewport sizes. Pills use `flex-wrap: wrap` and reflow naturally on narrow
+ * screens — no mobile-specific path is required.
+ *
+ * @param {HTMLElement} panel     - The element to render the row into.
+ * @param {number[]}    intervals - Scale intervals array (includes octave as last entry).
+ * @param {number}      rootMidi  - MIDI note number of the scale root.
+ * @param {string}      sym       - Scale symbol, used for enharmonic spelling.
+ * @returns {void}
+ */
+function makeHarmonicFieldRow(panel, intervals, rootMidi, sym) {
+  const field = buildHarmonicField(intervals, rootMidi, sym);
+  if (!field.length) return;
+
+  const rowWrap = document.createElement('div');
+  rowWrap.className = 'breakdown-row';
+  rowWrap.style.alignItems = 'flex-start';
+
+  const keyEl = document.createElement('span');
+  keyEl.className = 'breakdown-key';
+  keyEl.style.paddingTop = '0.25rem';
+  keyEl.textContent = 'Harmonic field';
+  rowWrap.appendChild(keyEl);
+
+  const valEl = document.createElement('span');
+  valEl.className = 'breakdown-val';
+  valEl.style.flex = '1';
+
+  const sec = document.createElement('div');
+  sec.className = 'cs-section';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'cs-header';
+  const hdrText = document.createElement('span');
+  hdrText.textContent = field.length + ' degree' + (field.length === 1 ? '' : 's');
+  const arrow = document.createElement('span');
+  arrow.className = 'cs-arrow';
+  arrow.textContent = '▸';
+  hdr.appendChild(hdrText);
+  hdr.appendChild(arrow);
+
+  const body = document.createElement('div');
+  body.className = 'cs-body';
+
+  hdr.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    arrow.textContent = open ? '▾' : '▸';
+  });
+
+  const QUALITY_FULL_NAMES = {
+    'maj':    'major',
+    'm':      'minor',
+    'dim':    'diminished',
+    'aug':    'augmented',
+    '7':      'dominant 7th',
+    'Maj7':   'major 7th',
+    'm7':     'minor 7th',
+    'mMaj7':  'minor major 7th',
+    'm7b5':   'half-diminished',
+    'o7':     'diminished 7th',
+    'aug7':   'augmented 7th',
+    'Maj7s5': 'augmented major 7th',
+  };
+
+  const pillsWrap = document.createElement('div');
+  pillsWrap.className = 'breakdown-pills';
+  pillsWrap.style.padding = '0.5rem 0.625rem';
+
+  field.forEach(({ roman, rootName, chordSym }) => {
+    const pill = document.createElement('div');
+    pill.className = 'breakdown-pill';
+
+    const romanEl = document.createElement('span');
+    romanEl.className = 'breakdown-pill-label';
+    romanEl.textContent = roman;
+
+    const displaySuffix = chordSym !== null ? (harmonicFieldSymbolSuffix(chordSym) ?? '') : '';
+    const rootEl = document.createElement('span');
+    rootEl.className = 'breakdown-pill-value';
+    rootEl.textContent = rootName + displaySuffix;
+
+    pill.appendChild(romanEl);
+    pill.appendChild(rootEl);
+
+    if (chordSym !== null) {
+      const fullName = QUALITY_FULL_NAMES[chordSym];
+      if (fullName) {
+        const nameEl = document.createElement('span');
+        nameEl.className = 'breakdown-pill-label';
+        nameEl.style.color = 'var(--accent-text)';
+        nameEl.style.marginTop = '1px';
+        nameEl.textContent = fullName;
+        pill.appendChild(nameEl);
+      }
+    }
+
+    pillsWrap.appendChild(pill);
+  });
+
+  body.appendChild(pillsWrap);
+  sec.appendChild(hdr);
+  sec.appendChild(body);
+  valEl.appendChild(sec);
+  rowWrap.appendChild(valEl);
+  panel.appendChild(rowWrap);
+}
+
+// ─── Renderer ─────────────────────────────────────────────────────────────────
+
+/**
+ * Renders the complete scales breakdown into the given panel element. Called by
+ * `showBreakdown()` in `breakdown.js` whenever the current mode is `'scales'`.
+ *
+ * Renders the following rows and sub-collapsibles, in order:
+ *   - Name header (root + scale name)
+ *   - Notes (spelled note names in playback direction)
+ *   - Degrees (qualified Roman numerals)
+ *   - From root (interval abbreviations from root, direction-aware)
+ *   - Between notes (step intervals in playback direction)
+ *   - Steps (W/H/W+H step pattern — only when all steps reduce to W, H, or W+H)
+ *   - Triad map collapsible (heptatonic scales only)
+ *   - Character collapsible (when a `SCALE_CHARACTER` entry exists)
+ *   - Parent collapsible (when a `SCALE_MODAL_PARENT` entry exists)
+ *   - Harmonic field collapsible (all scales)
+ *
+ * @param {HTMLElement} panel - The breakdown panel element to render into.
+ * @returns {void}
+ */
+function showBreakdownScales(panel) {
+  const rootPc   = currentScaleRootMidi % 12;
+  const sym      = currentScale.symbol;
+  const rootName = spelledRoot(rootPc);
+
+  const ascMidi  = currentScale.intervals.map(i => currentScaleRootMidi + i);
+  const descMidi = [...ascMidi].reverse();
+  const seqMidi  =
+    currentScaleDir === 'desc' ? descMidi :
+    currentScaleDir === 'both' ? [...ascMidi, ...descMidi.slice(1)] :
+    ascMidi;
+
+  const { body: scaleBody } = makeNameHeader(panel, rootName + ' ' + (currentScale.displayName || currentScale.name));
+
+  const noteNames = seqMidi.map(m => spelledNote(pcInterval(m % 12, rootPc), rootPc, sym));
+  makeBDRow(scaleBody, 'Notes', joinSep(noteNames));
+
+  const is7Note = currentScale.intervals.length === 8;
+  const degRomans = computeDegreeNumerals(currentScale.intervals, sym);
+  makeBDRow(scaleBody, 'Degrees', joinSep(degRomans));
+
+  if (currentScaleDir === 'asc') {
+    const fr = ascMidi.slice(1).map(m => {
+      const semi = m - currentScaleRootMidi;
+      return intervalAbbr(semi &lt;= 12 ? semi : semi % 12 || 12, sym);
+    });
+    makeBDRow(scaleBody, 'From root', joinSep(fr));
+  } else if (currentScaleDir === 'desc') {
+    const fr = descMidi.slice(1).map(m => {
+      const semi = currentScaleRootMidi - m;
+      return intervalAbbr(semi &lt;= 12 ? semi : semi % 12 || 12, sym) + '\u2193';
+    });
+    makeBDRow(scaleBody, 'From root', joinSep(fr));
+  } else {
+    const frAsc  = ascMidi.slice(1).map(m => {
+      const semi = m - currentScaleRootMidi;
+      return intervalAbbr(semi &lt;= 12 ? semi : semi % 12 || 12, sym);
+    });
+    const frDesc = descMidi.slice(1).map(m => {
+      const semi = currentScaleRootMidi - m;
+      return intervalAbbr(semi &lt;= 12 ? semi : semi % 12 || 12, sym) + '\u2193';
+    });
+    makeBDRow(scaleBody, 'From root', joinSep([...frAsc, ...frDesc]));
+  }
+
+  const steps = [];
+  for (let i = 1; i &lt; seqMidi.length; i++) {
+    steps.push(intervalAbbr(Math.abs(seqMidi[i] - seqMidi[i - 1])));
+  }
+  makeBDRow(scaleBody, 'Between notes', joinSep(steps));
+
+  const wh = [];
+  let allWH = true;
+  for (let i = 1; i &lt; seqMidi.length; i++) {
+    const diff = Math.abs(seqMidi[i] - seqMidi[i - 1]);
+    if      (diff === 2) wh.push('W');
+    else if (diff === 1) wh.push('H');
+    else if (diff === 3) wh.push('W+H');
+    else { allWH = false; break; }
+  }
+  if (allWH) makeBDRow(scaleBody, 'Steps', joinSep(wh));
+
+  if (is7Note) {
+    const triadMap = computeTriadMap(currentScale.intervals, sym, rootPc);
+    if (triadMap) {
+      const { section: tmSec, body: tmBody } = makeCSGroup('Triad map', false);
+      scaleBody.appendChild(tmSec);
+      makeBDRow(tmBody, 'Triad map', joinSep(triadMap));
+    }
+  }
+
+  const char = SCALE_CHARACTER[sym];
+  if (char) {
+    const { section: charSec, body: charBody } = makeCSGroup('Character', false);
+    scaleBody.appendChild(charSec);
+    makeBDRow(charBody, 'Character', char);
+  }
+
+  const modalInfo = SCALE_MODAL_PARENT[sym];
+  if (modalInfo) {
+    const { section: parSec, body: parBody } = makeCSGroup('Parent', false);
+    scaleBody.appendChild(parSec);
+    makeBDRow(parBody, 'Parent', ordinal(modalInfo.degree) + ' mode of ' + modalInfo.parent);
+  }
+
+  makeHarmonicFieldRow(scaleBody, currentScale.intervals, currentScaleRootMidi, sym);
+
+  panel.style.display = 'block';
+  document.getElementById('breakdownWrapper').style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// breakdown-scales.js — The Sound Travels Ear Training
+// © 2026 Renato Fera P. — The Sound Travels — MIT License
+// ─────────────────────────────────────────────────────────────────────────────
+</code></pre></div></div></div></main></div><footer class="border-t border-(--clean-border) bg-background py-6 text-sm text-muted-foreground"><div class="mx-auto flex w-full max-w-screen-2xl flex-col items-start justify-between gap-2 px-4 md:flex-row md:items-center"><div class="flex items-center gap-1.5"><span>Documentation</span><span>© 2026</span></div></div></footer></div><script type="application/json" data-island-props>{"i0":{"language":"javascript","filename":"breakdown/breakdown-scales.js"},"i1":{"basePath":"/","searchIndexUrl":"/_assets/search-index.mu8704my-06c54d73.json"},"i2":{},"i3":{},"i4":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/breakdown/breakdown-scales-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]},"i5":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/breakdown/breakdown-scales-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]}}</script><script type="module">(function(){var map={"theme-toggle":"/_islands/theme-toggle-QZPD445E.js","settings":"/_islands/settings-2ZS2MIWU.js","code-viewer":"/_islands/code-viewer-YGLLC5W5.js","embed":"/_islands/embed-GCSKGDO4.js","playground":"/_islands/playground-JBUGQGEY.js","tabs":"/_islands/tabs-NRSQKCSU.js","sidebar":"/_islands/sidebar-M4J6M54A.js","mobile-nav":"/_islands/mobile-nav-R4OP7AYN.js","toc":"/_islands/toc-QITK6TVX.js","toc-mobile":"/_islands/toc-mobile-ZE37NIO6.js","cmdk":"/_islands/cmdk-H5ACX54N.js","code-tabs":"/_islands/code-tabs-WQQJWQOG.js","copy-btn":"/_islands/copy-btn-FOLNJ4VF.js","copy-page":"/_islands/copy-page-EJSALNJL.js"};var seen=new Set();document.querySelectorAll('[data-island]').forEach(function(el){seen.add(el.getAttribute('data-island'));});seen.forEach(function(name){var src=map[name];if(src){import(src);}});})();</script><script>(function(){function flash(h){var b=h.querySelector('[data-heading-anchor]');if(!b)return;b.setAttribute('data-copied','');window.setTimeout(function(){b.removeAttribute('data-copied');},3000);}function onClick(e){var t=e.target;if(!t||!t.closest)return;if(t.closest('a'))return;var h=t.closest('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');if(!h)return;var id=h.id;if(!id)return;var iconOnly=!!t.closest('[data-heading-anchor]');if(!iconOnly){if(location.hash.slice(1)===id){h.scrollIntoView();}else{location.hash=id;}}try{var url=location.origin+location.pathname+location.search+'#'+id;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){flash(h);}).catch(function(){});}}catch(_){}}document.addEventListener('click',onClick);}());</script><script>(function(){var IDLE=700;var timers=new WeakMap();function onScroll(e){var el=e.target;if(el===document||el===window)el=document.documentElement;if(!el||!el.classList)return;el.classList.add('clean-scrolling');var prev=timers.get(el);if(prev)window.clearTimeout(prev);timers.set(el,window.setTimeout(function(){el.classList.remove('clean-scrolling');},IDLE));}document.addEventListener('scroll',onScroll,true);}());</script></body></html>

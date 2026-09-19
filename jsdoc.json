@@ -29,7 +29,7 @@
     "footer": "The Sound Travels Ear Training — Renato Fera P. — 2026"
   },
   "opts": {
-    "template": "node_modules/clean-jsdoc-theme",
+    "template": "node_modules/clean-jsdoc-theme/dist",
     "destination": "./docs",
     "recurse": true,
     "readme": "./tutorials/getting-started.md",

@@ -1,0 +1,1065 @@
+<!doctype html><html lang="en" data-scrollbar="styled"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="generator" content="clean-jsdoc-theme 5.2.0" /><title>app.js</title><script>(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme');if(t==='dark'){d.dataset.theme='dark'}else{d.dataset.theme='light'}var fs=localStorage.getItem('clean-font-size');if(fs==='sm'){d.style.fontSize='15px'}else if(fs==='lg'){d.style.fontSize='18px'}var ls=localStorage.getItem('clean-line-spacing');if(ls==='compact'){d.style.setProperty('--clean-line-height','1.4')}else if(ls==='relaxed'){d.style.setProperty('--clean-line-height','1.8')}}catch(_){}}());</script><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Roboto:wght@400;500;600;700&amp;display=swap" /><link rel="stylesheet" href="/_assets/styles.mu8704my-06c54d73.css" /></head><body><div class="flex min-h-screen flex-col bg-background text-(--clean-fg)"><header class="sticky top-0 z-30 border-b border-(--clean-border) bg-background"><div class="mx-auto flex h-16 w-full min-w-0 max-w-screen-2xl items-center gap-4 px-4"><a href="/" class="flex min-w-0 items-center pl-3 no-underline"><span class="truncate text-lg font-heading font-bold text-(--clean-fg)">Documentation</span></a><div class="ml-auto flex shrink-0 items-center gap-1"><div class="flex items-center gap-1"><div data-island="cmdk" data-island-id="i1"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search" title="Search (Ctrl K)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button></div></div><div class="hidden items-center gap-1 md:flex"><div data-island="theme-toggle" data-island-id="i2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-label="Switch to dark theme" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button></div><div data-island="settings" data-island-id="i3"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="md:hidden"><div data-island="mobile-nav" data-island-id="i4"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg></button></div></div></div></div></header><div class="mx-auto grid w-full max-w-screen-2xl flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[16rem_minmax(0,1fr)]"><aside class="hidden md:block"><div class="sticky overflow-y-auto [scrollbar-gutter:stable] pr-2 top-20 max-h-[calc(100vh-6rem)]"><div data-island="sidebar" data-island-id="i5"><nav aria-label="Documentation navigation" class="text-(--clean-fg)"><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Home</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Modules</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/audio" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Audio</span></a></li><li class="my-0.5"><a href="/module/breakdown" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown</span></a></li><li class="my-0.5"><a href="/module/breakdown-chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-chords</span></a></li><li class="my-0.5"><a href="/module/breakdown-intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-intervals</span></a></li><li class="my-0.5"><a href="/module/breakdown-progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-progressions</span></a></li><li class="my-0.5"><a href="/module/breakdown-scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-scales</span></a></li><li class="my-0.5"><a href="/module/chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">chords</span></a></li><li class="my-0.5"><a href="/module/defaults" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Defaults</span></a></li><li class="my-0.5"><a href="/module/helpcontent" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">HelpContent</span></a></li><li class="my-0.5"><a href="/module/helpers" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Helpers</span></a></li><li class="my-0.5"><a href="/module/intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">intervals</span></a></li><li class="my-0.5"><a href="/module/keysig" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">KeySig</span></a></li><li class="my-0.5"><a href="/module/notation" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">notation</span></a></li><li class="my-0.5"><a href="/module/progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">progressions</span></a></li><li class="my-0.5"><a href="/module/scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">scales</span></a></li><li class="my-0.5"><a href="/module/spelling" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Spelling</span></a></li><li class="my-0.5"><a href="/module/state" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">state</span></a></li><li class="my-0.5"><a href="/module/stats" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">stats</span></a></li><li class="my-0.5"><a href="/module/voiceleading" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voiceLeading</span></a></li><li class="my-0.5"><a href="/module/voicings" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voicings</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Typedefs</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/voicings/voicingmode" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">VoicingMode</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/global" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Tutorials</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/tutorials/css-architecture" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">css-architecture</span></a></li><li class="my-0.5"><a href="/tutorials/getting-started" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">getting-started</span></a></li><li class="my-0.5"><a href="/tutorials/html-structure" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">html-structure</span></a></li></ul></div><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/source" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Source Files</span></a></li></ul></div></nav></div></div></aside><main class="min-w-0 px-4 md:px-8 lg:px-12"><div data-island="code-viewer" data-island-id="i0"><div class="my-4 overflow-hidden rounded-lg border border-(--clean-border) bg-(--clean-bg)"><div class="flex items-center justify-between border-b border-(--clean-border) bg-(--clean-bg-muted) px-3 py-2 text-sm"><span class="font-mono text-(--clean-fg)">app.js</span><span class="text-xs text-(--clean-fg-muted)">javascript</span></div><div class="h-[calc(100vh-13rem)] min-h-[24rem]"><pre class="m-0 h-full overflow-auto whitespace-pre p-4 text-sm leading-relaxed text-(--clean-fg)"><code class="language-javascript">/**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
+ * @file app.js
+ * @description Boot file and application coordinator. Owns mode switching,
+ *   quiz/dictionary toggle, dictionary mode functions (dictLoadSymbol, dictShow,
+ *   renderDictPoolPanel, renderInversionChips), the recomputeCurrentNotes engine,
+ *   Basic/Advanced difficulty switching, register panel rendering, theme init,
+ *   keyboard shortcuts, and all top-level DOM event wiring.
+ *
+ *   Module-level state declared here (not in state.js) because it is tightly
+ *   coupled to dictionary UI logic and has no cross-file consumers:
+ *     - dictSymbol         — currently loaded dictionary item symbol
+ *     - dictInversionIndex — inversion position shown in dict / post-answer view
+ *
+ *   Must load last — depends on every other layer being defined.
+ * @layer boot
+ * @requires state.js, defaults.js, helpers.js, spelling.js, keysig.js,
+ *           audio.js, notation.js, voicings.js, voiceLeading.js,
+ *           breakdown.js, breakdown-chords.js,
+ *           stats.js, controls.js, pool.js, pool-chords.js,
+ *           pool-intervals.js, pool-scales.js, pool-progressions.js,
+ *           chords-mode.js, intervals-mode.js, scales-mode.js,
+ *           progressions-mode.js, help-mode.js, about-mode.js
+ */
+
+// ─── Mode switching ───────────────────────────────────────────────────────────
+
+/**
+ * Switches the active training mode, rebuilds the pool panel for the new mode,
+ * updates the mode tab UI, resets the streak, and either starts a new question
+ * or re-enters dictionary mode (preserving any target symbol passed in).
+ *
+ * Always calls teardownProgressionUI() first to clean up any progression DOM
+ * residue before the new mode's UI is built.
+ *
+ * @param {string}      mode         - Target mode: 'chords' | 'intervals' | 'scales' | 'progressions'.
+ * @param {string|null} targetSymbol - Optional symbol to load directly in dict mode
+ *                                     (e.g. navigating here from a chord-scales breakdown link).
+ */
+function switchMode(mode, targetSymbol = null) {
+  if (typeof teardownProgressionUI === 'function') teardownProgressionUI();
+  currentMode = mode;
+
+  streak = 0;
+  document.getElementById('streak').textContent = 0;
+
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+
+  // Rebuild pool panel and show/hide the per-mode playback style rows
+  renderPoolPanel();
+  document.getElementById('chordStyleSection').style.display    = mode === 'chords'       ? '' : 'none';
+  document.getElementById('intervalStyleSection').style.display = mode === 'intervals'    ? '' : 'none';
+  document.getElementById('scaleDirSection').style.display      = mode === 'scales'       ? '' : 'none';
+
+  document.getElementById('playLabel').textContent =
+    mode === 'intervals'    ? 'Play interval (together)'
+    : mode === 'scales'     ? 'Play scale (ascending)'
+    : mode === 'progressions' ? 'Play progression'
+    : 'Play chord';
+
+  updateRootBadge(null);
+
+  if (appMode === 'dict') {
+    // If a specific symbol was requested (e.g. navigating from a chord scales
+    // breakdown link), load it directly. Otherwise reset so the new mode's
+    // default is picked.
+    dictSymbol = targetSymbol ?? null;
+    setAppMode('dict');
+  } else {
+    generateQuestion();
+  }
+}
+
+// ─── Basic / Advanced difficulty ──────────────────────────────────────────────
+
+/**
+ * Hard-coded Basic chord symbol list. Matches the `basic: true` entries in
+ * chords.js but kept here as a constant so setAppDifficulty() can reset
+ * selectedChords without re-filtering the full CHORD_TYPES catalog.
+ */
+const BASIC_CHORD_SYMBOLS = ['maj','Maj7','m','m7','7','dim','m7b5','o7','aug','sus2','sus4','power'];
+
+/**
+ * Switches between Basic and Advanced difficulty modes. Resets all four pool
+ * selections (intervals, chords, scales, progressions) and voicing state to
+ * mode-appropriate defaults — no cross-difficulty memory. Rebuilds the pool
+ * panel and generates a fresh question for the current mode.
+ *
+ * Basic boundaries per mode:
+ *   Intervals   — 12 simple (m2–P8); Advanced adds 7 compound (m9–M13)
+ *   Chords      — 12 core families (BASIC_CHORD_SYMBOLS); Advanced shows all
+ *   Scales      — Major, Natural Minor, Major/Minor Pentatonic; Advanced shows all
+ *   Progressions — 9 core progressions (basic: true in progressions.js); Advanced shows all
+ *   Voicings     — Position + Doubling groups only (Groups 1–2); Advanced shows all 6
+ *
+ * @param {'basic'|'advanced'} difficulty - Target difficulty level.
+ */
+function setAppDifficulty(difficulty) {
+  appDifficulty = difficulty;
+
+  // Reset selectedIntervals — fresh start, no cross-difficulty memory
+  selectedIntervals.clear();
+  if (difficulty === 'basic') {
+    INTERVALS.filter(i => !i.compound).forEach(i => selectedIntervals.add(i.symbol));
+  } else {
+    INTERVALS.forEach(i => selectedIntervals.add(i.symbol));
+  }
+
+  // Reset selectedChords — fresh start, no cross-difficulty memory
+  selectedChords.clear();
+  if (difficulty === 'basic') {
+    BASIC_CHORD_SYMBOLS.forEach(s => selectedChords.add(s));
+  } else {
+    getAllChords().forEach(c => selectedChords.add(c.symbol));
+  }
+
+  // Sync difficulty chip UI
+  document.getElementById('diffChipBasic').classList.toggle('active',    difficulty === 'basic');
+  document.getElementById('diffChipAdvanced').classList.toggle('active', difficulty === 'advanced');
+
+  // Reset selectedScales — fresh start, no cross-difficulty memory
+  selectedScales.clear();
+  if (difficulty === 'basic') {
+    SCALES.filter(s => s.basic).forEach(s => selectedScales.add(s.symbol));
+  } else {
+    SCALES.forEach(s => selectedScales.add(s.symbol));
+  }
+
+  // Reset selectedProgressions — fresh start, no cross-difficulty memory
+  selectedProgressions.clear();
+  if (difficulty === 'basic') {
+    PROGRESSIONS.filter(p => p.basic).forEach(p => selectedProgressions.add(p.symbol));
+  } else {
+    PROGRESSIONS.forEach(p => selectedProgressions.add(p.symbol));
+  }
+
+  // Reset voicings to close position — Groups 1–2 only in Basic, all 6 in Advanced
+  selectedVoicings.clear();
+  selectedVoicings.add('close');
+  activeVoicingMode = 'close';
+
+  // Rebuild pool and generate a fresh question for the current mode
+  if (currentMode === 'intervals' || currentMode === 'chords' || currentMode === 'scales' || currentMode === 'progressions') {
+    renderPoolPanel();
+    if (appMode === 'dict') setAppMode('dict');
+    else generateQuestion();
+  }
+}
+
+// ─── Register panel ───────────────────────────────────────────────────────────
+
+/**
+ * Renders the root note and octave register chip rows into #rootChips and
+ * #octaveChips. Both rows call recomputeCurrentNotes() on chip click so the
+ * current item is re-voiced in place without picking a new question.
+ *
+ * Root chips include both enharmonic spellings for each accidental pitch class
+ * (e.g. C♯ and D♭ are separate chips sharing pitch class 1). Selecting one sets
+ * both pinnedRoot (pitch class) and pinnedRootSpelling ('sharp' | 'flat' | null),
+ * which the enharmonic spelling engine uses to choose the correct letter name.
+ */
+function renderRegisterPanel() {
+  // Full chromatic root list. Each accidental pitch class has two entries —
+  // one sharp spelling, one flat — so the user can pin the preferred enharmonic.
+  // { label, value: pitch class 0–11 or null (= random), spelling: 'sharp'|'flat'|null }
+  const ROOT_OPTIONS = [
+    { label: 'Rnd',       value: null, spelling: null   },
+    { label: 'C',         value: 0,    spelling: null   },
+    { label: 'C\u266f',  value: 1,    spelling: 'sharp' },
+    { label: 'D\u266d',  value: 1,    spelling: 'flat'  },
+    { label: 'D',         value: 2,    spelling: null   },
+    { label: 'D\u266f',  value: 3,    spelling: 'sharp' },
+    { label: 'E\u266d',  value: 3,    spelling: 'flat'  },
+    { label: 'E',         value: 4,    spelling: null   },
+    { label: 'F',         value: 5,    spelling: null   },
+    { label: 'F\u266f',  value: 6,    spelling: 'sharp' },
+    { label: 'G\u266d',  value: 6,    spelling: 'flat'  },
+    { label: 'G',         value: 7,    spelling: null   },
+    { label: 'G\u266f',  value: 8,    spelling: 'sharp' },
+    { label: 'A\u266d',  value: 8,    spelling: 'flat'  },
+    { label: 'A',         value: 9,    spelling: null   },
+    { label: 'A\u266f',  value: 10,   spelling: 'sharp' },
+    { label: 'B\u266d',  value: 10,   spelling: 'flat'  },
+    { label: 'B',         value: 11,   spelling: null   },
+  ];
+  const OCTAVE_OPTIONS = [
+    { label: 'Rnd',  value: null   },
+    { label: 'Low',  value: 'low'  },
+    { label: 'Mid',  value: 'mid'  },
+    { label: 'High', value: 'high' },
+  ];
+
+  // Root chips — also sets pinnedRootSpelling to select the correct enharmonic
+  const rootRow = document.getElementById('rootChips');
+  rootRow.innerHTML = '';
+  ROOT_OPTIONS.forEach(opt => {
+    const isActive = pinnedRoot === opt.value &amp;&amp; pinnedRootSpelling === opt.spelling;
+    const chip = document.createElement('button');
+    chip.className = 'reg-chip' + (isActive ? ' active' : '');
+    chip.textContent = opt.label;
+    chip.addEventListener('click', () => {
+      pinnedRoot         = opt.value;
+      pinnedRootSpelling = opt.spelling;
+      rootRow.querySelectorAll('.reg-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      recomputeCurrentNotes();
+    });
+    rootRow.appendChild(chip);
+  });
+
+  // Octave chips
+  const octaveRow = document.getElementById('octaveChips');
+  octaveRow.innerHTML = '';
+  OCTAVE_OPTIONS.forEach(opt => {
+    const chip = document.createElement('button');
+    chip.className = 'reg-chip' + (pinnedOctave === opt.value ? ' active' : '');
+    chip.textContent = opt.label;
+    chip.addEventListener('click', () => {
+      pinnedOctave = opt.value;
+      octaveRow.querySelectorAll('.reg-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      recomputeCurrentNotes();
+    });
+    octaveRow.appendChild(chip);
+  });
+}
+
+// ─── Settings panel ───────────────────────────────────────────────────────────
+
+// Settings panel collapsible toggle — wired immediately at load time via IIFE
+// so the header click works before any question is generated.
+(function() {
+  const header = document.getElementById('settingsPanelHeader');
+  const body   = document.getElementById('settingsPanelBody');
+  const arrow  = document.getElementById('settingsPanelArrow');
+  header.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    arrow.textContent = open ? '▾' : '▸';
+  });
+})();
+
+// ─── Dictionary mode ──────────────────────────────────────────────────────────
+
+// Full catalog getters — mirror getAllChords() in helpers.js for the other two modes.
+// Return a fresh array so callers cannot mutate the source data arrays.
+function getAllIntervals() { return [...INTERVALS]; }
+function getAllScales()    { return [...SCALES]; }
+
+/**
+ * Returns the full item catalog for the current mode, ignoring quiz pool filters.
+ * Used by dictionary mode to show every available item.
+ *
+ * @returns {object[]} Full array of interval, chord, or scale descriptors.
+ */
+function dictFullCatalog() {
+  if (currentMode === 'chords')    return getAllChords();
+  if (currentMode === 'intervals') return getAllIntervals();
+  return getAllScales();
+}
+
+/** Currently loaded dictionary item symbol, or null before first load. */
+let dictSymbol = null;
+
+/** Inversion position shown in dict mode and post-answer quiz view (0 = root position). */
+let dictInversionIndex = 0;
+
+/**
+ * Returns the symbol of the first item in the full catalog for the current mode.
+ * Used as the initial selection when entering dict mode with no prior symbol.
+ *
+ * @returns {string|null} Symbol string, or null if the catalog is empty.
+ */
+function dictDefaultSymbol() {
+  const catalog = dictFullCatalog();
+  return catalog.length ? catalog[0].symbol : null;
+}
+
+/**
+ * Loads a dictionary item by symbol and sets all relevant state variables so
+ * dictShow() / showNotation() / showBreakdown() can render it immediately.
+ * Mirrors the four chord-family paths in generateChordQuestion() exactly —
+ * any logic change there must be reflected here.
+ *
+ * The special symbol '_random' picks a random item from the full catalog.
+ *
+ * @param {string} symbol - Item symbol to load, or '_random' for a random pick.
+ */
+function dictLoadSymbol(symbol) {
+  if (!symbol) return;
+  dictSymbol = symbol;
+  const catalog = dictFullCatalog();
+
+  if (currentMode === 'chords') {
+    const item = symbol === '_random' ? pickRandom(catalog) : catalog.find(c => c.symbol === symbol);
+    if (!item) return;
+    currentChord = item;
+
+    // Reset all special-chord state before branching
+    currentSlashBassMidi = null; currentUpperRootMidi = null;
+    currentPolyUpperMidi = []; currentPolyLowerMidi = [];
+    currentPolyUpperRootMidi = null; currentPolyLowerRootMidi = null;
+    currentUSTShellMidi = []; currentUSTUpperMidi = []; currentUSTRootMidi = null;
+
+    dictInversionIndex = 0; // reset to root position on every new chord selection
+
+    if (item.family === 'slash') {
+      // Mirror generateChordQuestion slash path exactly
+      const pitchClass = pinnedRoot !== null ? pinnedRoot : Math.floor(Math.random() * 12);
+      currentUpperRootMidi = 12 + pitchClass + 4 * 12;
+      currentChordRootMidi = currentUpperRootMidi;
+      const belowSemitones = 12 - item.bassInterval;
+      currentSlashBassMidi = currentUpperRootMidi - belowSemitones;
+      while (currentSlashBassMidi > 48) currentSlashBassMidi -= 12;
+      while (currentSlashBassMidi &lt; 28) currentSlashBassMidi += 12;
+      currentMidiNotes = item.upperIntervals.map(i => currentUpperRootMidi + i);
+      currentVoicingMode = 'full';
+    } else if (item.family === 'poly') {
+      // Mirror generateChordQuestion poly path exactly
+      const pitchClass = pinnedRoot !== null ? pinnedRoot : Math.floor(Math.random() * 12);
+      currentPolyUpperRootMidi = 12 + pitchClass + 5 * 12;
+      currentPolyLowerRootMidi = currentPolyUpperRootMidi - item.lowerOffset;
+      while (currentPolyLowerRootMidi > 48) currentPolyLowerRootMidi -= 12;
+      while (currentPolyLowerRootMidi &lt; 36) currentPolyLowerRootMidi += 12;
+      currentPolyUpperMidi = item.upperIntervals.map(i => currentPolyUpperRootMidi + i);
+      currentPolyLowerMidi = item.lowerIntervals.map(i => currentPolyLowerRootMidi + i);
+      currentMidiNotes = [...currentPolyLowerMidi, ...currentPolyUpperMidi];
+      currentChordRootMidi = currentPolyLowerRootMidi;
+      currentVoicingMode = 'full';
+    } else if (item.family === 'ust') {
+      // Mirror generateChordQuestion ust path exactly
+      const pitchClass = pinnedRoot !== null ? pinnedRoot : Math.floor(Math.random() * 12);
+      currentUSTRootMidi = 12 + pitchClass + 4 * 12;
+      currentChordRootMidi = currentUSTRootMidi;
+      currentUSTShellMidi = item.shellIntervals.map(i => currentUSTRootMidi + i);
+      const upperTriadRootMidi = currentUSTRootMidi + item.upperTriadRoot;
+      currentUSTUpperMidi = item.upperTriadIntervals.map(i => upperTriadRootMidi + i);
+      currentUSTShellMidi = currentUSTShellMidi.map(m => m &lt; 48 ? m + 12 : m);
+      currentMidiNotes = [...currentUSTShellMidi, ...currentUSTUpperMidi];
+      currentVoicingMode = 'full';
+    } else {
+      // Normal chord path (including inversions)
+      const rootMidi = chooseSimpleRootMidi(Math.max(...item.intervals.map(Math.abs)));
+      currentChordRootMidi = rootMidi;
+      currentVoicingMode = resolveVoicingMode();
+      const voicedMidi = applyVoicing(rootMidi, item.intervals, currentVoicingMode);
+      const sorted = [...voicedMidi].sort((a, b) => a - b);
+      const invIdx = Math.min(dictInversionIndex, sorted.length - 1);
+      for (let i = 0; i &lt; invIdx; i++) { const lo = sorted.shift(); sorted.push(lo + 12); }
+      currentMidiNotes = sorted;
+    }
+
+  } else if (currentMode === 'intervals') {
+    const item = symbol === '_random' ? pickRandom(catalog) : catalog.find(i => i.symbol === symbol);
+    if (!item) return;
+    currentInterval = item;
+    currentIntervalStyle = resolveIntervalStyle();
+    const rootMidi = chooseSimpleRootMidi(item.semitones);
+    currentIntervalMidi = [rootMidi, rootMidi + item.semitones];
+
+  } else {
+    // Scales
+    const item = symbol === '_random' ? pickRandom(catalog) : catalog.find(s => s.symbol === symbol);
+    if (!item) return;
+    currentScale = item;
+    currentScaleRootMidi = chooseSimpleRootMidi(item.intervals[item.intervals.length - 1]);
+    currentScaleDir = resolveScaleDir();
+    scaleKeySigMode = 'key';
+  }
+}
+
+/**
+ * Renders the pool panel in dictionary mode. Structure mirrors the quiz pool
+ * (same groups and sections) but uses single-select chips with no All/None
+ * buttons. Chords reuse the shared _renderChordSubGroups() from pool-chords.js,
+ * which reads appMode internally to switch between multi and single select.
+ */
+function renderDictPoolPanel() {
+  const panel = document.getElementById('poolPanel');
+  panel.innerHTML = '';
+
+  const title = currentMode === 'chords'    ? 'Dictionary — Chords'
+              : currentMode === 'intervals' ? 'Dictionary — Intervals'
+              : 'Dictionary — Scales';
+  const { body } = makePoolPanelShell(panel, title, null);
+
+  if (currentMode === 'chords') {
+    // Shared two-subgroup structure (Chord quality + Voicing) — reads appMode
+    // internally to render single-select in dict mode.
+    _renderChordSubGroups(body);
+  } else if (currentMode === 'intervals') {
+    // Compound section hidden in Basic mode
+    makeDictSection(body, 'Simple intervals', INTERVALS.filter(i => !i.compound), false, false);
+    if (appDifficulty === 'advanced') {
+      makeDictSection(body, 'Extended / Compound', INTERVALS.filter(i => i.compound), false, true);
+    }
+  } else {
+    // Scales — groups auto-discovered via iterateScaleGroups (pool-scales.js),
+    // same source of truth used by the quiz pool panel.
+    iterateScaleGroups((key, title, items, cfg) => {
+      const useDisplayName = !!(cfg &amp;&amp; cfg.sectionFn === 'withDisplayName');
+      makeDictSection(body, title, items, useDisplayName, false);
+    });
+  }
+}
+
+/**
+ * Builds one collapsible section of single-select chips for the dictionary pool
+ * panel. Clicking a chip loads the item immediately via dictLoadSymbol + dictShow.
+ * No All/None buttons, no count display — dict mode is browse-only.
+ *
+ * @param {HTMLElement} body           - Parent element to append the section into.
+ * @param {string}      title          - Section heading text.
+ * @param {object[]}    items          - Array of item descriptors ({ name, symbol, displayName? }).
+ * @param {boolean}     useDisplayName - When true, chips show item.displayName over item.name.
+ * @param {boolean}     collapsed      - Whether the section starts collapsed.
+ */
+function makeDictSection(body, title, items, useDisplayName = false, collapsed = false) {
+  const sec = document.createElement('div');
+  sec.className = 'pool-section';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'pool-section-header';
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'pool-section-title';
+  const chevron = document.createElement('span');
+  chevron.className = 'pool-section-chevron';
+  chevron.textContent = collapsed ? '▸' : '▾';
+  titleEl.appendChild(chevron);
+  titleEl.appendChild(document.createTextNode(title));
+  hdr.appendChild(titleEl);
+
+  const sectionBody = document.createElement('div');
+  sectionBody.className = 'pool-section-body' + (collapsed ? ' collapsed' : '');
+
+  hdr.addEventListener('click', () => {
+    const isCollapsed = sectionBody.classList.toggle('collapsed');
+    chevron.textContent = isCollapsed ? '▸' : '▾';
+  });
+
+  const chipsEl = document.createElement('div');
+  chipsEl.className = 'pool-chips';
+  chipsEl.style.marginBottom = '0.4rem';
+
+  items.forEach(item => {
+    const chip = document.createElement('button');
+    chip.className = 'pool-chip' + (dictSymbol === item.symbol ? ' active' : '');
+    chip.textContent = useDisplayName ? (item.displayName || item.name) : item.name;
+    chip.addEventListener('click', () => {
+      _deactivateAllDictChips();
+      chip.classList.add('active');
+      dictLoadSymbol(item.symbol);
+      dictShow();
+    });
+    chipsEl.appendChild(chip);
+  });
+
+  sectionBody.appendChild(chipsEl);
+  sec.appendChild(hdr);
+  sec.appendChild(sectionBody);
+  body.appendChild(sec);
+}
+
+/**
+ * Removes the active class from every pool chip in #poolPanel.
+ * Called before activating a newly selected dict chip to ensure single-select.
+ */
+function _deactivateAllDictChips() {
+  document.querySelectorAll('#poolPanel .pool-chip').forEach(c => c.classList.remove('active'));
+}
+
+/**
+ * Applies a specific inversion index to the current chord in dict or post-answer
+ * quiz mode, re-voices in place, and refreshes notation and breakdown without
+ * triggering a full showNotation() header rebuild.
+ *
+ * No-ops for chord families that do not support rotation-based inversions:
+ * slash, poly, UST, classical, quartal, cluster.
+ *
+ * @param {number} invIdx - Target inversion index (0 = root position).
+ */
+function dictApplyInversion(invIdx) {
+  if (!currentChord || currentChord.family === 'slash' || currentChord.family === 'poly'
+    || currentChord.family === 'ust' || currentChord.family === 'classical'
+    || currentChord.family === 'quartal' || currentChord.family === 'cluster') return;
+
+  dictInversionIndex = invIdx;
+  const baseChord     = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
+  const baseIntervals = baseChord.intervals;
+  const voicedMidi    = applyVoicing(currentChordRootMidi, baseIntervals, currentVoicingMode);
+  const sortedVoiced  = [...voicedMidi].sort((a, b) => a - b);
+  const safeInvIdx    = Math.min(invIdx, sortedVoiced.length - 1);
+  for (let i = 0; i &lt; safeInvIdx; i++) { const lo = sortedVoiced.shift(); sortedVoiced.push(lo + 12); }
+  currentMidiNotes = sortedVoiced;
+  answered = true;
+
+  // Update the notation chord name label to reflect the selected inversion
+  const INV_LABELS = ['', ' — 1st inv', ' — 2nd inv', ' — 3rd inv', ' — 4th inv'];
+  const invLabel = INV_LABELS[invIdx] || '';
+  document.getElementById('notationChordName').textContent =
+    getChordRootName() + ' ' + baseChord.name + invLabel;
+
+  // Re-render notation and breakdown without rebuilding the full showNotation() header
+  const sym    = baseChord.symbol;
+  const rootPc = ((currentChordRootMidi % 12) + 12) % 12;
+  const keySigStr = chordKeySigMode === 'key' ? getChordKeyStr(sym, rootPc) : null;
+  const sorted = [...currentMidiNotes].sort((a, b) => a - b);
+  if (currentChordPlayStyle === 'ascending') {
+    renderNotation(sorted, true, sym, rootPc, keySigStr);
+  } else if (currentChordPlayStyle === 'descending') {
+    renderNotation([...sorted].reverse(), true, sym, rootPc, keySigStr);
+  } else if (currentChordPlayStyle === 'broken') {
+    const root = sorted[0], top = sorted[sorted.length - 1], mid = sorted.length > 2 ? sorted[1] : sorted[0];
+    renderNotation([root, top, mid, top], true, sym, rootPc, keySigStr);
+  } else {
+    renderNotation(currentMidiNotes, false, sym, rootPc, keySigStr);
+  }
+  showBreakdown();
+}
+
+/**
+ * Renders inversion chips into #inversionChipRow for normal chords in dict mode
+ * and post-answer quiz mode. Each chip calls dictApplyInversion() on click.
+ *
+ * The row is hidden entirely for chord families that do not support rotation-based
+ * inversions (slash, poly, UST, classical, quartal, cluster), for non-chord modes,
+ * and for chords with only one note.
+ *
+ * In quiz mode the active chip starts at the inversion that was actually quizzed
+ * (currentChord.invIndex). In dict mode it persists from the last chip click
+ * (dictInversionIndex).
+ *
+ * Called by showNotation() after every chord question and by dictShow().
+ */
+function renderInversionChips() {
+  const row = document.getElementById('inversionChipRow');
+  row.innerHTML = '';
+
+  const hide = currentMode !== 'chords'
+    || !currentChord
+    || currentChord.family === 'slash'
+    || currentChord.family === 'poly'
+    || currentChord.family === 'ust'
+    || currentChord.family === 'classical'
+    || currentChord.family === 'quartal'
+    || currentChord.family === 'cluster';
+
+  if (hide) { row.style.display = 'none'; return; }
+
+  const baseChord = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
+  const noteCount = baseChord.intervals.length;
+  const maxInv    = noteCount - 1;
+
+  if (maxInv &lt; 1) { row.style.display = 'none'; return; }
+
+  // In quiz mode: sync to the inversion that was actually quizzed.
+  // In dict mode: dictInversionIndex persists between chip clicks.
+  if (appMode === 'quiz') {
+    dictInversionIndex = currentChord.invIndex ?? 0;
+  }
+
+  row.style.display = 'flex';
+  const INV_CHIP_LABELS = ['Root', '1st inv', '2nd inv', '3rd inv', '4th inv'];
+  for (let i = 0; i &lt;= maxInv; i++) {
+    const chip = document.createElement('button');
+    chip.className = 'keysig-chip' + (i === dictInversionIndex ? ' active' : '');
+    chip.textContent = INV_CHIP_LABELS[i] || (i + 'th inv');
+    const idx = i;
+    chip.addEventListener('click', () => {
+      row.querySelectorAll('.keysig-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      dictApplyInversion(idx);
+    });
+    row.appendChild(chip);
+  }
+}
+
+/**
+ * Reveals notation and breakdown for the currently loaded dictionary item.
+ * Sets answered = true so showNotation() and showBreakdown() render without
+ * restriction, resets resolution state, and rebuilds the Hear Slowly + Resolve
+ * control buttons. No-ops if the required current-item state is missing.
+ */
+function dictShow() {
+  if (currentMode === 'scales'    &amp;&amp; !currentScale)    return;
+  if (currentMode === 'chords'    &amp;&amp; !currentChord)    return;
+  if (currentMode === 'intervals' &amp;&amp; !currentInterval) return;
+
+  document.getElementById('statusMsg').textContent = '';
+  document.getElementById('answerDropdownWrap').style.display = 'none';
+
+  if (currentMode === 'chords') {
+    updateRootBadge(getChordRootName());
+  } else if (currentMode === 'intervals') {
+    updateRootBadge(spelledNote(0, currentIntervalMidi[0] % 12, currentInterval.symbol));
+  } else {
+    updateRootBadge(spelledNote(0, currentScaleRootMidi % 12, currentScale.symbol));
+  }
+
+  answered = true;              // allow showNotation + showBreakdown to render fully
+  resolutionActive = false;     // reset so notation shows current item, not resolution view
+  resolutionRootMidi = null;    // force fresh derivation for the new item
+  selectedResolution = null;    // clear any user-selected resolution target
+  currentVoiceLeadingAnalysis = null; // force rebuild for the current chord/root
+
+  showNotation();
+  renderInversionChips();
+  showBreakdown();
+
+  // Rebuild controls: Hear Slowly always present; Resolve toggle in chords mode only
+  const c = document.getElementById('controls');
+  c.innerHTML = '';
+  const sb = document.createElement('button');
+  sb.className = 'ctrl-btn slow';
+  sb.textContent = '🐢 Hear slowly';
+  sb.addEventListener('click', playSlowly);
+  c.appendChild(sb);
+  if (currentMode === 'chords') {
+    const rb = document.createElement('button');
+    rb.className = 'ctrl-btn resolve';
+    rb.id = 'resolveBtn';
+    rb.textContent = resolutionActive ? '← Chord' : 'Resolve →';
+    rb.addEventListener('click', playResolution);
+    c.appendChild(rb);
+  }
+}
+
+// ─── Recompute current notes ──────────────────────────────────────────────────
+
+/**
+ * Reapplies current settings (root pin, octave band, voicing) to the active
+ * item without picking a new question. Called whenever a setting changes:
+ * root chip, octave chip, voicing chip, style/direction chip.
+ *
+ * Re-voices the same pitch class in place, preserving the current octave
+ * where possible (prefers to keep the existing octave if it still falls within
+ * the resolved band). Refreshes notation and breakdown if in dict mode or
+ * after answering in quiz mode.
+ *
+ * All four chord families (slash, poly, UST, normal) are handled identically
+ * to dictLoadSymbol() and generateChordQuestion() — any change to those paths
+ * must be reflected here.
+ */
+function recomputeCurrentNotes() {
+
+  // Returns the pitch class to use: pinned root wins, otherwise keep existing.
+  function resolvePc(existingPc) {
+    return pinnedRoot !== null ? pinnedRoot : existingPc;
+  }
+
+  // Builds a root MIDI note from a pitch class, preferring to keep the current
+  // octave if it still falls within [lo, hi]; otherwise uses the midpoint.
+  function rootMidiForPc(pc, existingRootMidi, lo, hi) {
+    const existingOct = Math.floor(existingRootMidi / 12) - 1;
+    const oct = (existingOct >= lo &amp;&amp; existingOct &lt;= hi)
+      ? existingOct
+      : Math.floor((lo + hi) / 2);
+    return 12 + pc + oct * 12;
+  }
+
+  // ── Progressions ─────────────────────────────────────────────────────────────
+  if (currentMode === 'progressions') {
+    if (!currentProgression) return;
+    const pc = pinnedRoot !== null ? pinnedRoot : currentProgRootPc ?? 0;
+    currentProgRootPc   = pc;
+    currentProgRootMidi = 12 + pc + 4 * 12;
+    updateRootBadge(spelledRoot(pc));
+    if (appMode === 'dict' || progAnswered) {
+      showProgressionNotation();
+      showBreakdown();
+    }
+    return;
+  }
+
+  // ── Chords ───────────────────────────────────────────────────────────────────
+  if (currentMode === 'chords') {
+    if (!currentChord) return;
+
+    if (currentChord.family === 'slash') {
+      const existingPc = currentUpperRootMidi !== null ? currentUpperRootMidi % 12 : 0;
+      const pc = resolvePc(existingPc);
+      const rootMidi = 12 + pc + 4 * 12;
+      currentUpperRootMidi = rootMidi;
+      currentChordRootMidi = rootMidi;
+      const belowSemitones = 12 - currentChord.bassInterval;
+      currentSlashBassMidi = rootMidi - belowSemitones;
+      while (currentSlashBassMidi > 48) currentSlashBassMidi -= 12;
+      while (currentSlashBassMidi &lt; 28) currentSlashBassMidi += 12;
+      currentMidiNotes = currentChord.upperIntervals.map(i => rootMidi + i);
+
+    } else if (currentChord.family === 'poly') {
+      const existingPc = currentPolyLowerRootMidi !== null
+        ? ((currentPolyLowerRootMidi % 12) + 12) % 12 : 0;
+      const pc = resolvePc(existingPc);
+      let lowerRootMidi = 12 + pc + 3 * 12;
+      while (lowerRootMidi > 48) lowerRootMidi -= 12;
+      while (lowerRootMidi &lt; 36) lowerRootMidi += 12;
+      currentPolyLowerRootMidi = lowerRootMidi;
+      currentPolyUpperRootMidi = lowerRootMidi + currentChord.lowerOffset;
+      currentPolyLowerMidi = currentChord.lowerIntervals.map(i => currentPolyLowerRootMidi + i);
+      currentPolyUpperMidi = currentChord.upperIntervals.map(i => currentPolyUpperRootMidi + i);
+      currentMidiNotes = [...currentPolyLowerMidi, ...currentPolyUpperMidi];
+      currentChordRootMidi = currentPolyLowerRootMidi;
+
+    } else if (currentChord.family === 'ust') {
+      const existingPc = currentUSTRootMidi !== null ? currentUSTRootMidi % 12 : 0;
+      const pc = resolvePc(existingPc);
+      const rootMidi = 12 + pc + 4 * 12;
+      currentUSTRootMidi = rootMidi;
+      currentChordRootMidi = rootMidi;
+      currentUSTShellMidi = currentChord.shellIntervals.map(i => rootMidi + i);
+      const upperTriadRootMidi = rootMidi + currentChord.upperTriadRoot;
+      currentUSTUpperMidi = currentChord.upperTriadIntervals.map(i => upperTriadRootMidi + i);
+      currentUSTShellMidi = currentUSTShellMidi.map(m => m &lt; 48 ? m + 12 : m);
+      currentMidiNotes = [...currentUSTShellMidi, ...currentUSTUpperMidi];
+
+    } else {
+      // Normal chord (root position or inversion).
+      // Back-compute root MIDI from the current bass note for inverted chords
+      // so the pitch class is preserved correctly when the octave band changes.
+      const baseIntervals = currentChord.invIndex !== undefined
+        ? currentChord.baseChord.intervals : currentChord.intervals;
+      const span    = baseIntervals[baseIntervals.length - 1];
+      const absMin  = Math.ceil((28 - 12) / 12);
+      const absMax  = Math.floor((96 - 12 - span) / 12);
+      const defaultLo = span > 14 ? Math.max(3, absMin) : Math.max(2, absMin);
+      const defaultHi = Math.min(5, absMax);
+      const [lo, hi]  = resolveOctaveBand(pinnedOctave, defaultLo, defaultHi);
+      const safeLo = Math.max(Math.min(lo, absMax), absMin);
+      const safeHi = Math.max(Math.min(hi, absMax), safeLo);
+
+      const existingRootMidi = (() => {
+        if (!currentMidiNotes.length) return 12 + (pinnedRoot ?? 0) + safeLo * 12;
+        if (currentChord.invIndex !== undefined) {
+          const bassInterval = currentChord.baseChord.intervals[currentChord.invIndex];
+          return currentMidiNotes[0] - bassInterval;
+        }
+        return currentMidiNotes[0];
+      })();
+
+      const existingPc = ((existingRootMidi % 12) + 12) % 12;
+      const pc         = resolvePc(existingPc);
+      const rootMidi   = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
+      currentChordRootMidi = rootMidi;
+
+      currentVoicingMode = resolveVoicingMode();
+      const voicedMidi = applyVoicing(rootMidi, baseIntervals, currentVoicingMode);
+      if (currentChord.invIndex !== undefined) {
+        const sorted = [...voicedMidi].sort((a, b) => a - b);
+        const invIdx = Math.min(currentChord.invIndex, sorted.length - 1);
+        for (let i = 0; i &lt; invIdx; i++) { const lo = sorted.shift(); sorted.push(lo + 12); }
+        currentMidiNotes = sorted;
+      } else {
+        currentMidiNotes = voicedMidi;
+      }
+    }
+
+  // ── Intervals ────────────────────────────────────────────────────────────────
+  } else if (currentMode === 'intervals') {
+    if (!currentInterval) return;
+    const existingPc = currentIntervalMidi.length ? currentIntervalMidi[0] % 12 : 0;
+    const pc = resolvePc(existingPc);
+    const [lo, hi] = resolveOctaveBand(pinnedOctave, 3, 5);
+    const safeHi = Math.min(hi, Math.floor((96 - currentInterval.semitones) / 12) - 1);
+    const safeLo = Math.min(lo, safeHi);
+    const existingRootMidi = currentIntervalMidi.length ? currentIntervalMidi[0] : 12 + pc + safeLo * 12;
+    const rootMidi = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
+    currentIntervalMidi = [rootMidi, rootMidi + currentInterval.semitones];
+
+  // ── Scales ───────────────────────────────────────────────────────────────────
+  } else {
+    if (!currentScale) return;
+    const existingPc = currentScaleRootMidi !== undefined ? currentScaleRootMidi % 12 : 0;
+    const pc   = resolvePc(existingPc);
+    const span = currentScale.intervals[currentScale.intervals.length - 1];
+    const [lo, hi] = resolveOctaveBand(pinnedOctave, 3, 5);
+    const safeHi = Math.min(hi, Math.floor((96 - span) / 12) - 1);
+    const safeLo = Math.min(lo, safeHi);
+    const existingRootMidi = currentScaleRootMidi ?? (12 + pc + safeLo * 12);
+    currentScaleRootMidi = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
+  }
+
+  // ── Refresh UI ───────────────────────────────────────────────────────────────
+  // In dict mode: always refresh. In quiz mode: only after answering.
+  // showCurrentView() dispatches to chord or resolution view as appropriate.
+  if (appMode === 'dict' || answered) {
+    currentVoiceLeadingAnalysis = null; // root/voicing changed — force rebuild
+    resolutionRootMidi = null;          // force re-derivation of resolution target
+    showCurrentView();
+    showBreakdown();
+  }
+
+  // Always update the root badge to reflect the new pitch class
+  if (currentMode === 'chords' &amp;&amp; currentChord) {
+    updateRootBadge(appMode === 'dict' || answered ? getChordRootName() : (showRoot ? getChordRootName() : null));
+  } else if (currentMode === 'intervals' &amp;&amp; currentInterval) {
+    const label = spelledNote(0, currentIntervalMidi[0] % 12, currentInterval.symbol);
+    updateRootBadge(appMode === 'dict' || answered ? label : (showRoot ? label : null));
+  } else if (currentMode === 'scales' &amp;&amp; currentScale) {
+    const label = spelledNote(0, currentScaleRootMidi % 12, currentScale.symbol);
+    updateRootBadge(appMode === 'dict' || answered ? label : (showRoot ? label : null));
+  }
+}
+
+// ─── Quiz / Dictionary toggle ─────────────────────────────────────────────────
+
+/**
+ * Switches between quiz and dictionary application modes. Updates the Q/D toggle
+ * button states, shows/hides score and session UI, and initialises the appropriate
+ * pool panel and view for the current training mode.
+ *
+ * Always calls teardownProgressionUI() first to clean up any progression DOM
+ * residue before rebuilding.
+ *
+ * @param {'quiz'|'dict'} mode - Target application mode.
+ */
+function setAppMode(mode) {
+  if (typeof teardownProgressionUI === 'function') teardownProgressionUI();
+  appMode = mode;
+
+  document.getElementById('qdQuiz').classList.toggle('active', mode === 'quiz');
+  document.getElementById('qdDict').classList.toggle('active', mode === 'dict');
+
+  // Score pills and New Session are quiz-only UI
+  const show = mode === 'quiz';
+  document.getElementById('streakPill').style.display    = show ? '' : 'none';
+  document.getElementById('scorePill').style.display     = show ? '' : 'none';
+  document.getElementById('newSessionBtn').style.display = show ? '' : 'none';
+
+  if (mode === 'dict') {
+    if (currentMode === 'progressions') {
+      // Progressions dict mode has its own pool panel and show function
+      if (!dictProgSymbol) dictProgSymbol = PROGRESSIONS[0].symbol;
+      const prog = PROGRESSIONS.find(p => p.symbol === dictProgSymbol) || PROGRESSIONS[0];
+      renderDictProgressionPoolPanel();
+      dictShowProgression(prog);
+    } else {
+      if (!dictSymbol) dictSymbol = dictDefaultSymbol();
+      dictLoadSymbol(dictSymbol);
+      renderDictPoolPanel();
+      dictShow();
+    }
+  } else {
+    document.getElementById('inversionChipRow').style.display = 'none';
+    renderPoolPanel();
+    answered = false;
+    generateQuestion();
+  }
+}
+
+// ─── Collapsible panel helper ─────────────────────────────────────────────────
+
+/**
+ * Wires a collapsible toggle for a header/body/arrow element triple.
+ * Clicking the header toggles the `open` class on the body and updates
+ * the arrow glyph. No-ops silently if any element is missing.
+ *
+ * @param {string} headerId - ID of the clickable header element.
+ * @param {string} bodyId   - ID of the collapsible body element.
+ * @param {string} arrowId  - ID of the ▸/▾ arrow indicator element.
+ */
+function makeCollapsible(headerId, bodyId, arrowId) {
+  const header = document.getElementById(headerId);
+  const body   = document.getElementById(bodyId);
+  const arrow  = document.getElementById(arrowId);
+  if (!header || !body || !arrow) return;
+  header.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    arrow.textContent = open ? '▾' : '▸';
+  });
+}
+
+makeCollapsible('rootPanelHeader',      'rootPanelBody',      'rootPanelArrow');
+makeCollapsible('notationPanelHeader',  'notationPanelBody',  'notationPanelArrow');
+makeCollapsible('breakdownPanelHeader', 'breakdownPanelBody', 'breakdownPanelArrow');
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+
+// Play button — dispatches to the correct playback function for the current mode.
+// In chords mode while resolution view is active: plays source → pause → resolution.
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (currentMode === 'intervals')         playInterval();
+  else if (currentMode === 'scales')       playScale();
+  else if (currentMode === 'progressions') playProgression();
+  else if (currentMode === 'chords' &amp;&amp; resolutionActive) {
+    // Resolution view: play source → pause → resolution (same arc as entering resolution)
+    const info = getResolutionInfo();
+    if (!info || !piano) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const sourceMidi = getSourceMidi().sort((a, b) => a - b);
+    setPlayingState(true);
+    const now = audioCtx.currentTime;
+    const srcDuration = 1.8, pause = 0.7;
+    sourceMidi.forEach(m => piano.play(midiToSoundFontName(m), now, { duration: srcDuration, gain: 1.4 }));
+    info.targetMidi.forEach(m => piano.play(midiToSoundFontName(m), now + srcDuration + pause, { duration: 2.2, gain: 1.4 }));
+    setTimeout(() => setPlayingState(false), (srcDuration + pause + 2.2) * 1000);
+  }
+  else playChord();
+});
+
+// Quiz / Dict toggle buttons
+document.getElementById('qdQuiz').addEventListener('click', () => setAppMode('quiz'));
+document.getElementById('qdDict').addEventListener('click', () => setAppMode('dict'));
+
+// Mode tabs
+document.querySelectorAll('.mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+});
+
+// Initial renders — pool panel, style chips, register panel
+renderPoolPanel();
+renderChordStyleChips();
+renderIntervalStyleChips();
+renderScaleDirChips();
+renderRegisterPanel();
+
+// Boot into dictionary mode — does not depend on audio being ready
+setAppMode('dict');
+
+// Root visibility toggle (Show Root checkbox)
+document.getElementById('showRootChk').addEventListener('change', e => {
+  showRoot = e.target.checked;
+  // Re-show or hide badge based on current question state (only before answering)
+  if (!answered) {
+    if (currentMode === 'chords' &amp;&amp; currentMidiNotes.length)
+      updateRootBadge(showRoot ? getChordRootName() : null);
+    else if (currentMode === 'intervals' &amp;&amp; currentIntervalMidi.length)
+      updateRootBadge(showRoot ? spelledNote(0, currentIntervalMidi[0] % 12, currentInterval.symbol) : null);
+    else if (currentMode === 'scales' &amp;&amp; currentScale)
+      updateRootBadge(showRoot ? spelledNote(0, currentScaleRootMidi % 12, currentScale.symbol) : null);
+  }
+});
+
+// Session stats panel toggle
+document.getElementById('statsToggle').addEventListener('click', () => {
+  const panel = document.getElementById('statsPanel');
+  const btn   = document.getElementById('statsToggle');
+  const open  = panel.style.display === 'block';
+  panel.style.display = open ? 'none' : 'block';
+  btn.textContent     = open ? '▸ Session stats' : '▾ Session stats';
+});
+
+// New Session and Reset Stats both trigger a full session reset
+document.getElementById('newSessionBtn').addEventListener('click', resetSession);
+document.getElementById('resetStatsBtn').addEventListener('click', resetSession);
+
+// Keyboard shortcuts — Space = play, Enter = Next button
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return; // ignore when typing in a search / input field
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (currentMode === 'intervals')         playInterval();
+    else if (currentMode === 'scales')       playScale();
+    else if (currentMode === 'progressions') playProgression();
+    else playChord();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const nb = document.getElementById('nextBtn');
+    if (nb) nb.click();
+  }
+});
+
+// ─── Theme ────────────────────────────────────────────────────────────────────
+
+// Theme toggle — persisted to localStorage; defaults to dark for new users.
+// Handles both desktop (#themeToggle) and mobile (#themeToggleMobile) buttons.
+(function() {
+  const root  = document.documentElement;
+  const btns  = [
+    document.getElementById('themeToggle'),
+    document.getElementById('themeToggleMobile'),
+  ].filter(Boolean);
+  const DARK  = 'dark';
+  const LIGHT = 'light';
+  const stored = localStorage.getItem('earTrainerTheme');
+  let theme = stored || DARK;
+  if (theme === DARK) root.setAttribute('data-theme', DARK);
+
+  function syncEmoji() {
+    const emoji = theme === DARK ? '☀️' : '🌙';
+    btns.forEach(b => { b.textContent = emoji; });
+  }
+  syncEmoji();
+
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      theme = theme === DARK ? LIGHT : DARK;
+      root.setAttribute('data-theme', theme);
+      syncEmoji();
+      localStorage.setItem('earTrainerTheme', theme);
+    });
+  });
+})();
+
+// About mode — see js/modes/about-mode.js
+
+// Initialise audio — races Soundfont.instrument() against a 12-second timeout
+initAudio();
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
+// Dynamic header offset — keeps body content clear of the sticky shell
+// regardless of how tall the header grows (e.g. on text resize or mobile reflow).
+(function() {
+  const shell = document.getElementById('stickyShell');
+  function syncPadding() {
+    document.body.style.paddingTop = shell.offsetHeight + 'px';
+  }
+  syncPadding();
+  window.addEventListener('resize', syncPadding);
+})();
+
+// Root panel — open by default on desktop, collapsed on mobile (≤ 600px).
+(function() {
+  if (window.matchMedia('(max-width: 600px)').matches) {
+    const body  = document.getElementById('rootPanelBody');
+    const arrow = document.getElementById('rootPanelArrow');
+    body.classList.remove('open');
+    arrow.textContent = '▸';
+  }
+})();
+
+// Mobile button relocation — moves ℹ (About) and ? (Help) buttons from the
+// desktop header into the score bar on narrow viewports, and restores them on
+// resize back to desktop width. Debounced at 100ms to avoid thrashing on drag.
+(function() {
+  const aboutBtn       = document.getElementById('aboutBtn');
+  const helpBtn        = document.getElementById('helpBtn');
+  const headerBtnGroup = aboutBtn.parentElement; // the header flex div on desktop
+  const scoreBar       = document.querySelector('.score-bar');
+  const qdToggle       = document.getElementById('qdToggle');
+  const mq             = window.matchMedia('(max-width: 600px)');
+
+  function applyLayout(isMobile) {
+    if (isMobile) {
+      // Move into score bar, before the Quiz/Dict toggle
+      scoreBar.insertBefore(aboutBtn, qdToggle);
+      scoreBar.insertBefore(helpBtn,  qdToggle);
+    } else {
+      // Restore to header button group, before the theme toggle
+      const themeToggle = document.getElementById('themeToggle');
+      headerBtnGroup.insertBefore(aboutBtn, themeToggle);
+      headerBtnGroup.insertBefore(helpBtn,  themeToggle);
+    }
+  }
+
+  applyLayout(mq.matches);
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => applyLayout(mq.matches), 100);
+  });
+})();
+
+// @file-end — The Sound Travels Ear Training © 2026
+</code></pre></div></div></div></main></div><footer class="border-t border-(--clean-border) bg-background py-6 text-sm text-muted-foreground"><div class="mx-auto flex w-full max-w-screen-2xl flex-col items-start justify-between gap-2 px-4 md:flex-row md:items-center"><div class="flex items-center gap-1.5"><span>Documentation</span><span>© 2026</span></div></div></footer></div><script type="application/json" data-island-props>{"i0":{"language":"javascript","filename":"app.js"},"i1":{"basePath":"/","searchIndexUrl":"/_assets/search-index.mu8704my-06c54d73.json"},"i2":{},"i3":{},"i4":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/app-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]},"i5":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/app-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]}}</script><script type="module">(function(){var map={"theme-toggle":"/_islands/theme-toggle-QZPD445E.js","settings":"/_islands/settings-2ZS2MIWU.js","code-viewer":"/_islands/code-viewer-YGLLC5W5.js","embed":"/_islands/embed-GCSKGDO4.js","playground":"/_islands/playground-JBUGQGEY.js","tabs":"/_islands/tabs-NRSQKCSU.js","sidebar":"/_islands/sidebar-M4J6M54A.js","mobile-nav":"/_islands/mobile-nav-R4OP7AYN.js","toc":"/_islands/toc-QITK6TVX.js","toc-mobile":"/_islands/toc-mobile-ZE37NIO6.js","cmdk":"/_islands/cmdk-H5ACX54N.js","code-tabs":"/_islands/code-tabs-WQQJWQOG.js","copy-btn":"/_islands/copy-btn-FOLNJ4VF.js","copy-page":"/_islands/copy-page-EJSALNJL.js"};var seen=new Set();document.querySelectorAll('[data-island]').forEach(function(el){seen.add(el.getAttribute('data-island'));});seen.forEach(function(name){var src=map[name];if(src){import(src);}});})();</script><script>(function(){function flash(h){var b=h.querySelector('[data-heading-anchor]');if(!b)return;b.setAttribute('data-copied','');window.setTimeout(function(){b.removeAttribute('data-copied');},3000);}function onClick(e){var t=e.target;if(!t||!t.closest)return;if(t.closest('a'))return;var h=t.closest('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');if(!h)return;var id=h.id;if(!id)return;var iconOnly=!!t.closest('[data-heading-anchor]');if(!iconOnly){if(location.hash.slice(1)===id){h.scrollIntoView();}else{location.hash=id;}}try{var url=location.origin+location.pathname+location.search+'#'+id;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){flash(h);}).catch(function(){});}}catch(_){}}document.addEventListener('click',onClick);}());</script><script>(function(){var IDLE=700;var timers=new WeakMap();function onScroll(e){var el=e.target;if(el===document||el===window)el=document.documentElement;if(!el||!el.classList)return;el.classList.add('clean-scrolling');var prev=timers.get(el);if(prev)window.clearTimeout(prev);timers.set(el,window.setTimeout(function(){el.classList.remove('clean-scrolling');},IDLE));}document.addEventListener('scroll',onScroll,true);}());</script></body></html>

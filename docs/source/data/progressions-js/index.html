@@ -1,0 +1,396 @@
+<!doctype html><html lang="en" data-scrollbar="styled"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="generator" content="clean-jsdoc-theme 5.2.0" /><title>data/progressions.js</title><script>(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme');if(t==='dark'){d.dataset.theme='dark'}else{d.dataset.theme='light'}var fs=localStorage.getItem('clean-font-size');if(fs==='sm'){d.style.fontSize='15px'}else if(fs==='lg'){d.style.fontSize='18px'}var ls=localStorage.getItem('clean-line-spacing');if(ls==='compact'){d.style.setProperty('--clean-line-height','1.4')}else if(ls==='relaxed'){d.style.setProperty('--clean-line-height','1.8')}}catch(_){}}());</script><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Roboto:wght@400;500;600;700&amp;display=swap" /><link rel="stylesheet" href="/_assets/styles.mu8704my-06c54d73.css" /></head><body><div class="flex min-h-screen flex-col bg-background text-(--clean-fg)"><header class="sticky top-0 z-30 border-b border-(--clean-border) bg-background"><div class="mx-auto flex h-16 w-full min-w-0 max-w-screen-2xl items-center gap-4 px-4"><a href="/" class="flex min-w-0 items-center pl-3 no-underline"><span class="truncate text-lg font-heading font-bold text-(--clean-fg)">Documentation</span></a><div class="ml-auto flex shrink-0 items-center gap-1"><div class="flex items-center gap-1"><div data-island="cmdk" data-island-id="i1"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search" title="Search (Ctrl K)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button></div></div><div class="hidden items-center gap-1 md:flex"><div data-island="theme-toggle" data-island-id="i2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-label="Switch to dark theme" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button></div><div data-island="settings" data-island-id="i3"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="md:hidden"><div data-island="mobile-nav" data-island-id="i4"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg></button></div></div></div></div></header><div class="mx-auto grid w-full max-w-screen-2xl flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[16rem_minmax(0,1fr)]"><aside class="hidden md:block"><div class="sticky overflow-y-auto [scrollbar-gutter:stable] pr-2 top-20 max-h-[calc(100vh-6rem)]"><div data-island="sidebar" data-island-id="i5"><nav aria-label="Documentation navigation" class="text-(--clean-fg)"><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Home</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Modules</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/audio" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Audio</span></a></li><li class="my-0.5"><a href="/module/breakdown" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown</span></a></li><li class="my-0.5"><a href="/module/breakdown-chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-chords</span></a></li><li class="my-0.5"><a href="/module/breakdown-intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-intervals</span></a></li><li class="my-0.5"><a href="/module/breakdown-progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-progressions</span></a></li><li class="my-0.5"><a href="/module/breakdown-scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-scales</span></a></li><li class="my-0.5"><a href="/module/chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">chords</span></a></li><li class="my-0.5"><a href="/module/defaults" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Defaults</span></a></li><li class="my-0.5"><a href="/module/helpcontent" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">HelpContent</span></a></li><li class="my-0.5"><a href="/module/helpers" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Helpers</span></a></li><li class="my-0.5"><a href="/module/intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">intervals</span></a></li><li class="my-0.5"><a href="/module/keysig" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">KeySig</span></a></li><li class="my-0.5"><a href="/module/notation" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">notation</span></a></li><li class="my-0.5"><a href="/module/progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">progressions</span></a></li><li class="my-0.5"><a href="/module/scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">scales</span></a></li><li class="my-0.5"><a href="/module/spelling" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Spelling</span></a></li><li class="my-0.5"><a href="/module/state" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">state</span></a></li><li class="my-0.5"><a href="/module/stats" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">stats</span></a></li><li class="my-0.5"><a href="/module/voiceleading" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voiceLeading</span></a></li><li class="my-0.5"><a href="/module/voicings" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voicings</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Typedefs</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/voicings/voicingmode" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">VoicingMode</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/global" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Tutorials</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/tutorials/css-architecture" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">css-architecture</span></a></li><li class="my-0.5"><a href="/tutorials/getting-started" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">getting-started</span></a></li><li class="my-0.5"><a href="/tutorials/html-structure" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">html-structure</span></a></li></ul></div><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/source" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Source Files</span></a></li></ul></div></nav></div></div></aside><main class="min-w-0 px-4 md:px-8 lg:px-12"><div data-island="code-viewer" data-island-id="i0"><div class="my-4 overflow-hidden rounded-lg border border-(--clean-border) bg-(--clean-bg)"><div class="flex items-center justify-between border-b border-(--clean-border) bg-(--clean-bg-muted) px-3 py-2 text-sm"><span class="font-mono text-(--clean-fg)">data/progressions.js</span><span class="text-xs text-(--clean-fg-muted)">javascript</span></div><div class="h-[calc(100vh-13rem)] min-h-[24rem]"><pre class="m-0 h-full overflow-auto whitespace-pre p-4 text-sm leading-relaxed text-(--clean-fg)"><code class="language-javascript">/**
+ * @file progressions.js
+ * @description Chord progression library, answer UI lookup tables, pool panel
+ * configuration, and progression-specific runtime state for The Sound Travels
+ * Ear Training. Organised into 13 stylistic groups ranging from cadences and
+ * classical sequences to jazz, blues, rock, reggae, and extended forms.
+ *
+ * @module progressions
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+
+// =============================================================================
+// PROGRESSIONS — Schema
+//
+// Each entry in PROGRESSIONS is an object with the following fields:
+//
+//   symbol    {string}   — Unique identifier used in state, stats, and pool logic.
+//                          Uses Roman numeral notation with ASCII-safe characters
+//                          (e.g. 'ii-V-I', 'I-vi-IV-V'). Suffixes like '-reg',
+//                          '-met', '-bossa' disambiguate entries that share the
+//                          same Roman numeral sequence across different groups.
+//   name      {string}   — Display label shown in the pool panel and breakdown.
+//   group     {string}   — Stylistic group. Must match a value in PROG_GROUPS.
+//   basic     {boolean}  — Optional. When true, the progression appears in Basic
+//                          difficulty mode. Omitted (falsy) for Advanced-only entries.
+//   degrees   {number[]} — Semitone offset of each chord's root above the tonic
+//                          (0–11). Length equals the number of chords in the
+//                          progression. Degree 0 = tonic, 7 = dominant, etc.
+//   qualities {string[]} — Quality symbol for each chord, parallel to degrees[].
+//                          Values match symbols in PROG_QUALITIES: 'maj', 'm', '7',
+//                          'maj7', 'm7', 'dim', 'm7b5', 'o7', 'aug', 'sus4'.
+// =============================================================================
+
+/**
+ * Master list of all chord progressions available in the app.
+ * Grouped by style: Cadences, Diminished, Classical, Short, Pop &amp; Rock, Jazz,
+ * Blues, Minor, Rock, Reggae, Samba &amp; Bossa, Metal, Extended.
+ *
+ * @type {Array&lt;{
+ *   symbol: string,
+ *   name: string,
+ *   group: string,
+ *   basic?: boolean,
+ *   degrees: number[],
+ *   qualities: string[]
+ * }>}
+ */
+const PROGRESSIONS = [
+  // ── Cadences (2 chords) ──────────────────────────────────────────────────
+  { symbol: 'V-I',         name: 'Perfect Authentic',          group: 'Cadences', basic: true,
+    degrees: [7, 0],     qualities: ['maj', 'maj'] },
+  { symbol: 'V7-I',        name: 'Perfect Authentic (dom7)',    group: 'Cadences', basic: true,
+    degrees: [7, 0],     qualities: ['7', 'maj'] },
+  { symbol: 'IV-I',        name: 'Plagal',                      group: 'Cadences', basic: true,
+    degrees: [5, 0],     qualities: ['maj', 'maj'] },
+  { symbol: 'I-V',         name: 'Half Cadence',                group: 'Cadences', basic: true,
+    degrees: [0, 7],     qualities: ['maj', 'maj'] },
+  { symbol: 'ii-V',        name: 'Half Cadence (jazz)',          group: 'Cadences',
+    degrees: [2, 7],     qualities: ['m', 'maj'] },
+  { symbol: 'IV-V',        name: 'Half Cadence (rock/pop)',      group: 'Cadences',
+    degrees: [5, 7],     qualities: ['maj', 'maj'] },
+  { symbol: 'vi-V',        name: 'Half Cadence (minor)',         group: 'Cadences',
+    degrees: [9, 7],     qualities: ['m', 'maj'] },
+  { symbol: 'V-vi',        name: 'Deceptive',                    group: 'Cadences',
+    degrees: [7, 9],     qualities: ['maj', 'm'] },
+  { symbol: 'V7-vi',       name: 'Deceptive (dom7)',             group: 'Cadences',
+    degrees: [7, 9],     qualities: ['7', 'm'] },
+  { symbol: 'iv-V',        name: 'Phrygian Half Cadence',        group: 'Cadences',
+    degrees: [5, 7],     qualities: ['m', 'maj'] },
+
+  // ── Diminished &amp; half-dim resolutions (2 chords) ─────────────────────────
+  { symbol: 'vii°-I',      name: 'Leading tone resolution',      group: 'Diminished',
+    degrees: [11, 0],    qualities: ['dim', 'maj'] },
+  { symbol: 'vii°7-I',     name: 'Fully dim → major tonic',      group: 'Diminished',
+    degrees: [11, 0],    qualities: ['o7', 'maj'] },
+  { symbol: 'vii°7-i',     name: 'Fully dim → minor tonic',      group: 'Diminished',
+    degrees: [11, 0],    qualities: ['o7', 'm'] },
+  { symbol: 'iiø7-V',      name: 'Half-dim → dominant',          group: 'Diminished',
+    degrees: [2, 7],     qualities: ['m7b5', 'maj'] },
+  { symbol: 'iiø7-V7',     name: 'Jazz minor ii–V',              group: 'Diminished',
+    degrees: [2, 7],     qualities: ['m7b5', '7'] },
+  { symbol: 'iiø7-i',      name: 'Half-dim direct resolution',   group: 'Diminished',
+    degrees: [2, 0],     qualities: ['m7b5', 'm'] },
+  { symbol: '#iv°-V',      name: 'Chromatic dim approach',        group: 'Diminished',
+    degrees: [6, 7],     qualities: ['dim', 'maj'] },
+
+  // ── Classical (3–6 chords) ────────────────────────────────────────────────
+  { symbol: 'I-V-I',       name: 'Basic tonic–dominant',         group: 'Classical',
+    degrees: [0, 7, 0],  qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'I-IV-V-I',    name: 'Four-chord cadence',           group: 'Classical', basic: true,
+    degrees: [0, 5, 7, 0],   qualities: ['maj', 'maj', 'maj', 'maj'] },
+  { symbol: 'I-ii-V-I',    name: 'Supertonic cadence',           group: 'Classical',
+    degrees: [0, 2, 7, 0],   qualities: ['maj', 'm', 'maj', 'maj'] },
+  { symbol: 'I-vi-ii-V-I', name: 'Circle of fifths (5 chords)',  group: 'Classical',
+    degrees: [0, 9, 2, 7, 0],    qualities: ['maj', 'm', 'm', 'maj', 'maj'] },
+  { symbol: 'iii-vi-ii-V-I', name: 'Circle of fifths (extended)', group: 'Classical',
+    degrees: [4, 9, 2, 7, 0],    qualities: ['m', 'm', 'm', 'maj', 'maj'] },
+  { symbol: 'vi-ii-V-I',   name: 'Circle of fifths (short)',     group: 'Classical',
+    degrees: [9, 2, 7, 0],   qualities: ['m', 'm', 'maj', 'maj'] },
+  { symbol: 'I-IV-I-V-I',  name: 'Baroque cadence',              group: 'Classical',
+    degrees: [0, 5, 0, 7, 0],    qualities: ['maj', 'maj', 'maj', 'maj', 'maj'] },
+
+  // ── Short (3 chords) ─────────────────────────────────────────────────────
+  { symbol: 'I-IV-V',      name: 'Rock / folk / blues',          group: 'Short', basic: true,
+    degrees: [0, 5, 7],   qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'I-V-IV',      name: 'Reverse rock',                 group: 'Short',
+    degrees: [0, 7, 5],   qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'I-V-vi',      name: 'Partial axis',                 group: 'Short',
+    degrees: [0, 7, 9],   qualities: ['maj', 'maj', 'm'] },
+  { symbol: 'I-vi-V',      name: 'Classical descending',         group: 'Short',
+    degrees: [0, 9, 7],   qualities: ['maj', 'm', 'maj'] },
+  { symbol: 'I-IV-I',      name: 'Blues fragment',               group: 'Short',
+    degrees: [0, 5, 0],   qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'IV-V-vi',     name: 'Ascending cadence',            group: 'Short',
+    degrees: [5, 7, 9],   qualities: ['maj', 'maj', 'm'] },
+  { symbol: 'i-VII-VI',    name: 'Minor descending',             group: 'Short',
+    degrees: [0, 10, 8],  qualities: ['m', 'maj', 'maj'] },
+  { symbol: 'i-bVII-i',    name: 'Modal minor',                  group: 'Short',
+    degrees: [0, 10, 0],  qualities: ['m', 'maj', 'm'] },
+  { symbol: 'i-iv-VII',    name: 'Minor pre-dominant',           group: 'Short',
+    degrees: [0, 5, 10],  qualities: ['m', 'm', 'maj'] },
+
+  // ── Pop &amp; Rock (4 chords) ─────────────────────────────────────────────────
+  { symbol: 'I-V-vi-IV',   name: 'Axis progression',            group: 'Pop &amp; Rock', basic: true,
+    degrees: [0, 7, 9, 5],   qualities: ['maj', 'maj', 'm', 'maj'] },
+  { symbol: 'vi-IV-I-V',   name: 'Axis (vi start)',             group: 'Pop &amp; Rock',
+    degrees: [9, 5, 0, 7],   qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'I-IV-vi-V',   name: 'Pop variant',                 group: 'Pop &amp; Rock',
+    degrees: [0, 5, 9, 7],   qualities: ['maj', 'maj', 'm', 'maj'] },
+  { symbol: 'I-vi-IV-V',   name: 'Doo-wop / 50s',              group: 'Pop &amp; Rock', basic: true,
+    degrees: [0, 9, 5, 7],   qualities: ['maj', 'm', 'maj', 'maj'] },
+  { symbol: 'I-iii-IV-V',  name: 'Ascending bright',            group: 'Pop &amp; Rock',
+    degrees: [0, 4, 5, 7],   qualities: ['maj', 'm', 'maj', 'maj'] },
+  { symbol: 'I-iii-vi-IV', name: 'Emotional pop',               group: 'Pop &amp; Rock',
+    degrees: [0, 4, 9, 5],   qualities: ['maj', 'm', 'm', 'maj'] },
+  { symbol: 'I-IV-I-V',    name: 'Blues-adjacent / country',    group: 'Pop &amp; Rock',
+    degrees: [0, 5, 0, 7],   qualities: ['maj', 'maj', 'maj', 'maj'] },
+  { symbol: 'I-VII-IV-I',  name: 'Mixolydian feel',             group: 'Pop &amp; Rock',
+    degrees: [0, 10, 5, 0],  qualities: ['maj', 'maj', 'maj', 'maj'] },
+  { symbol: 'I-bIII-IV',   name: 'Rock borrowed bIII',          group: 'Pop &amp; Rock',
+    degrees: [0, 3, 5],      qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'I-bIII-bVII', name: 'Power rock',                  group: 'Pop &amp; Rock',
+    degrees: [0, 3, 10],     qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'vi-I-V-IV',   name: 'Minor-start pop',             group: 'Pop &amp; Rock',
+    degrees: [9, 0, 7, 5],   qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'IV-I-V-vi',   name: 'IV-start axis',               group: 'Pop &amp; Rock',
+    degrees: [5, 0, 7, 9],   qualities: ['maj', 'maj', 'maj', 'm'] },
+  { symbol: 'ii-IV-I-V',   name: 'Gospel',                      group: 'Pop &amp; Rock',
+    degrees: [2, 5, 0, 7],   qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'I-vi-ii-V',   name: 'Pop / jazz ballad',           group: 'Pop &amp; Rock',
+    degrees: [0, 9, 2, 7],   qualities: ['maj', 'm', 'm', 'maj'] },
+
+  // ── Jazz (4–6 chords) ────────────────────────────────────────────────────
+  { symbol: 'ii-V-I',      name: 'Jazz ii–V–I (major)',         group: 'Jazz', basic: true,
+    degrees: [2, 7, 0],   qualities: ['m7', '7', 'maj7'] },
+  { symbol: 'ii-V-i',      name: 'Jazz ii–V–i (minor)',         group: 'Jazz',
+    degrees: [2, 7, 0],   qualities: ['m7b5', '7', 'm'] },
+  { symbol: 'ii-V-I-VI',   name: 'Jazz turnaround',             group: 'Jazz',
+    degrees: [2, 7, 0, 9],   qualities: ['m7', '7', 'maj7', '7'] },
+  { symbol: 'I-VI-ii-V',   name: 'Rhythm changes A',            group: 'Jazz',
+    degrees: [0, 9, 2, 7],   qualities: ['maj7', '7', 'm7', '7'] },
+  { symbol: 'iii-VI-ii-V', name: 'Cycle of 5ths (jazz)',        group: 'Jazz',
+    degrees: [4, 9, 2, 7],   qualities: ['m7', '7', 'm7', '7'] },
+  { symbol: 'vi-ii-V-I',   name: 'Extended turnaround',         group: 'Jazz',
+    degrees: [9, 2, 7, 0],   qualities: ['m7', 'm7', '7', 'maj7'] },
+  { symbol: 'I-VI7-ii-V',  name: 'Turnaround (sec. dom)',       group: 'Jazz',
+    degrees: [0, 9, 2, 7],   qualities: ['maj7', '7', 'm7', '7'] },
+  { symbol: 'ii-bVII7-I',  name: 'Backdoor dominant',           group: 'Jazz',
+    degrees: [2, 10, 0],  qualities: ['m7', '7', 'maj7'] },
+  { symbol: 'i-iv-VII-III', name: 'Minor jazz cycle',           group: 'Jazz',
+    degrees: [0, 5, 10, 3],  qualities: ['m7', 'm7', '7', 'maj7'] },
+  { symbol: 'i-iiø7-V7-i', name: 'Minor ii–V–I',               group: 'Jazz',
+    degrees: [0, 2, 7, 0],   qualities: ['m', 'm7b5', '7', 'm'] },
+  { symbol: 'ii-V-I-vi-ii-V', name: 'Jazz loop (6 chords)',     group: 'Jazz',
+    degrees: [2, 7, 0, 9, 2, 7],  qualities: ['m7', '7', 'maj7', 'm7', 'm7', '7'] },
+
+  // ── Blues (4–12 chords) ───────────────────────────────────────────────────
+  { symbol: 'I7-IV7-I7-V7',   name: 'Jazz blues turnaround',      group: 'Blues',
+    degrees: [0, 5, 0, 7],        qualities: ['7', '7', '7', '7'] },
+  { symbol: 'I7-VI7-ii7-V7',  name: 'Jazz blues (4 chords)',      group: 'Blues',
+    degrees: [0, 9, 2, 7],        qualities: ['7', '7', 'm7', '7'] },
+  { symbol: 'I-V-IV-IV',      name: 'Eight-bar blues (short)',    group: 'Blues',
+    degrees: [0, 7, 5, 5],        qualities: ['7', '7', '7', '7'] },
+  { symbol: 'I-IV-I-V',       name: 'Quick change (4 chords)',    group: 'Blues',
+    degrees: [0, 5, 0, 7],        qualities: ['7', '7', '7', '7'] },
+  { symbol: 'V-IV-I-V',       name: 'Blues ending',               group: 'Blues',
+    degrees: [7, 5, 0, 7],        qualities: ['7', '7', '7', '7'] },
+  // 12-bar entries store each two-bar block as a single chord slot (12 slots total)
+  { symbol: '12-bar',          name: '12-bar blues (standard)',    group: 'Blues',
+    degrees: [0, 0, 0, 0, 5, 5, 0, 0, 7, 5, 0, 7],
+    qualities: ['7','7','7','7','7','7','7','7','7','7','7','7'] },
+  { symbol: '12-bar-qc',       name: '12-bar blues (quick change)', group: 'Blues',
+    degrees: [0, 5, 0, 0, 5, 5, 0, 0, 7, 5, 0, 7],
+    qualities: ['7','7','7','7','7','7','7','7','7','7','7','7'] },
+  { symbol: '12-bar-jazz',     name: '12-bar blues (jazz)',        group: 'Blues',
+    degrees: [0, 5, 0, 9, 5, 5, 0, 3, 2, 10, 0, 7],
+    qualities: ['7','7','7','7','7','7','maj7','7','m7','7','7','7'] },
+
+  // ── Minor (4–8 chords) ────────────────────────────────────────────────────
+  { symbol: 'i-VII-VI-VII',    name: 'Natural minor loop',          group: 'Minor',
+    degrees: [0, 10, 8, 10],  qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-VI-III-VII',    name: 'Aeolian cycle',               group: 'Minor',
+    degrees: [0, 8, 3, 10],   qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-iv-v-i',        name: 'Pure minor / classical',      group: 'Minor',
+    degrees: [0, 5, 7, 0],    qualities: ['m', 'm', 'm', 'm'] },
+  { symbol: 'i-VI-VII-i',      name: 'Minor with return',           group: 'Minor',
+    degrees: [0, 8, 10, 0],   qualities: ['m', 'maj', 'maj', 'm'] },
+  { symbol: 'i-III-VII-VI',    name: 'Epic / cinematic',            group: 'Minor',
+    degrees: [0, 3, 10, 8],   qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-v-VI-VII',      name: 'Dramatic minor',              group: 'Minor',
+    degrees: [0, 7, 8, 10],   qualities: ['m', 'm', 'maj', 'maj'] },
+  { symbol: 'i-bVI-bIII-bVII', name: 'Aeolian (all borrowed)',      group: 'Minor',
+    degrees: [0, 8, 3, 10],   qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-iv-VII-III-VI-ii°-V-i', name: 'Harmonic minor circle', group: 'Minor',
+    degrees: [0, 5, 10, 3, 8, 2, 7, 0],
+    qualities: ['m', 'm', 'maj', 'maj', 'maj', 'dim', 'maj', 'm'] },
+
+  // ── Rock (3–4 chords) ────────────────────────────────────────────────────
+  { symbol: 'I-bVII-IV',      name: 'Mixolydian rock',             group: 'Rock',
+    degrees: [0, 10, 5],    qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'i-bVII-bVI',     name: 'Aeolian rock',               group: 'Rock',
+    degrees: [0, 10, 8],    qualities: ['m', 'maj', 'maj'] },
+  { symbol: 'i-bVI-bVII',     name: 'Minor anthem',               group: 'Rock',
+    degrees: [0, 8, 10],    qualities: ['m', 'maj', 'maj'] },
+  { symbol: 'i-bVII-IV-i',    name: 'Minor rock loop',            group: 'Rock',
+    degrees: [0, 10, 5, 0], qualities: ['m', 'maj', 'maj', 'm'] },
+  { symbol: 'i-iv-V-i',       name: 'Harmonic minor rock',        group: 'Rock',
+    degrees: [0, 5, 7, 0],  qualities: ['m', 'm', 'maj', 'm'] },
+  { symbol: 'I-bIII-bVII-IV', name: 'Classic rock borrowed',      group: 'Rock',
+    degrees: [0, 3, 10, 5], qualities: ['maj', 'maj', 'maj', 'maj'] },
+
+  // ── Reggae (2–4 chords) ──────────────────────────────────────────────────
+  { symbol: 'I-IV-V-reg',     name: 'Roots reggae',               group: 'Reggae',
+    degrees: [0, 5, 7],     qualities: ['maj', 'maj', 'maj'] },
+  { symbol: 'i-bVII-reg',     name: 'Roots minor',                group: 'Reggae',
+    degrees: [0, 10],       qualities: ['m', 'maj'] },
+  { symbol: 'i-bVI-bVII-reg', name: 'Minor roots',                group: 'Reggae',
+    degrees: [0, 8, 10],    qualities: ['m', 'maj', 'maj'] },
+  { symbol: 'I-vi-IV-V-reg',  name: 'Lovers rock',                group: 'Reggae',
+    degrees: [0, 9, 5, 7],  qualities: ['maj', 'm', 'maj', 'maj'] },
+  { symbol: 'vi-IV-I-V-reg',  name: 'Lovers rock (vi start)',     group: 'Reggae',
+    degrees: [9, 5, 0, 7],  qualities: ['m', 'maj', 'maj', 'maj'] },
+
+  // ── Samba &amp; Bossa Nova (3–5 chords) ──────────────────────────────────────
+  { symbol: 'I-VI7-ii-V7',    name: 'Samba turnaround',           group: 'Samba &amp; Bossa',
+    degrees: [0, 9, 2, 7],  qualities: ['maj7', '7', 'm7', '7'] },
+  { symbol: 'iii-VI7-ii-V7',  name: 'Samba cycle',                group: 'Samba &amp; Bossa',
+    degrees: [4, 9, 2, 7],  qualities: ['m7', '7', 'm7', '7'] },
+  { symbol: 'I-III7-vi',      name: 'Passing secondary dom',       group: 'Samba &amp; Bossa',
+    degrees: [0, 4, 9],     qualities: ['maj7', '7', 'm7'] },
+  { symbol: 'iiø7-V7-i-bossa', name: 'Bossa minor ii–V–i',        group: 'Samba &amp; Bossa',
+    degrees: [2, 7, 0],     qualities: ['m7b5', '7', 'm7'] },
+  { symbol: 'i-VI7-iiø7-V7',  name: 'Bossa minor turnaround',     group: 'Samba &amp; Bossa',
+    degrees: [0, 9, 2, 7],  qualities: ['m7', '7', 'm7b5', '7'] },
+  { symbol: 'iv-bVII7-III',   name: 'Minor bossa cadence',        group: 'Samba &amp; Bossa',
+    degrees: [5, 10, 3],    qualities: ['m7', '7', 'maj7'] },
+
+  // ── Metal (2–5 chords) ───────────────────────────────────────────────────
+  { symbol: 'i-bII',          name: 'Phrygian power',             group: 'Metal',
+    degrees: [0, 1],        qualities: ['m', 'maj'] },
+  { symbol: 'i-bII-bVII',     name: 'Phrygian loop',             group: 'Metal',
+    degrees: [0, 1, 10],    qualities: ['m', 'maj', 'maj'] },
+  { symbol: 'i-bVI-bIII-bVII', name: 'Neoclassical / Aeolian',   group: 'Metal',
+    degrees: [0, 8, 3, 10], qualities: ['m', 'maj', 'maj', 'maj'] },
+  { symbol: 'i-iv-V-i-met',   name: 'Harmonic minor metal',      group: 'Metal',
+    degrees: [0, 5, 7, 0],  qualities: ['m', 'm', 'maj', 'm'] },
+  { symbol: 'iii-vi-ii-V-i-neo', name: 'Neoclassical descending', group: 'Metal',
+    degrees: [4, 9, 2, 7, 0],  qualities: ['m', 'm', 'm7b5', '7', 'm'] },
+
+  // ── Extended (5–8 chords) ─────────────────────────────────────────────────
+  { symbol: 'I-IV-V-IV-I',     name: 'Rock/blues return',          group: 'Extended',
+    degrees: [0, 5, 7, 5, 0],          qualities: ['maj', 'maj', 'maj', 'maj', 'maj'] },
+  { symbol: 'ii-V-I-IV-V',     name: 'Extended jazz cadence',      group: 'Extended',
+    degrees: [2, 7, 0, 5, 7],          qualities: ['m7', '7', 'maj7', 'maj7', '7'] },
+  { symbol: 'i-VII-VI-VII-i',  name: 'Minor with return',          group: 'Extended',
+    degrees: [0, 10, 8, 10, 0],        qualities: ['m', 'maj', 'maj', 'maj', 'm'] },
+  { symbol: 'I-iii-IV-iv-I-V', name: 'Borrowed iv (Beatles)',      group: 'Extended',
+    degrees: [0, 4, 5, 5, 0, 7],       qualities: ['maj', 'm', 'maj', 'm', 'maj', 'maj'] },
+  { symbol: 'i-VII-VI-V-i-V',  name: 'Flamenco / classical minor', group: 'Extended',
+    degrees: [0, 10, 8, 7, 0, 7],      qualities: ['m', 'maj', 'maj', 'maj', 'm', 'maj'] },
+  // Romanesca / Pachelbel canon — 8-chord ground bass sequence
+  { symbol: 'Romanesca',        name: 'Romanesca / Pachelbel',      group: 'Extended',
+    degrees: [0, 7, 9, 4, 5, 0, 5, 7],
+    qualities: ['maj', 'maj', 'm', 'm', 'maj', 'maj', 'maj', 'maj'] },
+  // Descending fifths sequence — each chord root falls a fifth from the previous
+  { symbol: 'desc-5ths',        name: 'Descending fifths sequence', group: 'Extended',
+    degrees: [0, 5, 11, 4, 9, 2, 7, 0],
+    qualities: ['maj', 'maj', 'dim', 'm', 'm', 'm', 'maj', 'maj'] },
+];
+
+/**
+ * Scale degree labels for the progression answer UI.
+ * Covers all diatonic degrees plus common chromatic borrows (♭II, ♭III, ♭VI, ♭VII, ♯IV).
+ * Each entry maps a Roman numeral label to its semitone offset above the tonic.
+ *
+ * @type {Array&lt;{ label: string, semi: number }>}
+ */
+const PROG_DEGREES = [
+  { label: 'I',    semi: 0  },
+  { label: 'ii',   semi: 2  },
+  { label: 'iii',  semi: 4  },
+  { label: 'IV',   semi: 5  },
+  { label: 'V',    semi: 7  },
+  { label: 'vi',   semi: 9  },
+  { label: 'vii°', semi: 11 },
+  { label: '♭II',  semi: 1  },
+  { label: '♭III', semi: 3  },
+  { label: '♭VI',  semi: 8  },
+  { label: '♭VII', semi: 10 },
+  { label: '♯IV',  semi: 6  },
+];
+
+/**
+ * Chord quality options for the progression answer UI.
+ * Covers triads and basic 7th chords used across all progression groups.
+ * `label` is the display string; `sym` matches the `qualities` values in PROGRESSIONS.
+ *
+ * @type {Array&lt;{ label: string, sym: string }>}
+ */
+const PROG_QUALITIES = [
+  { label: 'maj',  sym: 'maj'   },
+  { label: 'm',    sym: 'm'     },
+  { label: '7',    sym: '7'     },
+  { label: 'maj7', sym: 'maj7'  },
+  { label: 'm7',   sym: 'm7'    },
+  { label: 'dim',  sym: 'dim'   },
+  { label: 'ø7',   sym: 'm7b5'  },
+  { label: 'dim7', sym: 'o7'    },
+  { label: 'aug',  sym: 'aug'   },
+  { label: 'sus4', sym: 'sus4'  },
+];
+
+/**
+ * Canonical display order of progression groups in the pool panel.
+ *
+ * @type {string[]}
+ */
+const PROG_GROUPS = [
+  'Cadences', 'Diminished', 'Classical', 'Short', 'Pop &amp; Rock',
+  'Jazz', 'Blues', 'Minor', 'Rock', 'Reggae', 'Samba &amp; Bossa', 'Metal', 'Extended',
+];
+
+/**
+ * Default collapsed state for each group in the pool panel.
+ * Only Cadences is expanded on load; all other groups start collapsed.
+ *
+ * @type {Object.&lt;string, boolean>}
+ */
+const PROG_GROUP_COLLAPSED = {
+  Cadences:        false,
+  Diminished:      true,
+  Classical:       true,
+  Short:           true,
+  'Pop &amp; Rock':    true,
+  Jazz:            true,
+  Blues:           true,
+  Minor:           true,
+  Rock:            true,
+  Reggae:          true,
+  'Samba &amp; Bossa': true,
+  Metal:           true,
+  Extended:        true,
+};
+
+// ── Progression runtime state ─────────────────────────────────────────────────
+// These variables hold per-question state for the active progressions quiz session.
+// `selectedProgressions` is initialised in defaults.js (after PROGRESSIONS is defined).
+
+/** @type {Object|null} The PROGRESSIONS entry for the current question. */
+let currentProgression = null;
+
+/** @type {number} MIDI note number of the tonic for the current question (default middle C = 60). */
+let currentProgRootMidi = 60;
+
+/** @type {number} Pitch class of the tonic for the current question (0–11). */
+let currentProgRootPc = 0;
+
+/**
+ * Per-slot answer state for the current question.
+ * One entry per chord in the progression; each tracks the user's selected
+ * degree and quality indices into PROG_DEGREES and PROG_QUALITIES.
+ *
+ * @type {Array&lt;{ degreeIdx: number|null, qualityIdx: number|null }>}
+ */
+let progSlotAnswers = [];
+
+/** @type {boolean} Whether the current progression question has been submitted. */
+let progAnswered = false;
+
+// =============================================================================
+// The Sound Travels Ear Training — progressions.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================
+</code></pre></div></div></div></main></div><footer class="border-t border-(--clean-border) bg-background py-6 text-sm text-muted-foreground"><div class="mx-auto flex w-full max-w-screen-2xl flex-col items-start justify-between gap-2 px-4 md:flex-row md:items-center"><div class="flex items-center gap-1.5"><span>Documentation</span><span>© 2026</span></div></div></footer></div><script type="application/json" data-island-props>{"i0":{"language":"javascript","filename":"data/progressions.js"},"i1":{"basePath":"/","searchIndexUrl":"/_assets/search-index.mu8704my-06c54d73.json"},"i2":{},"i3":{},"i4":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/data/progressions-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]},"i5":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/data/progressions-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]}}</script><script type="module">(function(){var map={"theme-toggle":"/_islands/theme-toggle-QZPD445E.js","settings":"/_islands/settings-2ZS2MIWU.js","code-viewer":"/_islands/code-viewer-YGLLC5W5.js","embed":"/_islands/embed-GCSKGDO4.js","playground":"/_islands/playground-JBUGQGEY.js","tabs":"/_islands/tabs-NRSQKCSU.js","sidebar":"/_islands/sidebar-M4J6M54A.js","mobile-nav":"/_islands/mobile-nav-R4OP7AYN.js","toc":"/_islands/toc-QITK6TVX.js","toc-mobile":"/_islands/toc-mobile-ZE37NIO6.js","cmdk":"/_islands/cmdk-H5ACX54N.js","code-tabs":"/_islands/code-tabs-WQQJWQOG.js","copy-btn":"/_islands/copy-btn-FOLNJ4VF.js","copy-page":"/_islands/copy-page-EJSALNJL.js"};var seen=new Set();document.querySelectorAll('[data-island]').forEach(function(el){seen.add(el.getAttribute('data-island'));});seen.forEach(function(name){var src=map[name];if(src){import(src);}});})();</script><script>(function(){function flash(h){var b=h.querySelector('[data-heading-anchor]');if(!b)return;b.setAttribute('data-copied','');window.setTimeout(function(){b.removeAttribute('data-copied');},3000);}function onClick(e){var t=e.target;if(!t||!t.closest)return;if(t.closest('a'))return;var h=t.closest('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');if(!h)return;var id=h.id;if(!id)return;var iconOnly=!!t.closest('[data-heading-anchor]');if(!iconOnly){if(location.hash.slice(1)===id){h.scrollIntoView();}else{location.hash=id;}}try{var url=location.origin+location.pathname+location.search+'#'+id;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){flash(h);}).catch(function(){});}}catch(_){}}document.addEventListener('click',onClick);}());</script><script>(function(){var IDLE=700;var timers=new WeakMap();function onScroll(e){var el=e.target;if(el===document||el===window)el=document.documentElement;if(!el||!el.classList)return;el.classList.add('clean-scrolling');var prev=timers.get(el);if(prev)window.clearTimeout(prev);timers.set(el,window.setTimeout(function(){el.classList.remove('clean-scrolling');},IDLE));}document.addEventListener('scroll',onScroll,true);}());</script></body></html>

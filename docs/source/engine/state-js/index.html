@@ -1,0 +1,285 @@
+<!doctype html><html lang="en" data-scrollbar="styled"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="generator" content="clean-jsdoc-theme 5.2.0" /><title>engine/state.js</title><script>(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme');if(t==='dark'){d.dataset.theme='dark'}else{d.dataset.theme='light'}var fs=localStorage.getItem('clean-font-size');if(fs==='sm'){d.style.fontSize='15px'}else if(fs==='lg'){d.style.fontSize='18px'}var ls=localStorage.getItem('clean-line-spacing');if(ls==='compact'){d.style.setProperty('--clean-line-height','1.4')}else if(ls==='relaxed'){d.style.setProperty('--clean-line-height','1.8')}}catch(_){}}());</script><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Roboto:wght@400;500;600;700&amp;display=swap" /><link rel="stylesheet" href="/_assets/styles.mu8704my-06c54d73.css" /></head><body><div class="flex min-h-screen flex-col bg-background text-(--clean-fg)"><header class="sticky top-0 z-30 border-b border-(--clean-border) bg-background"><div class="mx-auto flex h-16 w-full min-w-0 max-w-screen-2xl items-center gap-4 px-4"><a href="/" class="flex min-w-0 items-center pl-3 no-underline"><span class="truncate text-lg font-heading font-bold text-(--clean-fg)">Documentation</span></a><div class="ml-auto flex shrink-0 items-center gap-1"><div class="flex items-center gap-1"><div data-island="cmdk" data-island-id="i1"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search" title="Search (Ctrl K)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button></div></div><div class="hidden items-center gap-1 md:flex"><div data-island="theme-toggle" data-island-id="i2"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-label="Switch to dark theme" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button></div><div data-island="settings" data-island-id="i3"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="md:hidden"><div data-island="mobile-nav" data-island-id="i4"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg></button></div></div></div></div></header><div class="mx-auto grid w-full max-w-screen-2xl flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[16rem_minmax(0,1fr)]"><aside class="hidden md:block"><div class="sticky overflow-y-auto [scrollbar-gutter:stable] pr-2 top-20 max-h-[calc(100vh-6rem)]"><div data-island="sidebar" data-island-id="i5"><nav aria-label="Documentation navigation" class="text-(--clean-fg)"><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Home</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Modules</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/audio" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Audio</span></a></li><li class="my-0.5"><a href="/module/breakdown" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown</span></a></li><li class="my-0.5"><a href="/module/breakdown-chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-chords</span></a></li><li class="my-0.5"><a href="/module/breakdown-intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-intervals</span></a></li><li class="my-0.5"><a href="/module/breakdown-progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-progressions</span></a></li><li class="my-0.5"><a href="/module/breakdown-scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">breakdown-scales</span></a></li><li class="my-0.5"><a href="/module/chords" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">chords</span></a></li><li class="my-0.5"><a href="/module/defaults" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Defaults</span></a></li><li class="my-0.5"><a href="/module/helpcontent" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">HelpContent</span></a></li><li class="my-0.5"><a href="/module/helpers" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Helpers</span></a></li><li class="my-0.5"><a href="/module/intervals" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">intervals</span></a></li><li class="my-0.5"><a href="/module/keysig" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">KeySig</span></a></li><li class="my-0.5"><a href="/module/notation" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">notation</span></a></li><li class="my-0.5"><a href="/module/progressions" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">progressions</span></a></li><li class="my-0.5"><a href="/module/scales" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">scales</span></a></li><li class="my-0.5"><a href="/module/spelling" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Spelling</span></a></li><li class="my-0.5"><a href="/module/state" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">state</span></a></li><li class="my-0.5"><a href="/module/stats" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">stats</span></a></li><li class="my-0.5"><a href="/module/voiceleading" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voiceLeading</span></a></li><li class="my-0.5"><a href="/module/voicings" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">voicings</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Typedefs</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/module/voicings/voicingmode" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">VoicingMode</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/global" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Globals</span></a></li></ul></div><div class="mt-4 first:mt-0"><button type="button" aria-expanded="true" class="mb-1 flex w-full items-center rounded-xl py-1.5 px-3 text-left text-sm font-bold text-(--clean-fg) cursor-pointer hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Tutorials</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right ml-auto shrink-0 transition-transform rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/tutorials/css-architecture" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">css-architecture</span></a></li><li class="my-0.5"><a href="/tutorials/getting-started" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">getting-started</span></a></li><li class="my-0.5"><a href="/tutorials/html-structure" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">html-structure</span></a></li></ul></div><div class="mt-4 first:mt-0"><ul class="m-0 list-none p-0"><li class="my-0.5"><a href="/source" class="group flex items-start gap-x-3 w-full px-3 py-1.5 text-left text-sm no-underline break-words hyphens-auto overflow-hidden rounded-xl outline-offset-[-1px] cursor-pointer text-[var(--clean-fg)] hover:bg-[var(--clean-bg-muted)]"><span class="min-w-0 wrap-break-words">Source Files</span></a></li></ul></div></nav></div></div></aside><main class="min-w-0 px-4 md:px-8 lg:px-12"><div data-island="code-viewer" data-island-id="i0"><div class="my-4 overflow-hidden rounded-lg border border-(--clean-border) bg-(--clean-bg)"><div class="flex items-center justify-between border-b border-(--clean-border) bg-(--clean-bg-muted) px-3 py-2 text-sm"><span class="font-mono text-(--clean-fg)">engine/state.js</span><span class="text-xs text-(--clean-fg-muted)">javascript</span></div><div class="h-[calc(100vh-13rem)] min-h-[24rem]"><pre class="m-0 h-full overflow-auto whitespace-pre p-4 text-sm leading-relaxed text-(--clean-fg)"><code class="language-javascript">/**
+ * @file state.js
+ * @description Global runtime state for The Sound Travels Ear Training.
+ * Declares all shared mutable variables consumed across the engine, UI, and mode
+ * layers. Variables are declared with `var` (not `let`) so they are globally
+ * accessible across all script tags without ES module imports.
+ *
+ * Progression-specific state (`currentProgression`, `progSlotAnswers`, etc.)
+ * is declared in js/data/progressions.js because it is tightly coupled to the
+ * progressions data schema. Selection state (`selectedChords`, `selectedIntervals`,
+ * `selectedScales`, `selectedProgressions`) is initialised in js/engine/defaults.js
+ * after the data files are loaded.
+ *
+ * @module state
+ * @author Renato Fera P.
+ * @copyright The Sound Travels 2026
+ * @license MIT
+ */
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+
+/** @type {Object|null} soundfont-player instrument instance. Null until audio initialises. */
+var piano = null;
+
+/** @type {AudioContext|null} Web Audio API context. Null until first user interaction. */
+var audioCtx = null;
+
+// ── Session ───────────────────────────────────────────────────────────────────
+
+/** @type {boolean} Whether the current question has been answered. Resets on each new question. */
+var answered = false;
+
+/** @type {'quiz'|'dict'} Active app mode. 'quiz' = training mode; 'dict' = dictionary/reference mode. */
+var appMode = 'dict';
+
+/** @type {'basic'|'advanced'} Active difficulty level. Controls which items appear in the pool. */
+var appDifficulty = 'basic';
+
+/** @type {number} Correct answers in the current session. Resets on New Session. */
+var correct = 0;
+
+/** @type {number} Total attempts in the current session. Resets on New Session. */
+var total = 0;
+
+/** @type {number} Consecutive correct answers. Resets to 0 on any wrong answer or New Session. */
+var streak = 0;
+
+// ── Chord mode ────────────────────────────────────────────────────────────────
+
+/** @type {Object|null} The CHORDS entry for the current question. */
+var currentChord = null;
+
+/** @type {number[]} MIDI note numbers of all sounding notes in the current chord. */
+var currentMidiNotes = [];
+
+/**
+ * MIDI note number of the harmonic root of the current chord.
+ * Always the theoretical root regardless of voicing or inversion —
+ * e.g. for a C major chord in first inversion, this is still C.
+ *
+ * @type {number|null}
+ */
+var currentChordRootMidi = null;
+
+// Slash chord state — active when currentChord.family === 'slash'
+/** @type {number|null} MIDI note of the bass note (below the upper chord). */
+var currentSlashBassMidi = null;
+
+/** @type {number|null} MIDI note of the upper chord's root. */
+var currentUpperRootMidi = null;
+
+// Polychord state — active when currentChord.family === 'poly'
+/** @type {number[]} MIDI notes of the upper triad. */
+var currentPolyUpperMidi = [];
+
+/** @type {number[]} MIDI notes of the lower triad. */
+var currentPolyLowerMidi = [];
+
+/** @type {number|null} MIDI root of the upper triad. */
+var currentPolyUpperRootMidi = null;
+
+/** @type {number|null} MIDI root of the lower triad. */
+var currentPolyLowerRootMidi = null;
+
+// UST (Upper Structure Triad) state — active when currentChord.family === 'ust'
+/** @type {number[]} MIDI notes of the two-note shell (3rd + 7th). */
+var currentUSTShellMidi = [];
+
+/** @type {number[]} MIDI notes of the upper triad. */
+var currentUSTUpperMidi = [];
+
+/**
+ * MIDI note of the chord root.
+ * Not played in the audio — UST voicings are rootless by design,
+ * as the root is assumed to be held by the bass player.
+ *
+ * @type {number|null}
+ */
+var currentUSTRootMidi = null;
+
+// ── Chord pool selection ──────────────────────────────────────────────────────
+
+/**
+ * Whether inversion questions are enabled. When true, chords may be presented
+ * with a note other than the root in the bass.
+ *
+ * @type {boolean}
+ */
+var includeInversions = false;
+
+// ── Mode ──────────────────────────────────────────────────────────────────────
+
+/**
+ * The currently active practice mode.
+ *
+ * @type {'chords'|'intervals'|'scales'|'progressions'}
+ */
+var currentMode = 'intervals';
+
+// ── Interval mode ─────────────────────────────────────────────────────────────
+
+/** @type {Object|null} The INTERVALS entry for the current question. Shape: { name, symbol, semitones }. */
+var currentInterval = null;
+
+/** @type {number[]} MIDI note numbers [noteA, noteB] for the current interval question. */
+var currentIntervalMidi = [];
+
+/**
+ * User-selected interval playback style.
+ * 'random' resolves to one of the concrete styles at question time.
+ *
+ * @type {'harmonic'|'ascending'|'descending'|'random'}
+ */
+var intervalStyle = 'harmonic';
+
+/**
+ * Resolved playback style for the current interval question.
+ * When `intervalStyle` is 'random', this holds the style actually used.
+ * Always a concrete value ('harmonic' | 'ascending' | 'descending').
+ *
+ * @type {'harmonic'|'ascending'|'descending'}
+ */
+var currentIntervalStyle = 'harmonic';
+
+/**
+ * User-selected chord playback style.
+ * 'random' resolves to one of the concrete styles at question time.
+ *
+ * @type {'block'|'ascending'|'descending'|'broken'|'random'}
+ */
+var chordPlayStyle = 'block';
+
+// ── Voicing ───────────────────────────────────────────────────────────────────
+
+/**
+ * The voicing symbol currently active in Dictionary mode and post-answer display.
+ * Single-select: only one voicing is shown at a time in these contexts.
+ *
+ * @type {string}
+ */
+var activeVoicingMode = 'close';
+
+/**
+ * The set of voicing symbols included in the quiz training pool.
+ * Multi-select: the quiz draws randomly from all voicings in this set.
+ * Defaults to `{ 'close' }`.
+ *
+ * @type {Set&lt;string>}
+ */
+var selectedVoicings = new Set(['close']);
+
+// ── Scale mode ────────────────────────────────────────────────────────────────
+
+/** @type {Object|null} The SCALES entry for the current question. Shape: { name, symbol, intervals, group, parentKey }. */
+var currentScale = null;
+
+/** @type {number} MIDI root note for the current scale question. Default 60 (middle C). */
+var currentScaleRootMidi = 60;
+
+/**
+ * User-selected scale playback direction.
+ * 'random' resolves to 'asc' or 'desc' at question time.
+ *
+ * @type {'asc'|'desc'|'both'|'random'}
+ */
+var scaleDirection = 'asc';
+
+/**
+ * Resolved playback direction for the current scale question.
+ * When `scaleDirection` is 'random', this holds the direction actually used.
+ * Always a concrete value ('asc' | 'desc' | 'both').
+ *
+ * @type {'asc'|'desc'|'both'}
+ */
+var currentScaleDir = 'asc';
+
+// ── Notation key signature mode ───────────────────────────────────────────────
+// Controls whether the staff shows a key signature (key) or explicit accidentals (C).
+// Each mode has an independent default: scales default to 'key'; others default to 'C'.
+
+/** @type {'C'|'key'} Notation mode for scales. Resets to 'key' on each new question. */
+var scaleKeySigMode = 'key';
+
+/** @type {'C'|'key'} Notation mode for chords. Defaults to 'C' (accidentals shown inline). */
+var chordKeySigMode = 'C';
+
+/** @type {'C'|'key'} Notation mode for intervals. Defaults to 'C' (accidentals shown inline). */
+var intervalKeySigMode = 'C';
+
+/** @type {'C'|'key'} Notation mode for progressions. Defaults to 'C' (accidentals shown inline). */
+var progKeySigMode = 'C';
+
+// ── UX ────────────────────────────────────────────────────────────────────────
+
+/** @type {boolean} Whether the root note badge is shown before the answer is revealed. */
+var showRoot = true;
+
+/**
+ * Per-item accuracy tracking for the current session.
+ * Keyed by item symbol; each entry holds the display name, correct count, and total attempts.
+ *
+ * @type {Object.&lt;string, { name: string, correct: number, total: number }>}
+ */
+var sessionStats = {};
+
+// ── Root note &amp; octave register ───────────────────────────────────────────────
+
+/**
+ * Pitch class of the pinned root note (0 = C, 1 = C♯/D♭, …, 11 = B).
+ * When `pinnedRoot` is set and `pinnedRootSpelling` is null, the random root
+ * feature is disabled and every question uses this pitch class.
+ * Default is 0 (C). Set to null to enable random root selection.
+ *
+ * @type {number|null}
+ */
+var pinnedRoot = 0;
+
+/**
+ * Enharmonic spelling override for the pinned root.
+ * null = auto-select spelling based on context.
+ * 'sharp' | 'flat' = user explicitly chose an enharmonic form.
+ *
+ * @type {null|'sharp'|'flat'}
+ */
+var pinnedRootSpelling = null;
+
+/**
+ * Octave register constraint for question generation.
+ * null = random octave within a sensible range.
+ * 'low' = root in octave 2–3 (bass register).
+ * 'mid' = root in octave 3–4 (middle register, default).
+ * 'high' = root in octave 4–5 (upper register).
+ *
+ * @type {null|'low'|'mid'|'high'}
+ */
+var pinnedOctave = null;
+
+// ── Voice leading analysis cache ──────────────────────────────────────────────
+
+/**
+ * Cached result of the voice leading analysis for the current chord question.
+ * Set once when the answer is revealed by `submitChordAnswer()` via `analyseChord()`
+ * in js/engine/voiceLeading.js. Reset to null on each new question.
+ *
+ * Shape: `{ contexts: Array, isAmbiguous: boolean }`
+ * — `contexts`: one entry per harmonic context the chord can appear in,
+ *   each with resolution target, cadence type, strength, and voice movement table.
+ * — `isAmbiguous`: true when the chord can function in multiple harmonic contexts
+ *   (e.g. a fully diminished 7th with four enharmonic roots).
+ *
+ * @type {{ contexts: Array, isAmbiguous: boolean }|null}
+ */
+var currentVoiceLeadingAnalysis = null;
+
+// ── Progression mode ──────────────────────────────────────────────────────────
+// Progression-specific state (currentProgression, currentProgRootMidi,
+// currentProgRootPc, progSlotAnswers, progAnswered) is declared in
+// js/data/progressions.js. Selection state (selectedProgressions) is
+// initialised in js/engine/defaults.js.
+
+// =============================================================================
+// The Sound Travels Ear Training — state.js
+// Created by Renato Fera P. — The Sound Travels — 2026
+// =============================================================================
+</code></pre></div></div></div></main></div><footer class="border-t border-(--clean-border) bg-background py-6 text-sm text-muted-foreground"><div class="mx-auto flex w-full max-w-screen-2xl flex-col items-start justify-between gap-2 px-4 md:flex-row md:items-center"><div class="flex items-center gap-1.5"><span>Documentation</span><span>© 2026</span></div></div></footer></div><script type="application/json" data-island-props>{"i0":{"language":"javascript","filename":"engine/state.js"},"i1":{"basePath":"/","searchIndexUrl":"/_assets/search-index.mu8704my-06c54d73.json"},"i2":{},"i3":{},"i4":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/engine/state-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]},"i5":{"nav":[{"label":"Home","slug":"","order":-1},{"label":"Audio","slug":"module/audio","group":"Modules","order":1},{"label":"breakdown","slug":"module/breakdown","group":"Modules","order":1},{"label":"breakdown-chords","slug":"module/breakdown-chords","group":"Modules","order":1},{"label":"breakdown-intervals","slug":"module/breakdown-intervals","group":"Modules","order":1},{"label":"breakdown-progressions","slug":"module/breakdown-progressions","group":"Modules","order":1},{"label":"breakdown-scales","slug":"module/breakdown-scales","group":"Modules","order":1},{"label":"chords","slug":"module/chords","group":"Modules","order":1},{"label":"Defaults","slug":"module/defaults","group":"Modules","order":1},{"label":"HelpContent","slug":"module/helpcontent","group":"Modules","order":1},{"label":"Helpers","slug":"module/helpers","group":"Modules","order":1},{"label":"intervals","slug":"module/intervals","group":"Modules","order":1},{"label":"KeySig","slug":"module/keysig","group":"Modules","order":1},{"label":"notation","slug":"module/notation","group":"Modules","order":1},{"label":"progressions","slug":"module/progressions","group":"Modules","order":1},{"label":"scales","slug":"module/scales","group":"Modules","order":1},{"label":"Spelling","slug":"module/spelling","group":"Modules","order":1},{"label":"state","slug":"module/state","group":"Modules","order":1},{"label":"stats","slug":"module/stats","group":"Modules","order":1},{"label":"voiceLeading","slug":"module/voiceleading","group":"Modules","order":1},{"label":"voicings","slug":"module/voicings","group":"Modules","order":1},{"label":"VoicingMode","slug":"module/voicings/voicingmode","group":"Typedefs","order":7},{"label":"Globals","slug":"global","group":"Globals","order":8},{"label":"css-architecture","slug":"tutorials/css-architecture","group":"Tutorials","order":9},{"label":"getting-started","slug":"tutorials/getting-started","group":"Tutorials","order":9},{"label":"html-structure","slug":"tutorials/html-structure","group":"Tutorials","order":9},{"label":"Source Files","slug":"source","order":11}],"currentSlug":"source/engine/state-js","basePath":"/","collapsibleGroups":["Modules","Typedefs","Globals","Tutorials"]}}</script><script type="module">(function(){var map={"theme-toggle":"/_islands/theme-toggle-QZPD445E.js","settings":"/_islands/settings-2ZS2MIWU.js","code-viewer":"/_islands/code-viewer-YGLLC5W5.js","embed":"/_islands/embed-GCSKGDO4.js","playground":"/_islands/playground-JBUGQGEY.js","tabs":"/_islands/tabs-NRSQKCSU.js","sidebar":"/_islands/sidebar-M4J6M54A.js","mobile-nav":"/_islands/mobile-nav-R4OP7AYN.js","toc":"/_islands/toc-QITK6TVX.js","toc-mobile":"/_islands/toc-mobile-ZE37NIO6.js","cmdk":"/_islands/cmdk-H5ACX54N.js","code-tabs":"/_islands/code-tabs-WQQJWQOG.js","copy-btn":"/_islands/copy-btn-FOLNJ4VF.js","copy-page":"/_islands/copy-page-EJSALNJL.js"};var seen=new Set();document.querySelectorAll('[data-island]').forEach(function(el){seen.add(el.getAttribute('data-island'));});seen.forEach(function(name){var src=map[name];if(src){import(src);}});})();</script><script>(function(){function flash(h){var b=h.querySelector('[data-heading-anchor]');if(!b)return;b.setAttribute('data-copied','');window.setTimeout(function(){b.removeAttribute('data-copied');},3000);}function onClick(e){var t=e.target;if(!t||!t.closest)return;if(t.closest('a'))return;var h=t.closest('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');if(!h)return;var id=h.id;if(!id)return;var iconOnly=!!t.closest('[data-heading-anchor]');if(!iconOnly){if(location.hash.slice(1)===id){h.scrollIntoView();}else{location.hash=id;}}try{var url=location.origin+location.pathname+location.search+'#'+id;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){flash(h);}).catch(function(){});}}catch(_){}}document.addEventListener('click',onClick);}());</script><script>(function(){var IDLE=700;var timers=new WeakMap();function onScroll(e){var el=e.target;if(el===document||el===window)el=document.documentElement;if(!el||!el.classList)return;el.classList.add('clean-scrolling');var prev=timers.get(el);if(prev)window.clearTimeout(prev);timers.set(el,window.setTimeout(function(){el.classList.remove('clean-scrolling');},IDLE));}document.addEventListener('scroll',onScroll,true);}());</script></body></html>
