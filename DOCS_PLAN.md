@@ -16,9 +16,9 @@
 | Phase | Status | What happens |
 |---|---|---|
 | 0 — Audit | ✅ Complete | Inspect every file for existing `@author` / `@copyright` |
-| 1 — npm setup | — | Install JSDoc and `clean-jsdoc-theme` |
-| 2 — Config | — | Create `jsdoc.json` configuration file |
-| 3 — Headers | — | Shell script to add / update file headers in all JS, CSS, HTML files |
+| 1 — npm setup | ✅ Complete | Install JSDoc and `clean-jsdoc-theme` |
+| 2 — Config | ✅ Complete | Create `jsdoc.json` configuration file |
+| 3 — Headers | ✅ Complete | Shell script to add / update file headers in all JS, CSS, HTML files |
 | 4 — Tutorials | — | Create markdown pages for HTML structure and CSS architecture |
 | 5 — Generate | — | Run JSDoc, verify output locally |
 | 6 — Deploy | — | Commit, push, enable GitHub Pages from `/docs` |
@@ -74,7 +74,7 @@ find js/ -name "*.js" ! -path "js/vendor/*" | sort
 
 ---
 
-## Phase 1 — npm setup
+## Phase 1 — npm setup ✅ COMPLETE
 
 > Install JSDoc and the documentation theme. This adds a `node_modules/` folder
 > and updates `package.json`. `package.json` already exists in the repo — do
@@ -142,7 +142,7 @@ cat .gitignore
 
 ---
 
-## Phase 2 — JSDoc configuration
+## Phase 2 — JSDoc configuration ✅ COMPLETE
 
 > Create `jsdoc.json` in the repo root. This single file controls everything:
 > which files to process, which theme to use, where to output, and which
@@ -201,7 +201,7 @@ cat jsdoc.json
 
 ---
 
-## Phase 3 — File headers
+## Phase 3 — File headers ✅ COMPLETE
 
 > Adds a standardised header to every JS, CSS, and HTML file.
 > The script is non-destructive: it checks whether the header is already
