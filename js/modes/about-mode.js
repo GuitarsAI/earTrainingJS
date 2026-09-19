@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file about-mode.js
  * @description About view: show/hide the About panel, mutual exclusion with
  *   Help (handled from help-mode.js, which loads after this file), and

@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file pool.js
  * @description Shared pool panel primitives and top-level mode dispatcher.
  *   Provides the building blocks consumed by all four mode-specific pool files.

@@ -178,5 +178,6 @@ function renderControls(nextFn, playFn) {
 /**
  * @file-end js/ui/controls.js
  * @copyright 2026 Renato Fera P. — The Sound Travels
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
  * @license MIT
  */

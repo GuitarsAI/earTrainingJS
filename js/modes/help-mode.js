@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file help-mode.js
  * @description In-app Help system: show/hide the Help view, mutual exclusion
  *   with About, keyboard and tab-click wiring, and lazy rendering of the

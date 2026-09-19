@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file scales-mode.js
  * @description Scale quiz mode: question generation and answer grading.
  *   Playback lives in audio.js. Notation lives in notation.js.

@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file pool-progressions.js
  * @description Progression training pool panel rendering.
  *   Groups progressions by PROG_GROUPS order; respects Basic mode filtering.

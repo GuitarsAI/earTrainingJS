@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file pool-scales.js
  * @description Scale training pool panel and direction chip rendering.
  *   Groups scales by cardinality (pentatonic, hexatonic, diatonic, octatonic).

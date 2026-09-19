@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file pool-chords.js
  * @description Chord quality and voicing pool panel rendering.
  *   Handles both quiz multi-select and dict/post-answer single-select modes.

@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file pool-intervals.js
  * @description Interval training pool panel and playback style chip rendering.
  *   Splits the interval pool into Simple and Extended/Compound sections,

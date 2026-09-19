@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file chords-mode.js
  * @description Chord quiz mode: question generation, answer grading, and voice leading
  *   analysis cache. Handles all four chord families (normal, slash, polychord, UST)

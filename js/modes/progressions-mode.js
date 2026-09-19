@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file progressions-mode.js
  * @description Progression quiz and dictionary mode: playback, question generation,
  *   answer UI, grading, post-answer notation, dict panel, and DOM teardown.

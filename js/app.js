@@ -1,4 +1,10 @@
 /**
+ * @file
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+ */
+
+/**
  * @file app.js
  * @description Boot file and application coordinator. Owns mode switching,
  *   quiz/dictionary toggle, dictionary mode functions (dictLoadSymbol, dictShow,
