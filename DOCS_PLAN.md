@@ -13,15 +13,15 @@
 
 ## Overview
 
-| Phase | What happens |
-|---|---|
-| 0 — Audit | Inspect every file for existing `@author` / `@copyright` |
-| 1 — npm setup | Install JSDoc and `clean-jsdoc-theme` |
-| 2 — Config | Create `jsdoc.json` configuration file |
-| 3 — Headers | Shell script to add / update file headers in all JS, CSS, HTML files |
-| 4 — Tutorials | Create markdown pages for HTML structure and CSS architecture |
-| 5 — Home page | Create the docs landing page (`README.md` for JSDoc) |
-| 6 — Generate | Run JSDoc, verify output, push to GitHub, enable Pages from `/docs` |
+| Phase | Status | What happens |
+|---|---|---|
+| 0 — Audit | ✅ Complete | Inspect every file for existing `@author` / `@copyright` |
+| 1 — npm setup | — | Install JSDoc and `clean-jsdoc-theme` |
+| 2 — Config | — | Create `jsdoc.json` configuration file |
+| 3 — Headers | — | Shell script to add / update file headers in all JS, CSS, HTML files |
+| 4 — Tutorials | — | Create markdown pages for HTML structure and CSS architecture |
+| 5 — Generate | — | Run JSDoc, verify output locally |
+| 6 — Deploy | — | Commit, push, enable GitHub Pages from `/docs` |
 
 ---
 
@@ -35,60 +35,50 @@ earTrainingJS/
 │   └── ...
 ├── jsdoc.json                     ← JSDoc configuration
 ├── tutorials/                     ← markdown pages included in docs
+│   ├── getting-started.md
 │   ├── html-structure.md
-│   ├── css-architecture.md
-│   └── getting-started.md
+│   └── css-architecture.md
+├── add_headers.sh                 ← header script; keep for future use
 └── (all existing app files)
 ```
 
 ---
 
-## Phase 0 — Audit existing headers
+## Phase 0 — Audit existing headers ✅ COMPLETE
 
-> Find out exactly which files already have `@author`, `@copyright`, or a
-> file-level comment block. Run these one at a time.
+### Findings
 
-### 0.1 — Check JS files for @author
+**JS files — 33 total (excluding vendor)**
+
+| Status | Files |
+|---|---|
+| ✅ Have both `@author` and `@copyright` | `js/data/*.js` (7), `js/engine/*.js` (6), `js/breakdown/*.js` (5), `js/ui/stats.js` |
+| ⚠️ Has `@copyright` only — missing `@author` | `js/ui/controls.js` |
+| ❌ Missing both | `js/ui/pool.js`, `js/ui/pool-chords.js`, `js/ui/pool-intervals.js`, `js/ui/pool-scales.js`, `js/ui/pool-progressions.js`, `js/modes/chords-mode.js`, `js/modes/intervals-mode.js`, `js/modes/scales-mode.js`, `js/modes/progressions-mode.js`, `js/modes/help-mode.js`, `js/modes/about-mode.js`, `js/app.js` |
+
+**CSS files** — all three have comment blocks but no `@author` or `@copyright`
+
+**index.html** — has a header block but no `@author` or `@copyright`
+
+### Audit commands (for reference)
 
 ```bash
 grep -rl "@author" js/
-```
-
-### 0.2 — Check JS files for @copyright
-
-```bash
 grep -rl "@copyright" js/
-```
-
-### 0.3 — Check CSS files for any header comment
-
-```bash
 head -5 css/base.css
 head -5 css/components.css
 head -5 css/mobile.css
-```
-
-### 0.4 — Check index.html for existing header
-
-```bash
-head -10 index.html
-```
-
-### 0.5 — List every JS file we will process
-
-```bash
+head -5 index.html
 find js/ -name "*.js" ! -path "js/vendor/*" | sort
 ```
-
-> Note which files come back from 0.1 and 0.2 — these already have JSDoc
-> author/copyright tags. The header script in Phase 3 will handle both cases.
 
 ---
 
 ## Phase 1 — npm setup
 
 > Install JSDoc and the documentation theme. This adds a `node_modules/` folder
-> and updates (or creates) `package.json`.
+> and updates `package.json`. `package.json` already exists in the repo — do
+> NOT run `npm init`.
 
 ### 1.1 — Verify Node and npm are available
 
@@ -99,13 +89,14 @@ npm --version
 
 Expected: Node ≥ 16, npm ≥ 8. Both are pre-installed in GitHub Codespaces.
 
-### 1.2 — Initialise package.json if it does not already exist
+### 1.2 — Inspect existing package.json
 
 ```bash
-# Only run this if package.json does not already exist in the repo root.
-# If it exists, skip to 1.3.
-npm init -y
+cat package.json
 ```
+
+Read the output before proceeding — confirm no existing `scripts.docs` entry
+that would be overwritten.
 
 ### 1.3 — Install JSDoc
 
@@ -134,7 +125,7 @@ npm pkg set scripts.docs="jsdoc -c jsdoc.json"
 
 From now on `npm run docs` generates the documentation site.
 
-### 1.7 — Add node_modules and docs to .gitignore (if not already there)
+### 1.7 — Add node_modules to .gitignore if not already there
 
 ```bash
 grep -q "node_modules" .gitignore || echo "node_modules/" >> .gitignore
@@ -142,6 +133,12 @@ grep -q "node_modules" .gitignore || echo "node_modules/" >> .gitignore
 
 > Do NOT add `docs/` to .gitignore — the generated `docs/` folder must be
 > committed and pushed for GitHub Pages to serve it.
+
+### 1.8 — Verify .gitignore
+
+```bash
+cat .gitignore
+```
 
 ---
 
@@ -160,12 +157,6 @@ cat > jsdoc.json << 'EOF'
     "include": ["js/"],
     "exclude": ["js/vendor/"],
     "includePattern": ".+\\.js$"
-  },
-  "opts": {
-    "destination": "./docs",
-    "recurse": true,
-    "readme": "./tutorials/getting-started.md",
-    "tutorials": "./tutorials"
   },
   "plugins": ["plugins/markdown"],
   "templates": {
@@ -188,16 +179,6 @@ cat > jsdoc.json << 'EOF'
         "link": "https://github.com/guitarsai/earTrainingJS",
         "target": "_blank"
       }
-    ],
-    "sections": [
-      "Tutorials",
-      "Modules",
-      "Classes",
-      "Externals",
-      "Events",
-      "Namespaces",
-      "Mixins",
-      "Interfaces"
     ],
     "footer": "The Sound Travels Ear Training — Renato Fera P. — 2026"
   },
@@ -222,37 +203,45 @@ cat jsdoc.json
 
 ## Phase 3 — File headers
 
-> This phase adds a standardised header to every JS, CSS, and HTML file.
+> Adds a standardised header to every JS, CSS, and HTML file.
 > The script is non-destructive: it checks whether the header is already
-> present before prepending, so it is safe to run more than once.
->
-> **Header format by file type:**
->
-> JS / JSDoc files:
-> ```
->  * The Sound Travels Ear Training
->  * Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
->  * © 2026 The Sound Travels — MIT License
-> ```
-> (merged into the existing `@file` block, or prepended as a new block)
->
-> CSS files:
-> ```
-> /* =============================================================================
->    The Sound Travels Ear Training
->    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
->    © 2026 The Sound Travels — MIT License
->    ============================================================================= */
-> ```
->
-> HTML file:
-> ```
-> <!--
->   The Sound Travels Ear Training
->   Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
->   © 2026 The Sound Travels — MIT License
-> -->
-> ```
+> present before doing anything. Safe to re-run at any time.
+
+### What the header looks like per file type
+
+**JS files** (injected into existing `@file` JSDoc block, or prepended fresh):
+```
+ * @author    Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+ * @copyright © 2026 The Sound Travels — MIT License
+```
+
+**CSS files** (prepended as a comment block):
+```css
+/* =============================================================================
+   The Sound Travels Ear Training
+   Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+   © 2026 The Sound Travels — MIT License
+   ============================================================================= */
+```
+
+**HTML file** (prepended as an HTML comment):
+```html
+<!--
+  The Sound Travels Ear Training
+  Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+  © 2026 The Sound Travels — MIT License
+-->
+```
+
+### Known state from Phase 0 audit
+
+The script handles three cases automatically:
+
+| Case | Files | Action |
+|---|---|---|
+| Has `@author` + `@copyright` | 19 JS files | `[skip]` — already complete |
+| Has `@copyright` only | `controls.js` | `[patch]` — adds `@author` line |
+| Missing both | 12 JS files + 3 CSS + `index.html` | `[add]` — full header prepended |
 
 ### 3.1 — Create the header script
 
@@ -260,91 +249,99 @@ cat jsdoc.json
 cat > add_headers.sh << 'SCRIPT'
 #!/usr/bin/env bash
 # add_headers.sh
-# Prepends a standardised copyright header to every JS, CSS, and HTML file
-# in the project. Skips vendor files. Safe to re-run — checks for existing
-# header before prepending.
+# Adds a standardised copyright header to every JS, CSS, and HTML file.
+# Skips js/vendor/. Safe to re-run — checks for existing header first.
+#
+# The Sound Travels Ear Training
+# Renato Fera P. — https://www.linkedin.com/in/renato-profeta/
+# © 2026 The Sound Travels — MIT License
 
 set -e
 
 AUTHOR="Renato Fera P. — https://www.linkedin.com/in/renato-profeta/"
 TITLE="The Sound Travels Ear Training"
 COPYRIGHT="© 2026 The Sound Travels — MIT License"
+MARKER="renato-profeta"
 
 # ── JavaScript files ──────────────────────────────────────────────────────────
-JS_HEADER="/**
- * @file
- * @description ${TITLE}
- * @author ${AUTHOR}
- * @copyright ${COPYRIGHT}
- */"
 
 process_js() {
   local file="$1"
-  # Skip if header already present
-  if grep -q "The Sound Travels Ear Training" "$file"; then
-    echo "  [skip]  $file — header already present"
+
+  # Already has both tags — skip
+  if grep -q "@author" "$file" && grep -q "@copyright" "$file"; then
+    echo "  [skip]  $file"
     return
   fi
-  # Check if file starts with a /** block — if so, inject into it
-  if head -1 "$file" | grep -q "^/\*\*"; then
-    # Insert author/copyright lines after the opening /**
-    sed -i "1a\ * @author ${AUTHOR}\n * @copyright ${COPYRIGHT}\n * ${TITLE}" "$file"
-    echo "  [patch] $file — injected into existing JSDoc block"
-  else
-    # Prepend a new block
-    printf '%s\n\n' "$JS_HEADER" | cat - "$file" > /tmp/_header_tmp && mv /tmp/_header_tmp "$file"
-    echo "  [add]   $file — header prepended"
+
+  # Has @copyright but missing @author — patch it in after @copyright line
+  if grep -q "@copyright" "$file" && ! grep -q "@author" "$file"; then
+    sed -i "s|.*@copyright.*|&\n * @author    ${AUTHOR}|" "$file"
+    echo "  [patch] $file — @author added"
+    return
   fi
+
+  # Missing both — prepend a full JSDoc block
+  local header
+  header="/**
+ * @file
+ * @author    ${AUTHOR}
+ * @copyright ${COPYRIGHT}
+ */"
+  printf '%s\n\n' "$header" | cat - "$file" > /tmp/_hdr_tmp && mv /tmp/_hdr_tmp "$file"
+  echo "  [add]   $file — full header prepended"
 }
 
 echo ""
-echo "=== Processing JS files ==="
+echo "=== JS files ==="
 find js/ -name "*.js" ! -path "js/vendor/*" | sort | while read -r f; do
   process_js "$f"
 done
 
 # ── CSS files ─────────────────────────────────────────────────────────────────
-CSS_HEADER="/* =============================================================================
+
+process_css() {
+  local file="$1"
+  if grep -q "$MARKER" "$file"; then
+    echo "  [skip]  $file"
+    return
+  fi
+  local header
+  header="/* =============================================================================
    ${TITLE}
    ${AUTHOR}
    ${COPYRIGHT}
    ============================================================================= */"
-
-process_css() {
-  local file="$1"
-  if grep -q "The Sound Travels Ear Training" "$file"; then
-    echo "  [skip]  $file — header already present"
-    return
-  fi
-  printf '%s\n\n' "$CSS_HEADER" | cat - "$file" > /tmp/_header_tmp && mv /tmp/_header_tmp "$file"
+  printf '%s\n\n' "$header" | cat - "$file" > /tmp/_hdr_tmp && mv /tmp/_hdr_tmp "$file"
   echo "  [add]   $file — header prepended"
 }
 
 echo ""
-echo "=== Processing CSS files ==="
+echo "=== CSS files ==="
 find css/ -name "*.css" | sort | while read -r f; do
   process_css "$f"
 done
 
-# ── HTML file ─────────────────────────────────────────────────────────────────
-HTML_HEADER="<!--
+# ── HTML files ────────────────────────────────────────────────────────────────
+
+process_html() {
+  local file="$1"
+  if grep -q "$MARKER" "$file"; then
+    echo "  [skip]  $file"
+    return
+  fi
+  local header
+  header="<!--
   ${TITLE}
   ${AUTHOR}
   ${COPYRIGHT}
 -->"
-
-process_html() {
-  local file="$1"
-  if grep -q "The Sound Travels Ear Training" "$file"; then
-    echo "  [skip]  $file — header already present"
-    return
-  fi
-  printf '%s\n\n' "$HTML_HEADER" | cat - "$file" > /tmp/_header_tmp && mv /tmp/_header_tmp "$file"
+  printf '%s\n\n' "$header" | cat - "$file" > /tmp/_hdr_tmp && mv /tmp/_hdr_tmp "$file"
   echo "  [add]   $file — header prepended"
 }
 
 echo ""
-echo "=== Processing HTML files ==="
+echo "=== HTML files ==="
 process_html "index.html"
 
 echo ""
@@ -361,12 +358,12 @@ chmod +x add_headers.sh
 ### 3.3 — Dry run: preview which files will be touched
 
 ```bash
-grep -rL "The Sound Travels Ear Training" js/ css/ index.html \
-  | grep -v "js/vendor" | sort
-```
+# JS files missing @author
+grep -rL "@author" js/ | grep -v "js/vendor" | sort
 
-This lists every file that does NOT yet have the header string — these are the
-files the script will modify.
+# CSS and HTML files missing the author marker
+grep -rL "renato-profeta" css/ index.html
+```
 
 ### 3.4 — Run the header script
 
@@ -374,33 +371,31 @@ files the script will modify.
 ./add_headers.sh
 ```
 
-Read the output carefully. Every line should be either `[skip]` (already had
-header), `[add]` (header prepended), or `[patch]` (injected into existing
-JSDoc block).
+Read every line of output. Every file should be `[skip]`, `[patch]`, or `[add]`.
+No errors should appear.
 
-### 3.5 — Verify a sample JS file
+### 3.5 — Spot-check JS file that was missing both
 
 ```bash
-head -10 js/engine/state.js
+head -8 js/app.js
 ```
 
-### 3.6 — Verify a sample CSS file
+### 3.6 — Spot-check JS file that had @copyright only
+
+```bash
+head -10 js/ui/controls.js
+```
+
+### 3.7 — Spot-check a CSS file
 
 ```bash
 head -8 css/base.css
 ```
 
-### 3.7 — Verify index.html
+### 3.8 — Spot-check index.html
 
 ```bash
 head -8 index.html
-```
-
-### 3.8 — Clean up the script (optional — keep it if you want to re-run later)
-
-```bash
-# Keep add_headers.sh in the repo — useful if new files are added later.
-# Add it to .gitignore only if you do not want it committed.
 ```
 
 ---
@@ -408,8 +403,8 @@ head -8 index.html
 ## Phase 4 — Tutorial markdown pages
 
 > These three pages become dedicated sections in the docs sidebar alongside the
-> auto-generated JS API reference. They cover what JSDoc cannot: the HTML DOM
-> structure and the CSS architecture.
+> JS API reference. They cover what JSDoc cannot process natively: HTML DOM
+> structure and CSS architecture.
 
 ### 4.1 — Create the tutorials directory
 
@@ -417,7 +412,7 @@ head -8 index.html
 mkdir -p tutorials
 ```
 
-### 4.2 — Create getting-started.md (the docs home page)
+### 4.2 — Create getting-started.md (docs home page)
 
 ```bash
 cat > tutorials/getting-started.md << 'EOF'
@@ -445,17 +440,32 @@ strict dependency order.
 
 | Layer | Files | Role |
 |---|---|---|
-| 0 — Vendor | `soundfont-player.min.js`, `vexflow.min.js` | Third-party libraries (self-hosted) |
+| 0 — Vendor | `soundfont-player.min.js`, `vexflow.min.js` | Third-party libraries (self-hosted, no CDN) |
 | 1 — Data | `spelling.js`, `keysig.js`, `chords.js`, `intervals.js`, `scales.js`, `progressions.js`, `help-content.js` | Pure data objects — no DOM, no state |
-| 2 — State | `state.js`, `defaults.js` | All mutable app state |
+| 2 — State | `state.js`, `defaults.js` | All mutable application state |
 | 3 — Engine | `helpers.js`, `voicings.js`, `audio.js`, `notation.js`, `voiceLeading.js` | Audio, notation, and musical logic |
 | 4 — Breakdown | `breakdown.js` + 4 mode files | Post-answer analysis panels |
 | 5 — UI | `stats.js`, `controls.js`, `pool.js` + 4 pool files | Shared DOM rendering helpers |
 | 6 — Modes | `chords-mode.js`, `intervals-mode.js`, `scales-mode.js`, `progressions-mode.js`, `help-mode.js`, `about-mode.js` | Per-mode quiz loops and UI |
-| 7 — Boot | `app.js` | Orchestrator — loads last |
+| 7 — Boot | `app.js` | Orchestrator — loads last; depends on all layers above |
 
 **Rule:** each layer may only reference symbols defined in layers above it.
 No layer reaches down.
+
+---
+
+## Load order
+
+```
+soundfont-player.min.js  vexflow.min.js          (vendor)
+spelling.js → keysig.js → chords.js → ...        (data)
+state.js → defaults.js                            (state)
+helpers.js → voicings.js → audio.js → ...        (engine)
+breakdown.js → breakdown-*.js                     (breakdown)
+stats.js → controls.js → pool.js → pool-*.js     (UI)
+chords-mode.js → ... → about-mode.js             (modes)
+app.js                                            (boot)
+```
 
 ---
 
@@ -502,7 +512,7 @@ complete DOM structure. It contains no inline scripts and no inline styles beyon
 ```
 <body>
   #stickyShell / #stickyInner       Fixed top bar (z-index 200)
-    .header                          Row 1: logo, title, About (ℹ), Help (?), theme toggle
+    .header                          Row 1: logo, title, About (i), Help (?), theme toggle
     .score-bar                       Row 2: streak, score pill, New Session, QD toggle
     .mode-tabs                       Row 3: Intervals | Chords | Scales | Progressions
 
@@ -537,7 +547,7 @@ complete DOM structure. It contains no inline scripts and no inline styles beyon
 | `#rootChips`, `#octaveChips` | `app.js` → `renderRegisterPanel()` |
 | `#poolPanel` | `js/ui/pool.js` → `renderPoolPanel()` |
 | `#playBtn` | `app.js` play listener; `js/engine/audio.js` `.playing` class |
-| `#statusMsg` | `js/ui/controls.js` (aria-live polite) |
+| `#statusMsg` | `js/ui/controls.js` (aria-live="polite") |
 | `#notation-svg` | `js/engine/notation.js` → VexFlow |
 | `#breakdownPanel` | `js/breakdown/breakdown.js` → `showBreakdown()` |
 | `#ansDropdownList` | `js/ui/controls.js` (role="listbox") |
@@ -587,12 +597,13 @@ cat > tutorials/css-architecture.md << 'EOF'
 
 **Rule:** `components.css` and `mobile.css` contain zero hard-coded colour or
 spacing values — every value is a `var(--...)` reference from `base.css`, with
-two documented exceptions (notation card hardcoded white; key sig chips hardcoded
-light-palette).
+two documented exceptions: the notation card is hardcoded `#ffffff` (VexFlow
+renders black ink and needs a white surface regardless of theme), and key
+signature chips use hardcoded light-palette values for the same reason.
 
 ---
 
-## Design tokens (base.css)
+## Design tokens — base.css
 
 | Token | Purpose |
 |---|---|
@@ -606,7 +617,7 @@ light-palette).
 | `--text` | Primary text |
 | `--text-muted` | Secondary / label text |
 | `--text-faint` | Tertiary / annotation text |
-| `--accent` | Primary teal (`#4a9e8e`) — same in both themes |
+| `--accent` | Primary teal `#4a9e8e` — identical in both themes |
 | `--accent-dark` | Darker teal for hover states |
 | `--accent-text` | Teal text on white surface |
 | `--correct` | Correct-answer feedback colour |
@@ -618,35 +629,36 @@ light-palette).
 | `--shadow` | Subtle box shadow |
 | `--shadow-md` | Medium box shadow (cards, panels) |
 
-Dark mode is applied via `[data-theme="dark"]` on `<html>`, set by `app.js`
-and persisted in `localStorage`.
+Dark mode is applied via `[data-theme="dark"]` on `<html>`, toggled by `app.js`
+and persisted in `localStorage`. `--accent` is the same teal in both themes —
+it meets WCAG AA contrast against both `--bg-card` values.
 
 ---
 
 ## components.css — 20 sections
 
-| § | Section | Key selectors |
-|---|---|---|
-| 1 | Sticky header shell | `#stickyShell`, `#stickyInner` |
-| 2 | Header row | `.header`, `.header-left`, `.header-actions`, `.site-logo`, `.title` |
-| 3 | Score bar & QD toggle | `.score-bar`, `.score-pill`, `.qd-toggle`, `.qd-btn` |
-| 4 | Theme toggle & About/Help | `.theme-toggle`, `.about-btn` / `.about-btn.active` |
-| 5 | Mode tabs | `.mode-tabs`, `.mode-tab` / `.active` |
-| 6 | Training pool panel | `.pool-panel`, `.pool-chip` / `.active`, `.pool-section-body` / `.collapsed` |
-| 7 | Chip system | `.option-chip` + 4 aliases sharing one ruleset |
-| 8 | Play area | `.play-btn` / `.playing` / `:disabled` |
-| 9 | Notation panel | `.notation-area` (hardcoded `#ffffff`), `#notation-svg` |
-| 10 | Quiz status | `.status-msg` / `.good` / `.bad` |
-| 11 | Answer dropdown | `.ans-dropdown-trigger`, `.ans-dropdown-list`, `.ans-dropdown-item` |
-| 12 | Controls | `.ctrl-btn` / `.primary` / `.slow` / `.resolve` |
-| 13 | Settings panel | `.settings-panel-body` / `.open` |
-| 14 | Root & register chips | `.reg-chip` / `.active` |
-| 15 | Breakdown panel | `.breakdown-row`, `.cs-section`, `.bd-riemann-wrap` (CSS-only tooltip) |
-| 16 | Root toggle & stats | `.root-badge`, `.stats-table`, `.stat-bar` |
-| 17 | Voice leading | `.vl-selected` (`!important` override), `.vl-table` |
-| 18 | Progression mode | `.prog-slots-wrap`, `.prog-slot` / `.correct` / `.wrong` |
-| 19 | About view | `.about-card`, `.about-badges`, `.about-sponsor-btn` |
-| 20 | Help view | `.help-card`, `.help-entry` (`<details>`), `.help-entry-term` (`<summary>`) |
+| Section | Key selectors |
+|---|---|
+| 1 — Sticky header shell | `#stickyShell`, `#stickyInner` |
+| 2 — Header row | `.header`, `.header-left`, `.header-actions`, `.site-logo`, `.title` |
+| 3 — Score bar & QD toggle | `.score-bar`, `.score-pill`, `.qd-toggle`, `.qd-btn` / `.active` |
+| 4 — Theme toggle & About/Help | `.theme-toggle`, `.about-btn` / `.about-btn.active` |
+| 5 — Mode tabs | `.mode-tabs`, `.mode-tab` / `.active` (teal underline) |
+| 6 — Training pool panel | `.pool-panel`, `.pool-chip` / `.active`, `.pool-section-body` / `.collapsed` |
+| 7 — Chip system | `.option-chip` base + 4 aliases sharing one ruleset |
+| 8 — Play area | `.play-btn` / `.playing` / `:disabled` |
+| 9 — Notation panel | `.notation-area` (hardcoded `#ffffff`), `#notation-svg` |
+| 10 — Quiz status | `.status-msg` / `.good` / `.bad` |
+| 11 — Answer dropdown | `.ans-dropdown-trigger`, `.ans-dropdown-list`, `.ans-dropdown-item` |
+| 12 — Controls | `.ctrl-btn` / `.primary` / `.slow` / `.resolve` |
+| 13 — Settings panel | `.settings-panel-body` / `.open` |
+| 14 — Root & register chips | `.reg-chip` / `.active` |
+| 15 — Breakdown panel | `.breakdown-row`, `.cs-section`, `.bd-riemann-wrap` (CSS-only tooltip) |
+| 16 — Root toggle & stats | `.root-badge`, `.stats-table`, `.stat-bar` |
+| 17 — Voice leading | `.vl-selected` (`!important` override), `.vl-table` |
+| 18 — Progression mode | `.prog-slots-wrap`, `.prog-slot` / `.correct` / `.wrong` |
+| 19 — About view | `.about-card`, `.about-badges`, `.about-sponsor-btn` |
+| 20 — Help view | `.help-card`, `.help-entry` (`<details>`), `.help-entry-term` (`<summary>`) |
 
 ---
 
@@ -654,12 +666,12 @@ and persisted in `localStorage`.
 
 Applied at `max-width: 600px` unless noted.
 
-- Sticky header: reduced padding, smaller title font
-- Score bar: About/Help buttons hidden in header, shown in score bar
+- Sticky header: reduced padding, smaller title font with `text-overflow: ellipsis`
+- Score bar: About/Help buttons hidden in header, shown in score bar instead
 - Pool panel: full-width, sections stack vertically
 - Notation panel: horizontal scroll container
-- Breakdown: Chord Scales and Voice Leading render full-width (JS-gated via `isMobile()`)
-- Settings panel: `#settingsPanelBody.open { display: block }` — required because mobile CSS hides the body and the `.open` class must re-show it
+- Breakdown: Chord Scales and Voice Leading render full-width (JS-gated via `isMobile()` in `breakdown.js`)
+- Settings panel: `#settingsPanelBody.open { display: block }` — required because mobile CSS hides the body and only the `.open` class re-shows it
 
 ---
 
@@ -673,9 +685,12 @@ Applied at `max-width: 600px` unless noted.
 | `.play-btn.playing` | `js/engine/audio.js` |
 | `.status-msg.good` / `.bad` | `js/ui/controls.js` |
 | `.ans-dropdown-trigger.open` | `js/ui/controls.js` |
-| `[data-theme="dark"]` on `<html>` | `app.js` theme IIFE |
-| `.about-btn.active` | `js/modes/about-mode.js` / `help-mode.js` |
+| `[data-theme="dark"]` on `<html>` | `app.js` theme IIFE → persisted in `localStorage` |
+| `.about-btn.active` | `js/modes/about-mode.js` / `js/modes/help-mode.js` |
 | `.settings-panel-body.open` | `app.js` collapsible IIFE |
+| `.reg-chip.active` | `app.js` → `renderRegisterPanel()` |
+| `.breakdown-*`, `.cs-*`, `.vl-*` | `js/breakdown/breakdown-chords.js` and siblings |
+| `.prog-slot.correct` / `.wrong` | `js/modes/progressions-mode.js` |
 EOF
 ```
 
@@ -695,39 +710,44 @@ ls -la tutorials/
 npm run docs
 ```
 
+Read the output carefully. JSDoc will warn about malformed comments or missing
+tags. Fix any issues before pushing.
+
 ### 5.2 — Verify the docs folder was created
 
 ```bash
 ls docs/
 ```
 
-You should see `index.html`, font files, and asset folders.
+You should see `index.html`, font files, and asset subfolders.
 
-### 5.3 — Check for JSDoc warnings in the output
+### 5.3 — Confirm tutorial pages are in the output
 
-JSDoc will print warnings for any files with malformed JSDoc comments. Read the
-output carefully and fix any issues before pushing.
+```bash
+ls docs/tutorial-*.html
+```
 
 ### 5.4 — Quick content check
 
 ```bash
-# Confirm the home page was generated
-head -30 docs/index.html
-
-# Confirm tutorial pages are in the output
-ls docs/tutorial-*.html 2>/dev/null || ls docs/tutorials/ 2>/dev/null
+head -20 docs/index.html
 ```
 
-### 5.5 — Open in browser (Codespace port forward)
-
-In the Codespace terminal:
+### 5.5 — Preview in browser via Codespace port forward
 
 ```bash
 cd docs && python3 -m http.server 8080
 ```
 
-Then open the forwarded port 8080 in your browser to preview the docs before
-pushing. Press `Ctrl+C` to stop the server when done.
+Open the forwarded port 8080 in your browser. Verify:
+- Home page shows the getting-started content
+- Sidebar shows Tutorials section with all three pages
+- JS API reference is populated
+- Dark theme is active
+- Search works
+- "Live App" and "GitHub" links appear in the menu
+
+Press `Ctrl+C` to stop the server when done.
 
 ```bash
 cd ..
@@ -742,6 +762,7 @@ cd ..
 ```bash
 git add jsdoc.json tutorials/ docs/ add_headers.sh
 git add js/ css/ index.html
+git add package.json package-lock.json .gitignore
 ```
 
 ### 6.2 — Review what will be committed
@@ -756,13 +777,13 @@ git diff --stat HEAD
 ```bash
 git commit -m "docs: add JSDoc documentation site served from /docs
 
-- jsdoc.json configuration with clean-jsdoc-theme (dark)
-- tutorials/getting-started.md  — architecture overview and layer table
-- tutorials/html-structure.md   — full DOM structure and element reference
-- tutorials/css-architecture.md — design tokens, 20-section map, JS→CSS table
-- add_headers.sh                — standardised copyright header script
-- Generated docs/ site at /docs (GitHub Pages target)
-- All JS/CSS/HTML files: standardised header added via add_headers.sh"
+- jsdoc.json: JSDoc config with clean-jsdoc-theme (dark)
+- tutorials/getting-started.md: architecture overview and layer table
+- tutorials/html-structure.md: DOM structure and element reference
+- tutorials/css-architecture.md: design tokens, 20-section map, JS->CSS table
+- add_headers.sh: standardised copyright header script (idempotent)
+- docs/: generated JSDoc site (GitHub Pages target)
+- All JS/CSS/HTML files: @author and @copyright headers added"
 ```
 
 ### 6.4 — Push
@@ -783,18 +804,15 @@ In your GitHub repository:
 Wait 1–2 minutes, then visit:
 `https://guitarsai.github.io/earTrainingJS/docs/`
 
-### 6.6 — Verify the live docs URL
+### 6.6 — Verify the live docs URL loads correctly
 
-```bash
-# Confirm docs/index.html exists and is not empty
-wc -l docs/index.html
-```
+Check that the page loads, the sidebar is visible, and the Live App link works.
 
 ---
 
 ## Ongoing workflow
 
-Every time you update JS comments or add new files, regenerate the docs:
+Every time you update JS comments or add new files:
 
 ```bash
 npm run docs
@@ -803,8 +821,15 @@ git commit -m "docs: regenerate"
 git push origin main
 ```
 
-If you add new JS files in the future, run `add_headers.sh` again before
-regenerating — it is safe to re-run.
+If you add new JS, CSS, or HTML files in the future:
+
+```bash
+./add_headers.sh
+npm run docs
+git add docs/ js/ css/ index.html
+git commit -m "docs: add headers to new files; regenerate"
+git push origin main
+```
 
 ---
 
@@ -813,11 +838,12 @@ regenerating — it is safe to re-run.
 | Decision | Rationale |
 |---|---|
 | `clean-jsdoc-theme` with `"theme": "dark"` | Matches the app's dark-first design; professional look; built-in search |
-| `/docs` subfolder on `main` | Standard GitHub Pages pattern; no separate branch needed; committed output is version-controlled alongside source |
+| `/docs` subfolder on `main` branch | Standard GitHub Pages pattern; no separate branch needed; committed output is version-controlled alongside source |
 | `tutorials/` markdown pages for HTML and CSS | JSDoc only processes JS natively; tutorials are the correct mechanism for supplementary documentation pages |
-| `js/vendor/` excluded from JSDoc | Third-party minified files — no JSDoc comments to extract; including them would add noise |
-| `add_headers.sh` kept in repo | Reusable when new files are added; idempotent (safe to re-run) |
+| `js/vendor/` excluded from JSDoc | Third-party minified files — no JSDoc comments to extract; including them adds noise |
+| `add_headers.sh` kept in repo | Reusable when new files are added; idempotent — safe to re-run |
 | `node_modules/` in `.gitignore`, `docs/` not | `node_modules` is reproducible via `npm install`; `docs/` must be committed for GitHub Pages to serve it |
+| Detection marker is `renato-profeta` | A URL fragment unique to this project; avoids false positives from generic strings like "The Sound Travels" that could appear in content |
 
 ---
 
