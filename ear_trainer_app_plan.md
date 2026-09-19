@@ -68,6 +68,7 @@
 - **Mobile-3** Mobile breakdown fixes ✓ (Aug 2026) — Settings panel open bug fixed; dark mode now default for new users; Chord Scales and Voice Leading rebuilt as full-width collapsibles on mobile
 - **BUG-9** Notation key sig conflict fix ✓ (Aug 2026) — chord tones conflicting with active key signature now correctly show cancellation accidentals (♮ etc.); verified across all 540 chord/root combinations
 - **BUG-5** Closed (Aug 2026) — resolution notation two-chord layout: cannot reproduce; removed from open bugs
+- **Prod pass** `app.js` ✓ (Aug 2026) — `getAllIntervals`/`getAllScales` comment aligned with sibling pattern; changelog paragraph removed from `recomputeCurrentNotes` JSDoc; `panel_deactivateAllDictChips` renamed to `_deactivateAllDictChips` for naming consistency; zero logic changes
 - **Prod pass** `chords-mode.js` ✓ (Aug 2026) — JSDoc, section banners, comment cleanup; zero logic changes
 - **Prod pass** `help-mode.js` ✓ (Aug 2026) — JSDoc header, section banners, function docs, escapeHtml documented, dual-listener design clarified; zero logic changes
 - **Prod pass** `about-mode.js` ✓ (Aug 2026) — JSDoc header, section banners, function docs, mutual exclusion asymmetry documented; zero logic changes
@@ -75,6 +76,25 @@
 ---
 
 ## Current Session — Aug 2026
+
+### Production pass — app.js ✓ COMPLETE
+
+Documentation and cleanup pass only — one minor naming fix, zero logic changes.
+
+**What was delivered:**
+- `getAllIntervals()` and `getAllScales()` — replaced vague inline comment with precise note mirroring the `getAllChords()` pattern; fresh-array return documented
+- `recomputeCurrentNotes()` JSDoc — removed changelog "Design note: originally lived in progressions-mode.js" paragraph; ARCHITECTURE.md is the correct home for move history
+- `panel_deactivateAllDictChips` renamed to `_deactivateAllDictChips` — aligns with the `_camelCase` private-helper convention used throughout the codebase (`_makeProgSection`, `_buildVoiceLeadingAnalysis`, etc.); call site on line 452 updated
+- `ARCHITECTURE.md` updated: repo tree, "Last updated" line, full `app.js` entry added
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `js/app.js` | `getAllIntervals`/`getAllScales` comment; `recomputeCurrentNotes` JSDoc trimmed; `panel_deactivateAllDictChips` → `_deactivateAllDictChips` |
+| `ARCHITECTURE.md` | `app.js` ✅ in tree; full entry added; Last updated updated |
+
+---
 
 ### Production pass — about-mode.js ✓ COMPLETE
 
@@ -557,7 +577,7 @@ A mode toggle in Settings that controls which pool items are visible and selecta
 
 3. **`RESOLUTION_TARGETS` cleanup** — retained as live fallback for voice leading; remove once engine is confirmed stable.
 
-4. **Production pass — remaining files** — `app.js` is the last mode-layer file outstanding. `chords-mode.js` ✓, `intervals-mode.js` ✓, `scales-mode.js` ✓, `help-mode.js` ✓, `about-mode.js` ✓ complete. After `app.js`: `css/base.css` and `css/mobile.css`.
+4. **Production pass — remaining files** — `app.js` ✓ complete. All JS files are now production-passed. Remaining: `css/base.css` and `css/mobile.css`.
 
 ---
 

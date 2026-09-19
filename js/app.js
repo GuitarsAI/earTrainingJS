@@ -1,34 +1,70 @@
+/**
+ * @file app.js
+ * @description Boot file and application coordinator. Owns mode switching,
+ *   quiz/dictionary toggle, dictionary mode functions (dictLoadSymbol, dictShow,
+ *   renderDictPoolPanel, renderInversionChips), the recomputeCurrentNotes engine,
+ *   Basic/Advanced difficulty switching, register panel rendering, theme init,
+ *   keyboard shortcuts, and all top-level DOM event wiring.
+ *
+ *   Module-level state declared here (not in state.js) because it is tightly
+ *   coupled to dictionary UI logic and has no cross-file consumers:
+ *     - dictSymbol         — currently loaded dictionary item symbol
+ *     - dictInversionIndex — inversion position shown in dict / post-answer view
+ *
+ *   Must load last — depends on every other layer being defined.
+ * @layer boot
+ * @requires state.js, defaults.js, helpers.js, spelling.js, keysig.js,
+ *           audio.js, notation.js, voicings.js, voiceLeading.js,
+ *           breakdown.js, breakdown-chords.js,
+ *           stats.js, controls.js, pool.js, pool-chords.js,
+ *           pool-intervals.js, pool-scales.js, pool-progressions.js,
+ *           chords-mode.js, intervals-mode.js, scales-mode.js,
+ *           progressions-mode.js, help-mode.js, about-mode.js
+ */
+
+// ─── Mode switching ───────────────────────────────────────────────────────────
+
+/**
+ * Switches the active training mode, rebuilds the pool panel for the new mode,
+ * updates the mode tab UI, resets the streak, and either starts a new question
+ * or re-enters dictionary mode (preserving any target symbol passed in).
+ *
+ * Always calls teardownProgressionUI() first to clean up any progression DOM
+ * residue before the new mode's UI is built.
+ *
+ * @param {string}      mode         - Target mode: 'chords' | 'intervals' | 'scales' | 'progressions'.
+ * @param {string|null} targetSymbol - Optional symbol to load directly in dict mode
+ *                                     (e.g. navigating here from a chord-scales breakdown link).
+ */
 function switchMode(mode, targetSymbol = null) {
-  if (typeof teardownProgressionUI === 'function') teardownProgressionUI(); // POINT 38: always clean up progression DOM before switching
+  if (typeof teardownProgressionUI === 'function') teardownProgressionUI();
   currentMode = mode;
 
-  // Reset streak on mode switch
   streak = 0;
   document.getElementById('streak').textContent = 0;
 
-  // Tab UI
   document.querySelectorAll('.mode-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.mode === mode);
   });
 
-  // POINT 10: Rebuild pool panel for new mode; show/hide playback style rows
+  // Rebuild pool panel and show/hide the per-mode playback style rows
   renderPoolPanel();
   document.getElementById('chordStyleSection').style.display    = mode === 'chords'       ? '' : 'none';
   document.getElementById('intervalStyleSection').style.display = mode === 'intervals'    ? '' : 'none';
   document.getElementById('scaleDirSection').style.display      = mode === 'scales'       ? '' : 'none';
-  // POINT 41: voicingModeSection removed from Settings — voicing chips now in chord pool panel
 
-  // Play label
   document.getElementById('playLabel').textContent =
-    mode === 'intervals'   ? 'Play interval (together)'
-    : mode === 'scales'    ? 'Play scale (ascending)'
+    mode === 'intervals'    ? 'Play interval (together)'
+    : mode === 'scales'     ? 'Play scale (ascending)'
     : mode === 'progressions' ? 'Play progression'
     : 'Play chord';
 
-  updateRootBadge(null);  // clear badge until new question sets it
+  updateRootBadge(null);
+
   if (appMode === 'dict') {
-    // If a specific symbol was requested (e.g. navigating from chord scales breakdown),
-    // use it directly. Otherwise reset so the default for the new mode is picked.
+    // If a specific symbol was requested (e.g. navigating from a chord scales
+    // breakdown link), load it directly. Otherwise reset so the new mode's
+    // default is picked.
     dictSymbol = targetSymbol ?? null;
     setAppMode('dict');
   } else {
@@ -36,13 +72,34 @@ function switchMode(mode, targetSymbol = null) {
   }
 }
 
-// ─── POINT 50: Basic / Advanced mode ─────────────────────────────────────────
+// ─── Basic / Advanced difficulty ──────────────────────────────────────────────
+
+/**
+ * Hard-coded Basic chord symbol list. Matches the `basic: true` entries in
+ * chords.js but kept here as a constant so setAppDifficulty() can reset
+ * selectedChords without re-filtering the full CHORD_TYPES catalog.
+ */
 const BASIC_CHORD_SYMBOLS = ['maj','Maj7','m','m7','7','dim','m7b5','o7','aug','sus2','sus4','power'];
 
+/**
+ * Switches between Basic and Advanced difficulty modes. Resets all four pool
+ * selections (intervals, chords, scales, progressions) and voicing state to
+ * mode-appropriate defaults — no cross-difficulty memory. Rebuilds the pool
+ * panel and generates a fresh question for the current mode.
+ *
+ * Basic boundaries per mode:
+ *   Intervals   — 12 simple (m2–P8); Advanced adds 7 compound (m9–M13)
+ *   Chords      — 12 core families (BASIC_CHORD_SYMBOLS); Advanced shows all
+ *   Scales      — Major, Natural Minor, Major/Minor Pentatonic; Advanced shows all
+ *   Progressions — 9 core progressions (basic: true in progressions.js); Advanced shows all
+ *   Voicings     — Position + Doubling groups only (Groups 1–2); Advanced shows all 6
+ *
+ * @param {'basic'|'advanced'} difficulty - Target difficulty level.
+ */
 function setAppDifficulty(difficulty) {
   appDifficulty = difficulty;
 
-  // Reset selectedIntervals — fresh start, no cross-mode memory
+  // Reset selectedIntervals — fresh start, no cross-difficulty memory
   selectedIntervals.clear();
   if (difficulty === 'basic') {
     INTERVALS.filter(i => !i.compound).forEach(i => selectedIntervals.add(i.symbol));
@@ -50,7 +107,7 @@ function setAppDifficulty(difficulty) {
     INTERVALS.forEach(i => selectedIntervals.add(i.symbol));
   }
 
-  // Reset selectedChords — fresh start, no cross-mode memory
+  // Reset selectedChords — fresh start, no cross-difficulty memory
   selectedChords.clear();
   if (difficulty === 'basic') {
     BASIC_CHORD_SYMBOLS.forEach(s => selectedChords.add(s));
@@ -58,11 +115,11 @@ function setAppDifficulty(difficulty) {
     getAllChords().forEach(c => selectedChords.add(c.symbol));
   }
 
-  // Sync toggle chip UI
+  // Sync difficulty chip UI
   document.getElementById('diffChipBasic').classList.toggle('active',    difficulty === 'basic');
   document.getElementById('diffChipAdvanced').classList.toggle('active', difficulty === 'advanced');
 
-  // Reset selectedScales — fresh start, no cross-mode memory
+  // Reset selectedScales — fresh start, no cross-difficulty memory
   selectedScales.clear();
   if (difficulty === 'basic') {
     SCALES.filter(s => s.basic).forEach(s => selectedScales.add(s.symbol));
@@ -70,7 +127,7 @@ function setAppDifficulty(difficulty) {
     SCALES.forEach(s => selectedScales.add(s.symbol));
   }
 
-  // Reset selectedProgressions — fresh start, no cross-mode memory
+  // Reset selectedProgressions — fresh start, no cross-difficulty memory
   selectedProgressions.clear();
   if (difficulty === 'basic') {
     PROGRESSIONS.filter(p => p.basic).forEach(p => selectedProgressions.add(p.symbol));
@@ -78,12 +135,12 @@ function setAppDifficulty(difficulty) {
     PROGRESSIONS.forEach(p => selectedProgressions.add(p.symbol));
   }
 
-  // Reset selectedVoicings and activeVoicingMode — fresh start, no cross-mode memory
+  // Reset voicings to close position — Groups 1–2 only in Basic, all 6 in Advanced
   selectedVoicings.clear();
   selectedVoicings.add('close');
   activeVoicingMode = 'close';
 
-  // Rebuild pool panel and generate a fresh question for the current mode
+  // Rebuild pool and generate a fresh question for the current mode
   if (currentMode === 'intervals' || currentMode === 'chords' || currentMode === 'scales' || currentMode === 'progressions') {
     renderPoolPanel();
     if (appMode === 'dict') setAppMode('dict');
@@ -91,29 +148,41 @@ function setAppDifficulty(difficulty) {
   }
 }
 
-// POINT 12: Render root note and octave register chip rows
+// ─── Register panel ───────────────────────────────────────────────────────────
+
+/**
+ * Renders the root note and octave register chip rows into #rootChips and
+ * #octaveChips. Both rows call recomputeCurrentNotes() on chip click so the
+ * current item is re-voiced in place without picking a new question.
+ *
+ * Root chips include both enharmonic spellings for each accidental pitch class
+ * (e.g. C♯ and D♭ are separate chips sharing pitch class 1). Selecting one sets
+ * both pinnedRoot (pitch class) and pinnedRootSpelling ('sharp' | 'flat' | null),
+ * which the enharmonic spelling engine uses to choose the correct letter name.
+ */
 function renderRegisterPanel() {
-  // Full chromatic list with both enharmonic spellings for each accidental pitch class.
-  // Each entry: { label, value (pitch class 0-11 or null), spelling ('sharp'|'flat'|null) }
+  // Full chromatic root list. Each accidental pitch class has two entries —
+  // one sharp spelling, one flat — so the user can pin the preferred enharmonic.
+  // { label, value: pitch class 0–11 or null (= random), spelling: 'sharp'|'flat'|null }
   const ROOT_OPTIONS = [
-    { label: 'Rnd',        value: null, spelling: null    },
-    { label: 'C',          value: 0,   spelling: null     },
-    { label: 'C\u266f',   value: 1,   spelling: 'sharp'  },
-    { label: 'D\u266d',   value: 1,   spelling: 'flat'   },
-    { label: 'D',          value: 2,   spelling: null     },
-    { label: 'D\u266f',   value: 3,   spelling: 'sharp'  },
-    { label: 'E\u266d',   value: 3,   spelling: 'flat'   },
-    { label: 'E',          value: 4,   spelling: null     },
-    { label: 'F',          value: 5,   spelling: null     },
-    { label: 'F\u266f',   value: 6,   spelling: 'sharp'  },
-    { label: 'G\u266d',   value: 6,   spelling: 'flat'   },
-    { label: 'G',          value: 7,   spelling: null     },
-    { label: 'G\u266f',   value: 8,   spelling: 'sharp'  },
-    { label: 'A\u266d',   value: 8,   spelling: 'flat'   },
-    { label: 'A',          value: 9,   spelling: null     },
-    { label: 'A\u266f',   value: 10,  spelling: 'sharp'  },
-    { label: 'B\u266d',   value: 10,  spelling: 'flat'   },
-    { label: 'B',          value: 11,  spelling: null     },
+    { label: 'Rnd',       value: null, spelling: null   },
+    { label: 'C',         value: 0,    spelling: null   },
+    { label: 'C\u266f',  value: 1,    spelling: 'sharp' },
+    { label: 'D\u266d',  value: 1,    spelling: 'flat'  },
+    { label: 'D',         value: 2,    spelling: null   },
+    { label: 'D\u266f',  value: 3,    spelling: 'sharp' },
+    { label: 'E\u266d',  value: 3,    spelling: 'flat'  },
+    { label: 'E',         value: 4,    spelling: null   },
+    { label: 'F',         value: 5,    spelling: null   },
+    { label: 'F\u266f',  value: 6,    spelling: 'sharp' },
+    { label: 'G\u266d',  value: 6,    spelling: 'flat'  },
+    { label: 'G',         value: 7,    spelling: null   },
+    { label: 'G\u266f',  value: 8,    spelling: 'sharp' },
+    { label: 'A\u266d',  value: 8,    spelling: 'flat'  },
+    { label: 'A',         value: 9,    spelling: null   },
+    { label: 'A\u266f',  value: 10,   spelling: 'sharp' },
+    { label: 'B\u266d',  value: 10,   spelling: 'flat'  },
+    { label: 'B',         value: 11,   spelling: null   },
   ];
   const OCTAVE_OPTIONS = [
     { label: 'Rnd',  value: null   },
@@ -122,7 +191,7 @@ function renderRegisterPanel() {
     { label: 'High', value: 'high' },
   ];
 
-  // Root chips — custom handler to also set pinnedRootSpelling
+  // Root chips — also sets pinnedRootSpelling to select the correct enharmonic
   const rootRow = document.getElementById('rootChips');
   rootRow.innerHTML = '';
   ROOT_OPTIONS.forEach(opt => {
@@ -140,7 +209,7 @@ function renderRegisterPanel() {
     rootRow.appendChild(chip);
   });
 
-  // Octave chips — unchanged
+  // Octave chips
   const octaveRow = document.getElementById('octaveChips');
   octaveRow.innerHTML = '';
   OCTAVE_OPTIONS.forEach(opt => {
@@ -157,7 +226,10 @@ function renderRegisterPanel() {
   });
 }
 
-// ─── POINT 19: Settings panel toggle ────────────────────────────────────────────
+// ─── Settings panel ───────────────────────────────────────────────────────────
+
+// Settings panel collapsible toggle — wired immediately at load time via IIFE
+// so the header click works before any question is generated.
 (function() {
   const header = document.getElementById('settingsPanelHeader');
   const body   = document.getElementById('settingsPanelBody');
@@ -170,28 +242,50 @@ function renderRegisterPanel() {
 
 // ─── Dictionary mode ──────────────────────────────────────────────────────────
 
-// Full catalogs — all items regardless of quiz pool selection
-// NOTE: getAllChords() is defined in helpers.js
+// Full catalog getters — mirror getAllChords() in helpers.js for the other two modes.
+// Return a fresh array so callers cannot mutate the source data arrays.
 function getAllIntervals() { return [...INTERVALS]; }
 function getAllScales()    { return [...SCALES]; }
 
+/**
+ * Returns the full item catalog for the current mode, ignoring quiz pool filters.
+ * Used by dictionary mode to show every available item.
+ *
+ * @returns {object[]} Full array of interval, chord, or scale descriptors.
+ */
 function dictFullCatalog() {
   if (currentMode === 'chords')    return getAllChords();
   if (currentMode === 'intervals') return getAllIntervals();
   return getAllScales();
 }
 
-// dictSymbol: currently selected symbol ('_random' or an item symbol)
+/** Currently loaded dictionary item symbol, or null before first load. */
 let dictSymbol = null;
-// dictInversionIndex: inversion shown in dict mode (0 = root position)
+
+/** Inversion position shown in dict mode and post-answer quiz view (0 = root position). */
 let dictInversionIndex = 0;
 
+/**
+ * Returns the symbol of the first item in the full catalog for the current mode.
+ * Used as the initial selection when entering dict mode with no prior symbol.
+ *
+ * @returns {string|null} Symbol string, or null if the catalog is empty.
+ */
 function dictDefaultSymbol() {
   const catalog = dictFullCatalog();
   return catalog.length ? catalog[0].symbol : null;
 }
 
-// Load state for a given symbol from the full catalog
+/**
+ * Loads a dictionary item by symbol and sets all relevant state variables so
+ * dictShow() / showNotation() / showBreakdown() can render it immediately.
+ * Mirrors the four chord-family paths in generateChordQuestion() exactly —
+ * any logic change there must be reflected here.
+ *
+ * The special symbol '_random' picks a random item from the full catalog.
+ *
+ * @param {string} symbol - Item symbol to load, or '_random' for a random pick.
+ */
 function dictLoadSymbol(symbol) {
   if (!symbol) return;
   dictSymbol = symbol;
@@ -201,7 +295,8 @@ function dictLoadSymbol(symbol) {
     const item = symbol === '_random' ? pickRandom(catalog) : catalog.find(c => c.symbol === symbol);
     if (!item) return;
     currentChord = item;
-    // Reset all special-chord state
+
+    // Reset all special-chord state before branching
     currentSlashBassMidi = null; currentUpperRootMidi = null;
     currentPolyUpperMidi = []; currentPolyLowerMidi = [];
     currentPolyUpperRootMidi = null; currentPolyLowerRootMidi = null;
@@ -244,7 +339,7 @@ function dictLoadSymbol(symbol) {
       currentMidiNotes = [...currentUSTShellMidi, ...currentUSTUpperMidi];
       currentVoicingMode = 'full';
     } else {
-      // Normal chord path
+      // Normal chord path (including inversions)
       const rootMidi = chooseSimpleRootMidi(Math.max(...item.intervals.map(Math.abs)));
       currentChordRootMidi = rootMidi;
       currentVoicingMode = resolveVoicingMode();
@@ -264,6 +359,7 @@ function dictLoadSymbol(symbol) {
     currentIntervalMidi = [rootMidi, rootMidi + item.semitones];
 
   } else {
+    // Scales
     const item = symbol === '_random' ? pickRandom(catalog) : catalog.find(s => s.symbol === symbol);
     if (!item) return;
     currentScale = item;
@@ -273,30 +369,34 @@ function dictLoadSymbol(symbol) {
   }
 }
 
-// Render the pool panel in dictionary mode — same groups as quiz, single-select, no All/None
+/**
+ * Renders the pool panel in dictionary mode. Structure mirrors the quiz pool
+ * (same groups and sections) but uses single-select chips with no All/None
+ * buttons. Chords reuse the shared _renderChordSubGroups() from pool-chords.js,
+ * which reads appMode internally to switch between multi and single select.
+ */
 function renderDictPoolPanel() {
   const panel = document.getElementById('poolPanel');
   panel.innerHTML = '';
 
-  // Reuse makePoolPanelShell with a dict title; open by default
-  let title = currentMode === 'chords' ? 'Dictionary — Chords'
-            : currentMode === 'intervals' ? 'Dictionary — Intervals'
-            : 'Dictionary — Scales';
+  const title = currentMode === 'chords'    ? 'Dictionary — Chords'
+              : currentMode === 'intervals' ? 'Dictionary — Intervals'
+              : 'Dictionary — Scales';
   const { body } = makePoolPanelShell(panel, title, null);
-  // Dict pool panel starts collapsed like everything else (Point 33b)
 
   if (currentMode === 'chords') {
-    // POINT 41: Shared two-subgroup structure — Chord quality + Voicing.
-    // _renderChordQualitySection and _renderVoicingSection both read appMode internally.
+    // Shared two-subgroup structure (Chord quality + Voicing) — reads appMode
+    // internally to render single-select in dict mode.
     _renderChordSubGroups(body);
   } else if (currentMode === 'intervals') {
-    // POINT 39: split into simple and compound
-    // POINT 50: compound section hidden in basic mode
+    // Compound section hidden in Basic mode
     makeDictSection(body, 'Simple intervals', INTERVALS.filter(i => !i.compound), false, false);
     if (appDifficulty === 'advanced') {
       makeDictSection(body, 'Extended / Compound', INTERVALS.filter(i => i.compound), false, true);
     }
   } else {
+    // Scales — groups auto-discovered via iterateScaleGroups (pool-scales.js),
+    // same source of truth used by the quiz pool panel.
     iterateScaleGroups((key, title, items, cfg) => {
       const useDisplayName = !!(cfg && cfg.sectionFn === 'withDisplayName');
       makeDictSection(body, title, items, useDisplayName, false);
@@ -304,7 +404,17 @@ function renderDictPoolPanel() {
   }
 }
 
-// Build one section of chips for dict mode — single-select, no All/None buttons
+/**
+ * Builds one collapsible section of single-select chips for the dictionary pool
+ * panel. Clicking a chip loads the item immediately via dictLoadSymbol + dictShow.
+ * No All/None buttons, no count display — dict mode is browse-only.
+ *
+ * @param {HTMLElement} body           - Parent element to append the section into.
+ * @param {string}      title          - Section heading text.
+ * @param {object[]}    items          - Array of item descriptors ({ name, symbol, displayName? }).
+ * @param {boolean}     useDisplayName - When true, chips show item.displayName over item.name.
+ * @param {boolean}     collapsed      - Whether the section starts collapsed.
+ */
 function makeDictSection(body, title, items, useDisplayName = false, collapsed = false) {
   const sec = document.createElement('div');
   sec.className = 'pool-section';
@@ -338,7 +448,7 @@ function makeDictSection(body, title, items, useDisplayName = false, collapsed =
     chip.className = 'pool-chip' + (dictSymbol === item.symbol ? ' active' : '');
     chip.textContent = useDisplayName ? (item.displayName || item.name) : item.name;
     chip.addEventListener('click', () => {
-      panel_deactivateAllDictChips();
+      _deactivateAllDictChips();
       chip.classList.add('active');
       dictLoadSymbol(item.symbol);
       dictShow();
@@ -352,29 +462,47 @@ function makeDictSection(body, title, items, useDisplayName = false, collapsed =
   body.appendChild(sec);
 }
 
-function panel_deactivateAllDictChips() {
+/**
+ * Removes the active class from every pool chip in #poolPanel.
+ * Called before activating a newly selected dict chip to ensure single-select.
+ */
+function _deactivateAllDictChips() {
   document.querySelectorAll('#poolPanel .pool-chip').forEach(c => c.classList.remove('active'));
 }
 
-// Apply a specific inversion index in dict or post-answer quiz mode and refresh the display
+/**
+ * Applies a specific inversion index to the current chord in dict or post-answer
+ * quiz mode, re-voices in place, and refreshes notation and breakdown without
+ * triggering a full showNotation() header rebuild.
+ *
+ * No-ops for chord families that do not support rotation-based inversions:
+ * slash, poly, UST, classical, quartal, cluster.
+ *
+ * @param {number} invIdx - Target inversion index (0 = root position).
+ */
 function dictApplyInversion(invIdx) {
-  if (!currentChord || currentChord.family === 'slash' || currentChord.family === 'poly' || currentChord.family === 'ust' || currentChord.family === 'classical' || currentChord.family === 'quartal' || currentChord.family === 'cluster') return;
+  if (!currentChord || currentChord.family === 'slash' || currentChord.family === 'poly'
+    || currentChord.family === 'ust' || currentChord.family === 'classical'
+    || currentChord.family === 'quartal' || currentChord.family === 'cluster') return;
+
   dictInversionIndex = invIdx;
-  const baseChord      = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
-  const baseIntervals  = baseChord.intervals;
-  const voicedMidi = applyVoicing(currentChordRootMidi, baseIntervals, currentVoicingMode);
-  const sortedVoiced = [...voicedMidi].sort((a, b) => a - b);
-  const safeInvIdx = Math.min(invIdx, sortedVoiced.length - 1);
+  const baseChord     = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
+  const baseIntervals = baseChord.intervals;
+  const voicedMidi    = applyVoicing(currentChordRootMidi, baseIntervals, currentVoicingMode);
+  const sortedVoiced  = [...voicedMidi].sort((a, b) => a - b);
+  const safeInvIdx    = Math.min(invIdx, sortedVoiced.length - 1);
   for (let i = 0; i < safeInvIdx; i++) { const lo = sortedVoiced.shift(); sortedVoiced.push(lo + 12); }
   currentMidiNotes = sortedVoiced;
   answered = true;
-  // Update notation chord name label to reflect the selected inversion
+
+  // Update the notation chord name label to reflect the selected inversion
   const INV_LABELS = ['', ' — 1st inv', ' — 2nd inv', ' — 3rd inv', ' — 4th inv'];
   const invLabel = INV_LABELS[invIdx] || '';
   document.getElementById('notationChordName').textContent =
     getChordRootName() + ' ' + baseChord.name + invLabel;
-  // Re-render notation SVG and breakdown without rebuilding the whole showNotation header logic
-  const sym = baseChord.symbol;
+
+  // Re-render notation and breakdown without rebuilding the full showNotation() header
+  const sym    = baseChord.symbol;
   const rootPc = ((currentChordRootMidi % 12) + 12) % 12;
   const keySigStr = chordKeySigMode === 'key' ? getChordKeyStr(sym, rootPc) : null;
   const sorted = [...currentMidiNotes].sort((a, b) => a - b);
@@ -391,12 +519,24 @@ function dictApplyInversion(invIdx) {
   showBreakdown();
 }
 
-// Render inversion chips in the notation area (after answering in quiz, always in dict)
+/**
+ * Renders inversion chips into #inversionChipRow for normal chords in dict mode
+ * and post-answer quiz mode. Each chip calls dictApplyInversion() on click.
+ *
+ * The row is hidden entirely for chord families that do not support rotation-based
+ * inversions (slash, poly, UST, classical, quartal, cluster), for non-chord modes,
+ * and for chords with only one note.
+ *
+ * In quiz mode the active chip starts at the inversion that was actually quizzed
+ * (currentChord.invIndex). In dict mode it persists from the last chip click
+ * (dictInversionIndex).
+ *
+ * Called by showNotation() after every chord question and by dictShow().
+ */
 function renderInversionChips() {
   const row = document.getElementById('inversionChipRow');
   row.innerHTML = '';
 
-  // Only show for normal chords, not slash/poly/UST, not intervals/scales
   const hide = currentMode !== 'chords'
     || !currentChord
     || currentChord.family === 'slash'
@@ -408,14 +548,14 @@ function renderInversionChips() {
 
   if (hide) { row.style.display = 'none'; return; }
 
-  const baseChord  = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
-  const noteCount  = baseChord.intervals.length;
-  const maxInv     = noteCount - 1;
+  const baseChord = currentChord.invIndex !== undefined ? currentChord.baseChord : currentChord;
+  const noteCount = baseChord.intervals.length;
+  const maxInv    = noteCount - 1;
 
   if (maxInv < 1) { row.style.display = 'none'; return; }
 
-  // In quiz mode: start at the inversion that was actually quizzed.
-  // In dict mode: use dictInversionIndex (persists between chip clicks).
+  // In quiz mode: sync to the inversion that was actually quizzed.
+  // In dict mode: dictInversionIndex persists between chip clicks.
   if (appMode === 'quiz') {
     dictInversionIndex = currentChord.invIndex ?? 0;
   }
@@ -436,7 +576,12 @@ function renderInversionChips() {
   }
 }
 
-// Reveal notation + breakdown immediately; play area moves below breakdown in dict mode
+/**
+ * Reveals notation and breakdown for the currently loaded dictionary item.
+ * Sets answered = true so showNotation() and showBreakdown() render without
+ * restriction, resets resolution state, and rebuilds the Hear Slowly + Resolve
+ * control buttons. No-ops if the required current-item state is missing.
+ */
 function dictShow() {
   if (currentMode === 'scales'    && !currentScale)    return;
   if (currentMode === 'chords'    && !currentChord)    return;
@@ -453,18 +598,17 @@ function dictShow() {
     updateRootBadge(spelledNote(0, currentScaleRootMidi % 12, currentScale.symbol));
   }
 
-  answered = true; // so showNotation + showBreakdown render without restriction
-  resolutionActive = false;   // POINT 37: reset so notation shows current chord, not resolution
-  resolutionRootMidi = null;  // reset stored root so new chord computes fresh
-  selectedResolution = null;  // clear any user-selected resolution target
-  currentVoiceLeadingAnalysis = null; // POINT 37: always rebuild for the current chord/root
+  answered = true;              // allow showNotation + showBreakdown to render fully
+  resolutionActive = false;     // reset so notation shows current item, not resolution view
+  resolutionRootMidi = null;    // force fresh derivation for the new item
+  selectedResolution = null;    // clear any user-selected resolution target
+  currentVoiceLeadingAnalysis = null; // force rebuild for the current chord/root
+
   showNotation();
   renderInversionChips();
   showBreakdown();
 
-  // Play area stays in its fixed HTML position — no DOM move needed
-
-  // Hear Slowly button in controls area
+  // Rebuild controls: Hear Slowly always present; Resolve toggle in chords mode only
   const c = document.getElementById('controls');
   c.innerHTML = '';
   const sb = document.createElement('button');
@@ -472,7 +616,6 @@ function dictShow() {
   sb.textContent = '🐢 Hear slowly';
   sb.addEventListener('click', playSlowly);
   c.appendChild(sb);
-  // POINT 37: Resolve ↔ Chord toggle in dict mode (chord mode only)
   if (currentMode === 'chords') {
     const rb = document.createElement('button');
     rb.className = 'ctrl-btn resolve';
@@ -483,21 +626,31 @@ function dictShow() {
   }
 }
 
-// ─── Reapply settings to current item (no new item picked, same pitch class) ──
-// Called when any setting changes (voicing, root, octave, style, direction).
-// Recomputes MIDI notes from the current item + current pinned root/octave,
-// then refreshes notation + breakdown if currently visible.
-// Moved here from progressions-mode.js — this is app-level coordination, not
-// progression-specific logic.
+// ─── Recompute current notes ──────────────────────────────────────────────────
+
+/**
+ * Reapplies current settings (root pin, octave band, voicing) to the active
+ * item without picking a new question. Called whenever a setting changes:
+ * root chip, octave chip, voicing chip, style/direction chip.
+ *
+ * Re-voices the same pitch class in place, preserving the current octave
+ * where possible (prefers to keep the existing octave if it still falls within
+ * the resolved band). Refreshes notation and breakdown if in dict mode or
+ * after answering in quiz mode.
+ *
+ * All four chord families (slash, poly, UST, normal) are handled identically
+ * to dictLoadSymbol() and generateChordQuestion() — any change to those paths
+ * must be reflected here.
+ */
 function recomputeCurrentNotes() {
 
-  // Resolve pitch class to use: pinned root wins, otherwise keep existing.
+  // Returns the pitch class to use: pinned root wins, otherwise keep existing.
   function resolvePc(existingPc) {
     return pinnedRoot !== null ? pinnedRoot : existingPc;
   }
 
-  // Build root MIDI from a pitch class, respecting current octave band.
-  // Prefers to keep the existing octave if it still falls within the band.
+  // Builds a root MIDI note from a pitch class, preferring to keep the current
+  // octave if it still falls within [lo, hi]; otherwise uses the midpoint.
   function rootMidiForPc(pc, existingRootMidi, lo, hi) {
     const existingOct = Math.floor(existingRootMidi / 12) - 1;
     const oct = (existingOct >= lo && existingOct <= hi)
@@ -563,20 +716,20 @@ function recomputeCurrentNotes() {
       currentMidiNotes = [...currentUSTShellMidi, ...currentUSTUpperMidi];
 
     } else {
-      // Normal chord (root position or inversion) — POINT 41 BUG FIX:
-      // was applyVoicingMode(baseIntervals, mode) → now applyVoicing(rootMidi, baseIntervals, mode)
+      // Normal chord (root position or inversion).
+      // Back-compute root MIDI from the current bass note for inverted chords
+      // so the pitch class is preserved correctly when the octave band changes.
       const baseIntervals = currentChord.invIndex !== undefined
         ? currentChord.baseChord.intervals : currentChord.intervals;
-      const span = baseIntervals[baseIntervals.length - 1];
-      const absMin = Math.ceil((28 - 12) / 12);
-      const absMax = Math.floor((96 - 12 - span) / 12);
+      const span    = baseIntervals[baseIntervals.length - 1];
+      const absMin  = Math.ceil((28 - 12) / 12);
+      const absMax  = Math.floor((96 - 12 - span) / 12);
       const defaultLo = span > 14 ? Math.max(3, absMin) : Math.max(2, absMin);
       const defaultHi = Math.min(5, absMax);
-      const [lo, hi] = resolveOctaveBand(pinnedOctave, defaultLo, defaultHi);
+      const [lo, hi]  = resolveOctaveBand(pinnedOctave, defaultLo, defaultHi);
       const safeLo = Math.max(Math.min(lo, absMax), absMin);
       const safeHi = Math.max(Math.min(hi, absMax), safeLo);
 
-      // For inverted chords, back-compute the root from the bass note
       const existingRootMidi = (() => {
         if (!currentMidiNotes.length) return 12 + (pinnedRoot ?? 0) + safeLo * 12;
         if (currentChord.invIndex !== undefined) {
@@ -587,8 +740,8 @@ function recomputeCurrentNotes() {
       })();
 
       const existingPc = ((existingRootMidi % 12) + 12) % 12;
-      const pc = resolvePc(existingPc);
-      const rootMidi = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
+      const pc         = resolvePc(existingPc);
+      const rootMidi   = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
       currentChordRootMidi = rootMidi;
 
       currentVoicingMode = resolveVoicingMode();
@@ -619,7 +772,7 @@ function recomputeCurrentNotes() {
   } else {
     if (!currentScale) return;
     const existingPc = currentScaleRootMidi !== undefined ? currentScaleRootMidi % 12 : 0;
-    const pc = resolvePc(existingPc);
+    const pc   = resolvePc(existingPc);
     const span = currentScale.intervals[currentScale.intervals.length - 1];
     const [lo, hi] = resolveOctaveBand(pinnedOctave, 3, 5);
     const safeHi = Math.min(hi, Math.floor((96 - span) / 12) - 1);
@@ -628,15 +781,17 @@ function recomputeCurrentNotes() {
     currentScaleRootMidi = rootMidiForPc(pc, existingRootMidi, safeLo, safeHi);
   }
 
-  // ── Always refresh UI ────────────────────────────────────────────────────────
-  // In dict mode: always. In quiz mode: only after answering.
+  // ── Refresh UI ───────────────────────────────────────────────────────────────
+  // In dict mode: always refresh. In quiz mode: only after answering.
   // showCurrentView() dispatches to chord or resolution view as appropriate.
   if (appMode === 'dict' || answered) {
-    currentVoiceLeadingAnalysis = null; // POINT 37: root/voicing changed — force rebuild
-    resolutionRootMidi = null;          // POINT 37: force re-derive resolution target
-    showCurrentView(); showBreakdown();
+    currentVoiceLeadingAnalysis = null; // root/voicing changed — force rebuild
+    resolutionRootMidi = null;          // force re-derivation of resolution target
+    showCurrentView();
+    showBreakdown();
   }
-  // Always update the root badge to reflect the new pitch
+
+  // Always update the root badge to reflect the new pitch class
   if (currentMode === 'chords' && currentChord) {
     updateRootBadge(appMode === 'dict' || answered ? getChordRootName() : (showRoot ? getChordRootName() : null));
   } else if (currentMode === 'intervals' && currentInterval) {
@@ -648,14 +803,26 @@ function recomputeCurrentNotes() {
   }
 }
 
-// Switch between quiz and dictionary app modes
+// ─── Quiz / Dictionary toggle ─────────────────────────────────────────────────
+
+/**
+ * Switches between quiz and dictionary application modes. Updates the Q/D toggle
+ * button states, shows/hides score and session UI, and initialises the appropriate
+ * pool panel and view for the current training mode.
+ *
+ * Always calls teardownProgressionUI() first to clean up any progression DOM
+ * residue before rebuilding.
+ *
+ * @param {'quiz'|'dict'} mode - Target application mode.
+ */
 function setAppMode(mode) {
-  if (typeof teardownProgressionUI === 'function') teardownProgressionUI(); // POINT 38: always clean up progression DOM before switching
+  if (typeof teardownProgressionUI === 'function') teardownProgressionUI();
   appMode = mode;
 
   document.getElementById('qdQuiz').classList.toggle('active', mode === 'quiz');
   document.getElementById('qdDict').classList.toggle('active', mode === 'dict');
 
+  // Score pills and New Session are quiz-only UI
   const show = mode === 'quiz';
   document.getElementById('streakPill').style.display    = show ? '' : 'none';
   document.getElementById('scorePill').style.display     = show ? '' : 'none';
@@ -663,6 +830,7 @@ function setAppMode(mode) {
 
   if (mode === 'dict') {
     if (currentMode === 'progressions') {
+      // Progressions dict mode has its own pool panel and show function
       if (!dictProgSymbol) dictProgSymbol = PROGRESSIONS[0].symbol;
       const prog = PROGRESSIONS.find(p => p.symbol === dictProgSymbol) || PROGRESSIONS[0];
       renderDictProgressionPoolPanel();
@@ -681,7 +849,17 @@ function setAppMode(mode) {
   }
 }
 
-// ─── Collapsible panel toggle helper ─────────────────────────────────────────
+// ─── Collapsible panel helper ─────────────────────────────────────────────────
+
+/**
+ * Wires a collapsible toggle for a header/body/arrow element triple.
+ * Clicking the header toggles the `open` class on the body and updates
+ * the arrow glyph. No-ops silently if any element is missing.
+ *
+ * @param {string} headerId - ID of the clickable header element.
+ * @param {string} bodyId   - ID of the collapsible body element.
+ * @param {string} arrowId  - ID of the ▸/▾ arrow indicator element.
+ */
 function makeCollapsible(headerId, bodyId, arrowId) {
   const header = document.getElementById(headerId);
   const body   = document.getElementById(bodyId);
@@ -699,12 +877,14 @@ makeCollapsible('breakdownPanelHeader', 'breakdownPanelBody', 'breakdownPanelArr
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
+// Play button — dispatches to the correct playback function for the current mode.
+// In chords mode while resolution view is active: plays source → pause → resolution.
 document.getElementById('playBtn').addEventListener('click', () => {
-  if (currentMode === 'intervals')    playInterval();
-  else if (currentMode === 'scales')  playScale();
+  if (currentMode === 'intervals')         playInterval();
+  else if (currentMode === 'scales')       playScale();
   else if (currentMode === 'progressions') playProgression();
   else if (currentMode === 'chords' && resolutionActive) {
-    // In resolution view: play source → pause → resolution (same as entering resolution)
+    // Resolution view: play source → pause → resolution (same arc as entering resolution)
     const info = getResolutionInfo();
     if (!info || !piano) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -719,27 +899,29 @@ document.getElementById('playBtn').addEventListener('click', () => {
   else playChord();
 });
 
+// Quiz / Dict toggle buttons
 document.getElementById('qdQuiz').addEventListener('click', () => setAppMode('quiz'));
 document.getElementById('qdDict').addEventListener('click', () => setAppMode('dict'));
 
+// Mode tabs
 document.querySelectorAll('.mode-tab').forEach(tab => {
   tab.addEventListener('click', () => switchMode(tab.dataset.mode));
 });
 
-renderPoolPanel(); // POINT 10
+// Initial renders — pool panel, style chips, register panel
+renderPoolPanel();
 renderChordStyleChips();
-// POINT 41: renderVoicingChips() removed — voicing chips now rendered inside renderChordPoolPanel()
 renderIntervalStyleChips();
 renderScaleDirChips();
-renderRegisterPanel(); // POINT 12
+renderRegisterPanel();
 
-// POINT 37 / Mobile: boot into dictionary mode immediately — does not depend on audio
+// Boot into dictionary mode — does not depend on audio being ready
 setAppMode('dict');
 
-// POINT 8: Root toggle
+// Root visibility toggle (Show Root checkbox)
 document.getElementById('showRootChk').addEventListener('change', e => {
   showRoot = e.target.checked;
-  // Re-show or hide badge based on current question (only before answering)
+  // Re-show or hide badge based on current question state (only before answering)
   if (!answered) {
     if (currentMode === 'chords' && currentMidiNotes.length)
       updateRootBadge(showRoot ? getChordRootName() : null);
@@ -750,28 +932,27 @@ document.getElementById('showRootChk').addEventListener('change', e => {
   }
 });
 
-// POINT 8: Stats panel toggle
+// Session stats panel toggle
 document.getElementById('statsToggle').addEventListener('click', () => {
   const panel = document.getElementById('statsPanel');
-  const btn = document.getElementById('statsToggle');
-  const open = panel.style.display === 'block';
+  const btn   = document.getElementById('statsToggle');
+  const open  = panel.style.display === 'block';
   panel.style.display = open ? 'none' : 'block';
-  btn.textContent = open ? '▸ Session stats' : '▾ Session stats';
+  btn.textContent     = open ? '▸ Session stats' : '▾ Session stats';
 });
 
-// POINT 20.5: New Session button + reset stats button both call full reset
+// New Session and Reset Stats both trigger a full session reset
 document.getElementById('newSessionBtn').addEventListener('click', resetSession);
 document.getElementById('resetStatsBtn').addEventListener('click', resetSession);
 
-// POINT 8: Keyboard shortcuts — Space=play, 1–4=answer, Enter=next
+// Keyboard shortcuts — Space = play, Enter = Next button
 document.addEventListener('keydown', e => {
-  // Ignore when typing in an input
-  if (e.target.tagName === 'INPUT') return;
+  if (e.target.tagName === 'INPUT') return; // ignore when typing in a search / input field
 
   if (e.code === 'Space') {
     e.preventDefault();
-    if (currentMode === 'intervals')        playInterval();
-    else if (currentMode === 'scales')      playScale();
+    if (currentMode === 'intervals')         playInterval();
+    else if (currentMode === 'scales')       playScale();
     else if (currentMode === 'progressions') playProgression();
     else playChord();
   } else if (e.key === 'Enter') {
@@ -779,18 +960,20 @@ document.addEventListener('keydown', e => {
     const nb = document.getElementById('nextBtn');
     if (nb) nb.click();
   }
-  // POINT 11: 1-4 shortcut removed; answer via dropdown
 });
 
-// ─── POINT 16: Theme toggle ───────────────────────────────────────────────────
+// ─── Theme ────────────────────────────────────────────────────────────────────
+
+// Theme toggle — persisted to localStorage; defaults to dark for new users.
+// Handles both desktop (#themeToggle) and mobile (#themeToggleMobile) buttons.
 (function() {
-  const root   = document.documentElement;
-  const btns   = [
+  const root  = document.documentElement;
+  const btns  = [
     document.getElementById('themeToggle'),
     document.getElementById('themeToggleMobile'),
-  ].filter(Boolean); // guard against missing elements
-  const DARK   = 'dark';
-  const LIGHT  = 'light';
+  ].filter(Boolean);
+  const DARK  = 'dark';
+  const LIGHT = 'light';
   const stored = localStorage.getItem('earTrainerTheme');
   let theme = stored || DARK;
   if (theme === DARK) root.setAttribute('data-theme', DARK);
@@ -811,11 +994,15 @@ document.addEventListener('keydown', e => {
   });
 })();
 
-// ── About mode — see js/modes/about-mode.js ───────────────────────────────────
+// About mode — see js/modes/about-mode.js
 
+// Initialise audio — races Soundfont.instrument() against a 12-second timeout
 initAudio();
 
-// ── Dynamic header offset — keeps body clear of sticky shell regardless of height ──
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
+// Dynamic header offset — keeps body content clear of the sticky shell
+// regardless of how tall the header grows (e.g. on text resize or mobile reflow).
 (function() {
   const shell = document.getElementById('stickyShell');
   function syncPadding() {
@@ -825,7 +1012,7 @@ initAudio();
   window.addEventListener('resize', syncPadding);
 })();
 
-// ── Root panel: open on desktop, collapsed on mobile ──
+// Root panel — open by default on desktop, collapsed on mobile (≤ 600px).
 (function() {
   if (window.matchMedia('(max-width: 600px)').matches) {
     const body  = document.getElementById('rootPanelBody');
@@ -835,14 +1022,16 @@ initAudio();
   }
 })();
 
-// ── Mobile: move ℹ and ? buttons into score bar, restore on desktop ──
+// Mobile button relocation — moves ℹ (About) and ? (Help) buttons from the
+// desktop header into the score bar on narrow viewports, and restores them on
+// resize back to desktop width. Debounced at 100ms to avoid thrashing on drag.
 (function() {
-  const aboutBtn  = document.getElementById('aboutBtn');
-  const helpBtn   = document.getElementById('helpBtn');
-  const headerBtnGroup = aboutBtn.parentElement;  // the flex div they live in on desktop
-  const scoreBar  = document.querySelector('.score-bar');
-  const qdToggle  = document.getElementById('qdToggle');
-  const mq        = window.matchMedia('(max-width: 600px)');
+  const aboutBtn       = document.getElementById('aboutBtn');
+  const helpBtn        = document.getElementById('helpBtn');
+  const headerBtnGroup = aboutBtn.parentElement; // the header flex div on desktop
+  const scoreBar       = document.querySelector('.score-bar');
+  const qdToggle       = document.getElementById('qdToggle');
+  const mq             = window.matchMedia('(max-width: 600px)');
 
   function applyLayout(isMobile) {
     if (isMobile) {
@@ -866,4 +1055,4 @@ initAudio();
   });
 })();
 
-
+// @file-end — The Sound Travels Ear Training © 2026

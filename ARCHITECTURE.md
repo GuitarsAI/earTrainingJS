@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: js/modes/about-mode.js ✅
+> Last updated: js/app.js ✅
 
 ---
 
@@ -79,7 +79,7 @@ earTrainingJS/
 │   │   ├── progressions-mode.js       ✅ production pass complete
 │   │   ├── help-mode.js               ✅ production pass complete
 │   │   └── about-mode.js              ✅ production pass complete
-│   └── app.js                         [ ] pending
+│   └── app.js                         ✅ production pass complete
 │
 ├── tests/
 │   ├── spelling.test.js
@@ -1388,5 +1388,78 @@ Specialised families extend the schema with additional fields:
 
 ---
 
-### js/app.js
-[ ] — pending production pass
+### ✅ js/app.js
+
+**Role:** Boot file and application coordinator. The last file to load; depends on every other layer being defined. Owns mode switching, quiz/dictionary toggle, dictionary mode functions (`dictLoadSymbol`, `dictShow`, `renderDictPoolPanel`, `makeDictSection`, `_deactivateAllDictChips`), inversion chip rendering, `recomputeCurrentNotes`, Basic/Advanced difficulty switching, register panel rendering, theme init, collapsible panel wiring, keyboard shortcuts, and all top-level DOM event wiring.
+
+Module-level state declared here (not in `state.js`) because it is tightly coupled to dictionary UI logic and has no cross-file consumers: `dictSymbol` and `dictInversionIndex`.
+
+**Size:** ~1,060 lines across 14 functions plus 5 IIFEs and module-level event wiring.
+
+**Public API:**
+
+| Symbol | Type | Description |
+|---|---|---|
+| `switchMode(mode, targetSymbol?)` | `(string, string\|null) → void` | Switches the active training mode. Calls `teardownProgressionUI()`, updates `currentMode`, resets streak, updates mode tab active states, rebuilds the pool panel and per-mode style rows, updates the play label, resets the root badge, then enters dict or quiz flow. Optional `targetSymbol` loads a specific item directly in dict mode (used by chord-scales breakdown links). |
+| `setAppDifficulty(difficulty)` | `('basic'\|'advanced') → void` | Switches between Basic and Advanced difficulty. Resets all four pool selections (intervals, chords, scales, progressions) and voicing state to mode-appropriate defaults — no cross-difficulty memory. Rebuilds the pool panel and generates a fresh question. |
+| `setAppMode(mode)` | `('quiz'\|'dict') → void` | Switches between quiz and dictionary application modes. Calls `teardownProgressionUI()`, updates the Q/D toggle UI, shows/hides score and session UI, and initialises the appropriate pool panel and view for the current training mode. |
+| `renderRegisterPanel()` | `() → void` | Renders root note and octave register chip rows into `#rootChips` and `#octaveChips`. Root chips include both enharmonic spellings for each accidental pitch class. Clicking either chip type sets the relevant state variable and calls `recomputeCurrentNotes()`. |
+| `recomputeCurrentNotes()` | `() → void` | Reapplies current settings (root pin, octave band, voicing) to the active item without picking a new question. Handles all four chord families, intervals, scales, and progressions. Refreshes notation and breakdown if in dict mode or after answering in quiz mode. |
+| `dictLoadSymbol(symbol)` | `(string) → void` | Loads a dictionary item by symbol and sets all relevant state variables so `dictShow()` can render it. Handles all four chord families, intervals, and scales. The special symbol `'_random'` picks a random item from the full catalog. Mirrors the four chord-family paths in `generateChordQuestion()` exactly. |
+| `renderDictPoolPanel()` | `() → void` | Renders the pool panel in dictionary mode. Same groups and sections as the quiz pool but single-select chips with no All/None buttons. Chords reuse `_renderChordSubGroups()` from `pool-chords.js`. |
+| `makeDictSection(body, title, items, useDisplayName?, collapsed?)` | `(HTMLElement, string, object[], boolean, boolean) → void` | Builds one collapsible section of single-select chips for the dictionary pool panel. Clicking a chip calls `dictLoadSymbol` + `dictShow`. No count display, no All/None buttons. |
+| `dictShow()` | `() → void` | Reveals notation and breakdown for the currently loaded dictionary item. Sets `answered = true`, resets resolution state, rebuilds the Hear Slowly + Resolve control buttons. No-ops if required current-item state is missing. |
+| `dictApplyInversion(invIdx)` | `(number) → void` | Applies a specific inversion index to the current chord in dict or post-answer quiz mode. Re-voices in place, updates the notation chord name label, and refreshes notation and breakdown. No-ops for chord families that do not support rotation-based inversions. |
+| `renderInversionChips()` | `() → void` | Renders inversion chips into `#inversionChipRow` for normal chords in dict and post-answer quiz mode. Hidden for families that do not support rotation-based inversions, for non-chord modes, and for single-note chords. |
+| `makeCollapsible(headerId, bodyId, arrowId)` | `(string, string, string) → void` | Wires a collapsible toggle for a header/body/arrow element triple. No-ops silently if any element is missing. |
+
+**Private helpers (not exported, documented for maintainers):**
+
+| Symbol | Description |
+|---|---|
+| `getAllIntervals()` | Returns a fresh copy of the full `INTERVALS` array. Mirrors `getAllChords()` in `helpers.js`. |
+| `getAllScales()` | Returns a fresh copy of the full `SCALES` array. Mirrors `getAllChords()` in `helpers.js`. |
+| `dictFullCatalog()` | Returns the full item catalog for the current mode, ignoring quiz pool filters. Used by dictionary mode to show every available item. |
+| `dictDefaultSymbol()` | Returns the symbol of the first item in the full catalog for the current mode. Used as the initial selection when entering dict mode with no prior symbol. |
+| `_deactivateAllDictChips()` | Removes the active class from every pool chip in `#poolPanel`. Called before activating a newly selected dict chip to ensure single-select. |
+
+**Module-level state (declared here, not in `state.js`):**
+
+| Variable | Type | Description |
+|---|---|---|
+| `dictSymbol` | `string\|null` | Currently loaded dictionary item symbol, or `null` before first load. |
+| `dictInversionIndex` | `number` | Inversion position shown in dict mode and post-answer quiz view (0 = root position). |
+| `BASIC_CHORD_SYMBOLS` | `const string[]` | Hard-coded Basic chord symbol list. Matches `basic: true` entries in `chords.js`; kept here so `setAppDifficulty()` can reset `selectedChords` without re-filtering `CHORD_TYPES`. |
+
+**IIFEs and module-level wiring (in execution order):**
+
+| Block | Description |
+|---|---|
+| Settings panel IIFE | Wires the `#settingsPanelHeader` click toggle immediately at load time. |
+| `makeCollapsible` calls | Wires root, notation, and breakdown panel collapsibles. |
+| Play button listener | Dispatches to the correct playback function per mode; handles the resolution arc for chords in resolution view. |
+| Q/D toggle listeners | `#qdQuiz` → `setAppMode('quiz')`; `#qdDict` → `setAppMode('dict')`. |
+| Mode tab listeners | Each `.mode-tab` click calls `switchMode(tab.dataset.mode)`. |
+| Initial render calls | `renderPoolPanel()`, `renderChordStyleChips()`, `renderIntervalStyleChips()`, `renderScaleDirChips()`, `renderRegisterPanel()`, then `setAppMode('dict')` to boot into dictionary mode. |
+| Root visibility toggle | `#showRootChk` — updates `showRoot` and refreshes the root badge based on current question state. |
+| Stats panel toggle | `#statsToggle` — toggles `#statsPanel` display and button text. |
+| Session reset listeners | `#newSessionBtn` and `#resetStatsBtn` both call `resetSession()`. |
+| Keyboard shortcuts IIFE | `Space` = play (mode-dispatched); `Enter` = click `#nextBtn` if present. Both no-op when focus is in an `<input>`. |
+| Theme IIFE | Reads `earTrainerTheme` from `localStorage`; defaults to dark. Wires both `#themeToggle` and `#themeToggleMobile` to toggle theme and persist choice. |
+| Layout IIFE | Syncs `body.paddingTop` to `#stickyShell.offsetHeight` on load and resize. |
+| Root panel IIFE | Collapses root panel on mobile (≤ 600px) on load. |
+| Mobile button relocation IIFE | Moves `#aboutBtn` and `#helpBtn` from the desktop header into `.score-bar` on narrow viewports; restores them on resize (debounced at 100ms). |
+| `initAudio()` call | Races `Soundfont.instrument()` against a 12-second timeout. Must be last — depends on all other wiring being in place. |
+
+**Key design patterns:**
+
+- **`dictLoadSymbol` mirrors `generateChordQuestion`:** All four chord-family state-setting paths (slash, poly, UST, normal) are duplicated between the two functions. Any change to question generation must be reflected in the dict loader. The JSDoc cross-reference is intentional.
+- **`recomputeCurrentNotes` handles all modes:** Consolidates the re-voice-in-place logic for every mode in one function. Inner helpers `resolvePc` and `rootMidiForPc` avoid code repetition across the four chord family branches. Progressions update the root badge and re-show notation without re-voicing.
+- **`_deactivateAllDictChips` naming:** Follows the `_camelCase` private-helper convention used throughout the codebase (cf. `_makeProgSection`, `_buildVoiceLeadingAnalysis`).
+- **`makeDictSection` is consumed externally:** `pool-chords.js` calls `makeDictSection` from `_renderChordQualitySection()` in dict mode. This is a documented cross-layer dependency: `app.js` (Layer 7) defines the function; `pool-chords.js` (Layer 5) calls it. Acceptable because `app.js` loads last and the function is stable. Noted in `pool-chords.js` ARCHITECTURE entry.
+- **Boot order:** `setAppMode('dict')` is the final render call. It triggers `dictLoadSymbol` + `renderDictPoolPanel` + `dictShow` for the initial item — the user sees a chord immediately without playing audio (audio is not yet loaded at this point).
+- **`teardownProgressionUI` guard:** Both `switchMode()` and `setAppMode()` call `teardownProgressionUI()` with a `typeof` guard, defensively allowing the function to be undefined (e.g. in test environments where `progressions-mode.js` is not loaded).
+
+**Dependencies:** `state.js`, `defaults.js`, `helpers.js` (`resetSession`, `getAllChords`, `pickRandom`, `chooseSimpleRootMidi`, `resolveOctaveBand`, `spelledRoot`, `getChordRootName`, `updateRootBadge`, `spelledNote`), `spelling.js` (`spelledNote`), `keysig.js`, `audio.js` (`playInterval`, `playScale`, `playProgression`, `playChord`, `playSlowly`, `playResolution`, `initAudio`, `audioCtx`, `midiToSoundFontName`, `piano`), `notation.js` (`showNotation`, `renderInversionChips`, `showBreakdown`, `showCurrentView`, `showProgressionNotation`, `updateRootBadge`), `voicings.js` (`resolveVoicingMode`, `applyVoicing`), `voiceLeading.js` (`getResolutionInfo`, `getSourceMidi`, `resolutionActive`), `breakdown.js`, `breakdown-chords.js`, `stats.js` (`resetQuizUI`), `controls.js`, `pool.js` (`renderPoolPanel`, `makePoolPanelShell`), `pool-chords.js` (`renderChordStyleChips`, `_renderChordSubGroups`), `pool-intervals.js` (`renderIntervalStyleChips`), `pool-scales.js` (`renderScaleDirChips`, `iterateScaleGroups`), `pool-progressions.js` (`renderProgressionPoolPanel`), `chords-mode.js` (`generateChordQuestion`), `intervals-mode.js` (`generateIntervalQuestion`), `scales-mode.js` (`generateScaleQuestion`), `progressions-mode.js` (`generateQuestion`, `teardownProgressionUI`, `generateProgressionQuestion_entry`, `renderDictProgressionPoolPanel`, `dictShowProgression`, `dictProgSymbol`, `showProgressionNotation`), `help-mode.js`, `about-mode.js`.
+
+**Consumed by:** nothing — this is the boot layer; no other file loads after it.
