@@ -19,9 +19,9 @@
 | 1 — npm setup | ✅ Complete | Install JSDoc and `clean-jsdoc-theme` |
 | 2 — Config | ✅ Complete | Create `jsdoc.json` configuration file |
 | 3 — Headers | ✅ Complete | Shell script to add / update file headers in all JS, CSS, HTML files |
-| 4 — Tutorials | — | Create markdown pages for HTML structure and CSS architecture |
-| 5 — Generate | — | Run JSDoc, verify output locally |
-| 6 — Deploy | — | Commit, push, enable GitHub Pages from `/docs` |
+| 4 — Tutorials | ✅ Complete | Create markdown pages for HTML structure and CSS architecture |
+| 5 — Generate | ✅ Complete | Run JSDoc, verify output locally |
+| 6 — Deploy | ✅ Complete | Commit, push, enable GitHub Pages from `/docs` |
 
 ---
 
@@ -400,7 +400,7 @@ head -8 index.html
 
 ---
 
-## Phase 4 — Tutorial markdown pages
+## Phase 4 — Tutorial markdown pages ✅ COMPLETE
 
 > These three pages become dedicated sections in the docs sidebar alongside the
 > JS API reference. They cover what JSDoc cannot process natively: HTML DOM
@@ -702,7 +702,7 @@ ls -la tutorials/
 
 ---
 
-## Phase 5 — Generate and verify locally
+## Phase 5 — Generate and verify locally ✅ COMPLETE
 
 ### 5.1 — Run JSDoc
 
@@ -755,7 +755,7 @@ cd ..
 
 ---
 
-## Phase 6 — Commit, push, and enable GitHub Pages
+## Phase 6 — Commit, push, and enable GitHub Pages ✅ COMPLETE
 
 ### 6.1 — Stage all changes
 
@@ -844,6 +844,9 @@ git push origin main
 | `add_headers.sh` kept in repo | Reusable when new files are added; idempotent — safe to re-run |
 | `node_modules/` in `.gitignore`, `docs/` not | `node_modules` is reproducible via `npm install`; `docs/` must be committed for GitHub Pages to serve it |
 | Detection marker is `renato-profeta` | A URL fragment unique to this project; avoids false positives from generic strings like "The Sound Travels" that could appear in content |
+| `template` path set to `node_modules/clean-jsdoc-theme/dist` | v5.2.0 ships `publish.js` in `dist/` not the package root; jsdoc.json must point there or JSDoc throws a FATAL |
+| `"basePath": "/earTrainingJS/docs/"` in `opts` | GitHub Pages serves the repo from `/earTrainingJS/`, not `/`; without basePath the theme generates absolute asset paths (`/_assets/...`) that 404. basePath fixes all asset, island, and search index URLs |
+| GitHub Pages source left on root `/` of `main` | The app (`index.html`) lives at root; docs live at `/docs/` subfolder — both served by the same Pages config with no conflict. No need to change the Pages source setting |
 
 ---
 
