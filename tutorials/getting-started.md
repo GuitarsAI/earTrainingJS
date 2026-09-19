@@ -1,7 +1,9 @@
 # The Sound Travels Ear Training — Developer Reference
 
 **Author:** Renato Fera P. — [LinkedIn](https://www.linkedin.com/in/renato-profeta/)
+
 **Copyright:** © 2026 The Sound Travels — MIT License
+
 **Live app:** [guitarsai.github.io/earTrainingJS](https://guitarsai.github.io/earTrainingJS/)
 
 ---
