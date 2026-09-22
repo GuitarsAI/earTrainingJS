@@ -124,10 +124,87 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
   const barCount = sequential ? Math.ceil(notes.length / 4) : 1;
   const W = sequential ? barCount * 4 * 46 + headerPx + 40 : 260;
 
+  // ── Dynamic layout: expand SVG to fit all ledger lines ──────────────────────
+  //
+  // VexFlow renders ledger lines outside the staff body without clipping them
+  // itself — clipping happens when the SVG height is too small. We measure how
+  // far each note sits above/below its staff's outer lines and add the required
+  // pixel padding so every note is always fully visible.
+  //
+  // Reference MIDI values for the outer staff lines:
+  //   Treble top line    : F5  = MIDI 77   (notes above need padding-top)
+  //   Treble bottom line : E4  = MIDI 64   (notes below need padding between staves or extra top)
+  //   Bass top line      : A3  = MIDI 57   (notes above need padding between staves)
+  //   Bass bottom line   : G2  = MIDI 43   (notes below need padding-bottom)
+  //
+  // Each staff line / space pair is ~10 px in VexFlow at our stave width.
+  // We use 10 px per semitone-pair (i.e. per diatonic step), with a small
+  // base margin so the outermost ledger line head never touches the SVG edge.
+  //
+  // Diatonic step sizes (semitones per step vary; we approximate via MIDI):
+  //   Each diatonic step ≈ 1–2 semitones. Rather than convert to diatonic space,
+  //   we use a conservative 5 px/semitone factor which reliably over-estimates
+  //   slightly (safe) and keeps arithmetic simple across all clefs.
+
+  const PX_PER_SEMI  = 5;   // px per semitone of overshoot past the staff boundary
+  const BASE_MARGIN  = 20;  // minimum px of breathing room above/below outermost note
+
+  // Treble outer lines (MIDI)
+  const TREBLE_TOP    = 77; // F5
+  const TREBLE_BOTTOM = 64; // E4
+
+  // Bass outer lines (MIDI)
+  const BASS_TOP      = 57; // A3
+  const BASS_BOTTOM   = 43; // G2
+
+  /**
+   * Returns the extra px needed above/below a staff given the notes assigned to it.
+   * @param {number[]} midiArr  - Notes on this staff.
+   * @param {number}   topLine  - MIDI of the staff's top line.
+   * @param {number}   botLine  - MIDI of the staff's bottom line.
+   * @returns {{ above: number, below: number }}
+   */
+  function _staffOvershoot(midiArr, topLine, botLine) {
+    if (!midiArr.length) return { above: 0, below: 0 };
+    const hi = Math.max(...midiArr);
+    const lo = Math.min(...midiArr);
+    const above = hi > topLine  ? Math.ceil((hi - topLine)  * PX_PER_SEMI) + BASE_MARGIN : BASE_MARGIN;
+    const below = lo < botLine  ? Math.ceil((botLine - lo)  * PX_PER_SEMI) + BASE_MARGIN : BASE_MARGIN;
+    return { above, below };
+  }
+
+  // Assign notes to their stave for overshoot calculation.
+  // (Mirrors the split logic used later in block mode; for sequential mode all
+  //  notes go to a single stave selected by the lowest pitch.)
+  let trebleNotesMeasure = [], bassNotesMeasure = [];
+  if (grandStaff) {
+    notes.forEach(m => (m >= 60 ? trebleNotesMeasure : bassNotesMeasure).push(m));
+  } else if (needsBass) {
+    bassNotesMeasure = notes;
+  } else {
+    trebleNotesMeasure = notes;
+  }
+
+  const tOver = _staffOvershoot(trebleNotesMeasure, TREBLE_TOP, TREBLE_BOTTOM);
+  const bOver = _staffOvershoot(bassNotesMeasure,   BASS_TOP,   BASS_BOTTOM);
+
+  // Staff body height is fixed at 40 px (4 spaces × 10 px each).
+  // Gap between treble bottom and bass top on a grand staff is 60 px.
+  const STAFF_H    = 40;
+  const GRAND_GAP  = 60;
+
   let H, trebleY, bassY;
-  if (grandStaff)       { H = 240; trebleY = 20; bassY = 120; }
-  else if (needsBass)   { H = 140; bassY = 30; }
-  else                  { H = 140; trebleY = 30; }
+  if (grandStaff) {
+    trebleY = tOver.above;
+    bassY   = trebleY + STAFF_H + GRAND_GAP;
+    H       = bassY + STAFF_H + bOver.below;
+  } else if (needsBass) {
+    bassY = bOver.above;
+    H     = bassY + STAFF_H + bOver.below;
+  } else {
+    trebleY = tOver.above;
+    H       = trebleY + STAFF_H + tOver.below;
+  }
 
   svg.setAttribute('width', W);
   svg.setAttribute('height', H);
@@ -505,8 +582,35 @@ function renderPolyNotation(keySigStr) {
   const svg = document.getElementById('notation-svg');
   svg.innerHTML = '';
 
-  // Polychord layout is always a fixed-size grand staff — no dynamic sizing needed.
-  const W = 260, H = 240, trebleY = 20, bassY = 120;
+  // Polychord layout: grand staff, but sized dynamically so ledger lines are
+  // never clipped. Upper triad always on treble, lower on bass.
+  const W = 260;
+
+  const PX_PER_SEMI_P = 5;
+  const BASE_MARGIN_P = 20;
+  const TREBLE_TOP_P  = 77; // F5
+  const TREBLE_BOT_P  = 64; // E4
+  const BASS_TOP_P    = 57; // A3
+  const BASS_BOT_P    = 43; // G2
+  const STAFF_H_P     = 40;
+  const GRAND_GAP_P   = 60;
+
+  function _polyOvershoot(midiArr, topLine, botLine) {
+    if (!midiArr.length) return { above: BASE_MARGIN_P, below: BASE_MARGIN_P };
+    const hi = Math.max(...midiArr);
+    const lo = Math.min(...midiArr);
+    const above = hi > topLine ? Math.ceil((hi - topLine) * PX_PER_SEMI_P) + BASE_MARGIN_P : BASE_MARGIN_P;
+    const below = lo < botLine ? Math.ceil((botLine - lo) * PX_PER_SEMI_P) + BASE_MARGIN_P : BASE_MARGIN_P;
+    return { above, below };
+  }
+
+  const tOver = _polyOvershoot(currentPolyUpperMidi, TREBLE_TOP_P, TREBLE_BOT_P);
+  const bOver = _polyOvershoot(currentPolyLowerMidi, BASS_TOP_P,   BASS_BOT_P);
+
+  const trebleY = tOver.above;
+  const bassY   = trebleY + STAFF_H_P + GRAND_GAP_P;
+  const H       = bassY + STAFF_H_P + bOver.below;
+
   svg.setAttribute('width', W);
   svg.setAttribute('height', H);
   const renderer = new Renderer(svg, Renderer.Backends.SVG);

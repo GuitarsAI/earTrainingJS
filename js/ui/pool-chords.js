@@ -187,7 +187,7 @@ function _renderVoicingSection(body) {
   if (isMulti) {
     _renderVoicingMulti(body);
   } else {
-    _renderVoicingSingle(body);
+    _renderVoicingSingle(body, currentBaseIntervals);
   }
 }
 
