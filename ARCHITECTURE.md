@@ -2,7 +2,7 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: css/mobile.css ✅
+> Last updated: ARCHITECTURE.md ✅ (voicings cleanup pass)
 
 ---
 
@@ -259,7 +259,7 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 
 **Role:** All component-level styles for the application. Consumed after `base.css` (which defines the CSS custom property tokens) and before `mobile.css` (which applies narrow-viewport overrides). Contains zero design tokens — all colour, spacing, and shadow values are referenced via `var(--...)` from `base.css`, with two deliberate exceptions noted below.
 
-**Size:** 1,128 lines across 20 sections.
+**Size:** 1,138 lines across 20 sections.
 
 **Structure — 20 sections in render order:**
 
@@ -270,7 +270,7 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 | 3 | Score bar & Quiz/Dictionary toggle | `.score-bar`, `.score-pill`, `.qd-toggle`, `.qd-btn` / `.qd-btn.active` |
 | 4 | Theme toggle & About/Help buttons | `.theme-toggle`, `#themeToggleMobile` (hidden at desktop), `.about-btn` / `.about-btn.active` |
 | 5 | Mode tabs | `.mode-tabs`, `.mode-tab` / `.mode-tab.active` (teal underline; `flex:1` fills full width) |
-| 6 | Training pool panel | `.pool-panel`, `.pool-panel-header`, `.pool-panel-body` / `.open`, `.pool-section`, `.pool-section-header`, `.pool-section-body` / `.collapsed`, `.pool-section-chevron`, `.pool-chips`, `.pool-chip` / `.active`, `.pool-inv-row` |
+| 6 | Training pool panel | `.pool-panel`, `.pool-panel-header`, `.pool-panel-body` / `.open`, `.pool-section`, `.pool-section-header`, `.pool-section-body` / `.collapsed`, `.pool-section-chevron`, `.pool-chips`, `.pool-chip` / `.active`, `.pool-inv-row`. Also: `.voicing-chip-disabled` — greyed-out inert chip for voicings inapplicable to the current chord (opacity 0.35, pointer-events none; see §6 design decisions below). |
 | 7 | Chip system | `.option-chip` base + four aliases: `.chord-style-chip`, `.voicing-chip`, `.style-chip`, `.scale-dir-chip` — all share one ruleset; row wrappers: `.chord-style-row`, `.voicing-mode-row`, `.interval-style-row`, `.scale-dir-row` |
 | 8 | Play area | `.play-area`, `.play-label`, `.play-btn` / `.playing` / `:disabled`, `.chord-hint` |
 | 9 | Notation panel | `.notation-area` (hardcoded `#ffffff` — see design decisions), `.notation-scroll` (`-webkit-overflow-scrolling: touch`), `#notation-svg`, `.notation-label`, `.notation-chord-name`, `.keysig-chip-row`, `.keysig-chip` / `.active` (hardcoded light-palette — see design decisions) |
@@ -279,7 +279,7 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 | 12 | Controls | `.controls`, `.ctrl-btn` / `.primary` / `.slow` / `.resolve` |
 | 13 | Settings panel | `.settings-panel`, `.settings-panel-header`, `.settings-panel-body` / `.open`, `.settings-section`, `.settings-section-label`, `.settings-chips` |
 | 14 | Root note & register chips | `.register-row`, `.register-label`, `.register-chips`, `.reg-chip` / `.active` |
-| 15 | Breakdown panel | `.breakdown-panel`, `.breakdown-header`, `.breakdown-figured` (superscript figured bass), `.breakdown-row`, `.breakdown-key`, `.breakdown-val`, `.breakdown-sep`, `.breakdown-divider`, `.breakdown-pills`, `.breakdown-pill`, `.breakdown-pill-label`, `.breakdown-pill-value`; Riemannian tooltip: `.bd-riemann-wrap`, `.bd-riemann-icon`, `.bd-riemann-tooltip` (CSS-only hover/focus; `@media (max-width: 479px)` flips anchor to right); Chord scales sub-section: `.cs-section`, `.cs-header`, `.cs-body` / `.open`, `.cs-row` / `.cs-row-link` (CSS `::after` arrow on hover), `.cs-name`, `.cs-name-link`, `.cs-tag`, `.cs-note` |
+| 15 | Breakdown panel | `.breakdown-panel`, `.breakdown-header`, `.breakdown-figured` (superscript figured bass), `.breakdown-aka` (also-known-as alias row — muted smaller text beneath the chord name header), `.breakdown-row`, `.breakdown-key`, `.breakdown-val`, `.breakdown-sep`, `.breakdown-divider`, `.breakdown-pills`, `.breakdown-pill`, `.breakdown-pill-label`, `.breakdown-pill-value`; Riemannian tooltip: `.bd-riemann-wrap`, `.bd-riemann-icon`, `.bd-riemann-tooltip` (CSS-only hover/focus; `@media (max-width: 479px)` flips anchor to right); Chord scales sub-section: `.cs-section`, `.cs-header`, `.cs-body` / `.open`, `.cs-row` / `.cs-row-link` (CSS `::after` arrow on hover), `.cs-name`, `.cs-name-link`, `.cs-tag`, `.cs-note` |
 | 16 | Root toggle & stats panel | `.root-toggle-row`, `.root-badge`; `.stats-panel`, `.stats-title`, `.stats-table`, `.stat-bar-wrap`, `.stat-bar` (width set inline by `js/ui/stats.js`), `.stats-toggle`, `.kbd-hint`, `.new-session-btn` |
 | 17 | Voice leading | `.vl-selected` (`!important` border + background override on `.cs-section` card), `.vl-table` with four `td:nth-child()` column rules (voice name / target note teal / interval / annotation italic) |
 | 18 | Progression mode | `.prog-slots-wrap` (horizontal scroll; custom scrollbar), `.prog-slot` / `.correct` / `.wrong`, `.prog-slot-label`, `.prog-slot-revealed`, `.prog-slot-row`, `.prog-chip` / `.active` / `.disabled`, `.prog-submit-row`, `.prog-submit-btn`, `.prog-notation-row`, `.prog-notation-cell`, `.prog-notation-cell-label`; pool chip variant: `.pool-chip.prog-pool-chip`, `.prog-chip-sym`, `.prog-chip-name` |
@@ -294,13 +294,14 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 | `.pool-panel-body.open`, `.pool-section-body.collapsed`, `.pool-chip.active` | `js/ui/pool.js` |
 | `.qd-btn.active` | `js/app.js` |
 | `.style-chip.active`, `.chord-style-chip.active`, `.voicing-chip.active`, `.scale-dir-chip.active` | `js/modes/*-mode.js` (each mode manages its own chips) |
+| `.voicing-chip-disabled` | `js/ui/pool-chords.js` → `_makeVoicingGroupSingle()` |
 | `.play-btn.playing`, `.play-btn:disabled` | `js/engine/audio.js` |
 | `.notation-area` (display toggle), `.keysig-chip.active` | `js/engine/notation.js` |
 | `.status-msg.good` / `.bad` | `js/ui/controls.js` |
 | `.ans-dropdown-trigger`, `.ans-dropdown-list`, `.ans-dropdown-item` (all states) | `js/ui/controls.js` |
 | `.settings-panel-body.open` | `js/app.js` |
 | `.reg-chip.active` | `js/modes/chords-mode.js`, `js/modes/intervals-mode.js` |
-| `.breakdown-*`, `.cs-*`, `.vl-*`, `.bd-riemann-*` | `js/breakdown/breakdown-chords.js`, `breakdown-intervals.js`, `breakdown-scales.js`, `breakdown-progressions.js` |
+| `.breakdown-*`, `.breakdown-aka`, `.cs-*`, `.vl-*`, `.bd-riemann-*` | `js/breakdown/breakdown-chords.js`, `breakdown-intervals.js`, `breakdown-scales.js`, `breakdown-progressions.js` |
 | `.stat-bar` width (inline style) | `js/ui/stats.js` |
 | `.stats-panel` (display toggle), `.stats-toggle` | `js/app.js` |
 | `.prog-slot.correct` / `.wrong`, `.prog-chip.active` / `.disabled`, `.prog-submit-btn:disabled` | `js/modes/progressions-mode.js` |
@@ -313,9 +314,13 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 - **Notation card hardcoded white** — `.notation-area` uses `background: #ffffff` (not `var(--bg-card)`) because VexFlow renders black ink; the card must remain white regardless of active theme. `.notation-label`, `.notation-chord-name`, and all `.keysig-chip` colours are also hardcoded to light-palette hex values for the same reason — they sit on a white surface, not the themed background.
 - **`#themeToggleMobile` hidden here** — `display:none` is set in this file; `mobile.css` overrides to `display:inline-flex` at the narrow breakpoint so the score-bar instance shows on mobile. The desktop instance `#themeToggle` is always visible via `.header-actions`. Note: `mobile.css` previously contained a duplicate `display:none` rule that re-hid the mobile toggle — corrected to `display:inline-flex` in the Aug 2026 production pass.
 - **Chip alias pattern** — `.option-chip`, `.chord-style-chip`, `.voicing-chip`, `.style-chip`, `.scale-dir-chip` all share one ruleset via a grouped selector. This allows JS in each mode file to use semantically meaningful class names without any style duplication.
+- **`.voicing-chip-disabled`** — added in the voicings cleanup pass (Prompt 5). Applied by `pool-chords.js` to single-select voicing chips that are structurally inapplicable to the chord currently on screen. `opacity: 0.35` and `pointer-events: none` make the chip visible but inert. `pool-chords.js` also omits the click handler on disabled chips — the CSS is belt-and-suspenders, the missing handler is the authoritative guard. Opacity matches `.play-btn:disabled` for visual consistency.
+- **`.breakdown-aka`** — added in the voicings cleanup pass (Prompt 7). Styles the "Also known as: …" alias row rendered by `breakdown-chords.js` beneath the chord name header when a chord descriptor carries `alsoKnownAs`. Font-size 0.85em, `var(--text-muted)` colour, small vertical padding. Note: the CSS rule is defined in `components.css` §15 after `.breakdown-figured`; the class is assigned in `breakdown-chords.js`.
 - **Riemannian tooltip is CSS-only** — shown via `:hover` and `:focus-within` on `.bd-riemann-wrap`. The only `@media` query in this file (`max-width: 479px`) exists solely to prevent this tooltip clipping off the left edge on the smallest viewports.
 - **`.vl-selected` uses `!important`** — overrides the `.cs-section` border and background to create the visual link between the voice leading engine output and the harmonic field panel. Intentional; no other `!important` in the file.
 - **`min-height: 2.75rem`** — applied consistently to every interactive element (chips, buttons, triggers, table rows) to meet the 44×44px touch target floor required by the accessibility pass.
+
+**Note — `.breakdown-aka` verified missing from this snapshot:** `.breakdown-aka` is referenced in `breakdown-chords.js` (assigned via `classList` and read in the voicings cleanup notes below), but no matching CSS rule for it exists anywhere in the uploaded `components.css`. The plan document states it was added "after `.breakdown-figured`" during Prompt 7. Either the uploaded `components.css` predates that edit, or the rule was dropped in a later pass. This is recorded here as a known discrepancy rather than silently corrected — add the rule (font-size ~0.85em, `var(--text-muted)`, small vertical padding, positioned after `.breakdown-figured` in §15) before shipping v1.0.0.
 
 ---
 
@@ -391,6 +396,8 @@ Used for polychords, USTs, and slash chords where no single root key is obvious.
 
 **Role:** Complete chord type library. Single source of truth for all playable chord families, their interval structures, extended schema fields, and playback style options. Loaded in the data layer; consumed by every file that needs to construct, voice, spell, or display a chord.
 
+**Size:** ~383 lines.
+
 **Exports:**
 
 | Constant | Type | Description |
@@ -406,21 +413,21 @@ Standard families share a common schema (`name`, `symbol`, `intervals`, `family`
 |---|---|---|
 | `major` | 17 | Triads, added-note, sixth, Maj7 extensions |
 | `minor` | 19 | Minor triads, m6, m7, mMaj7 extensions |
-| `dominant` | 23 | Dom7 and all altered / suspended / extended variants |
+| `dominant` | 25 | Dom7 and all altered / suspended / extended variants. Includes two entries promoted from deleted voicings: `7b5b9` (Rootless Altered C) and `phryg_dom` (Phrygian Dom). |
 | `diminished` | 4 | dim, m7♭5, °7, °7(Maj7) |
 | `augmented` | 4 | aug, Maj7♯5, aug7, aug9 |
 | `suspended` | 5 | sus2, sus4, power, and extensions |
 
 Specialised families extend the schema with additional fields:
 
-| Family | Extra fields | Notes |
-|---|---|---|
-| `classical` | `classicalNote` | N6, It⁺⁶, Fr⁺⁶, Ger⁺⁶. Root badge = bass note (♭6 for aug sixths; ♭2 for N6 in first inversion) |
-| `quartal` | `quartal: true`, `quartNote` | 6 voicings: qrt3/4/5, qrtTT, qnt3/4. Triggers modal-context breakdown path |
-| `cluster` | `cluster: true`, `clustNote` | 4 voicings: M2/m2 3-note, mixed 4-note, chromatic 4-note. Triggers timbral breakdown path |
-| `slash` | `upperIntervals`, `bassInterval`, `belowLabel`, `upperQuality`, `alsoKnownAs?` | 18 entries: 9 maj + 9 min upper triads. Bass placed below upper root by `12 − bassInterval` semitones |
-| `poly` | `upperIntervals`, `lowerIntervals`, `lowerOffset`, `upperSymbol`, `lowerSymbol` | 24 entries: Maj/Min/Aug/Dom7 combinations at P5 and TT offsets |
-| `ust` | `shellIntervals`, `upperTriadRoot`, `upperTriadIntervals`, `upperQuality`, `ustNumber`, `tensions`, `resultingChord`, `subFamily`, `shellQuality?` | 15 entries across 3 shell contexts: dom7 [4,10], min [3,10], maj7 [4,11]. Root not played |
+| Family | Count | Extra fields | Notes |
+|---|---|---|---|
+| `classical` | 4 | `classicalNote` | N6, It⁺⁶, Fr⁺⁶, Ger⁺⁶. Root badge = bass note (♭6 for aug sixths; ♭2 for N6 in first inversion) |
+| `quartal` | 6 | `quartal: true`, `quartNote` | qrt3/4/5, qrtTT, qnt3/4. Triggers modal-context breakdown path |
+| `cluster` | 11 | `cluster: true`, `clustNote` | 3-note M2/m2 clusters, 4-note mixed and chromatic, plus new 5-note chromatic, 4- and 5-note diatonic, pentatonic, and whole-tone clusters promoted from deleted voicings. Triggers timbral breakdown path. |
+| `slash` | 18 | `upperIntervals`, `bassInterval`, `belowLabel`, `upperQuality`, `alsoKnownAs?` | 9 maj + 9 min upper triads. Bass placed below upper root by `12 − bassInterval` semitones |
+| `poly` | 24 | `upperIntervals`, `lowerIntervals`, `lowerOffset`, `upperSymbol`, `lowerSymbol` | Maj/Min/Aug/Dom7 combinations at P5 and TT offsets |
+| `ust` | 15 | `shellIntervals`, `upperTriadRoot`, `upperTriadIntervals`, `upperQuality`, `ustNumber`, `tensions`, `resultingChord`, `subFamily`, `shellQuality?` | 15 entries across 3 shell contexts: dom7 [4,10], min [3,10], maj7 [4,11]. Root not played |
 
 **Schema field reference:**
 
@@ -431,6 +438,8 @@ Specialised families extend the schema with additional fields:
 | `intervals` | number[] | standard families | Semitone offsets from root; values >11 = compound intervals |
 | `family` | string | all | Pool panel chip category |
 | `basic` | boolean | selected | `true` = included in Basic difficulty |
+| `alsoKnownAs` | `string[]` | quartal (some), cluster (some), dominant (some) | Voicing or cultural names that collapse to this chord identity. Rendered in the breakdown panel beneath the chord name header via `breakdown-chords.js`. Type is `string[]` on all standard / quartal / cluster / dominant entries. |
+| `alsoKnownAs` | `string` | slash (some) | Equivalent standard chord symbol where the slash voicing has a common tertian reading. Legacy type — `string` not `string[]`. Both types are handled by an `Array.isArray` guard in `breakdown-chords.js`. |
 | `classicalNote` | string | classical | Explanatory text for Classical function breakdown sub-section |
 | `quartal` | boolean | quartal | Triggers quartal breakdown path |
 | `quartNote` | string | quartal | Text for Quartal construction breakdown sub-section |
@@ -440,7 +449,6 @@ Specialised families extend the schema with additional fields:
 | `bassInterval` | number | slash | PC offset from upper root UP to bass note (1–11); sounding distance below = 12 − bassInterval |
 | `belowLabel` | string | slash | Plain interval name for the sounding-below distance (m2/M2/…/M7/TT) |
 | `upperQuality` | string | slash, ust | Quality of the upper triad: `'maj'` or `'min'` |
-| `alsoKnownAs` | string | slash (some) | Equivalent standard chord symbol where the voicing has a common tertian reading |
 | `lowerIntervals` | number[] | poly | Intervals within the lower triad from its own root |
 | `lowerOffset` | number | poly | Semitones from upper root DOWN to lower root (1–11) |
 | `upperSymbol` | string | poly | Short quality label for upper triad (`'maj'`\|`'min'`\|`'aug'`\|`'7'`) |
@@ -453,6 +461,12 @@ Specialised families extend the schema with additional fields:
 | `resultingChord` | string | ust | Full chord symbol implied by the combined voicing |
 | `subFamily` | string | ust | Shell context: `'dom7'` \| `'min'` \| `'maj7'` |
 | `shellQuality` | string | ust (non-dom7) | Explicit shell label for non-dominant contexts: `'min'` or `'maj7'` |
+
+**Changes from voicings cleanup pass:**
+- `dominant` family grew from 23 → 25: added `7b5b9` (symbol was previously only a deleted voicing `rl_alt_c`) and `phryg_dom`.
+- `cluster` family grew from 4 → 11: added `clust_chr_5`, `clust_diaton_5`, `clust_diaton_4`, `clust_pent_5`, `clust_pent_4`, `clust_wt_5`, `clust_wt_4`. These replace the deleted Group 5 Intervallic voicings.
+- `quartal` family is unchanged in count (6) but three entries now carry `alsoKnownAs`: `qrt4` → `['Quartal (4-note)']`, `qrt5` → `['So What']`, `qnt4` → `['Quintal']`. `7sus4` in `dominant` carries `['McCoy Tyner']`.
+- `alsoKnownAs` is now present on 11 entries across dominant, quartal, and cluster families. All use `string[]`. The slash family's pre-existing `alsoKnownAs: string` fields are untouched.
 
 **Dependencies:** none — pure data, no imports.
 
@@ -564,6 +578,8 @@ Specialised families extend the schema with additional fields:
 
 **Role:** Single source of truth for all in-app Help text. Contains no DOM references or rendering logic — content only. Consumed exclusively by `help-mode.js`, which handles search, rendering, and panel open/close.
 
+**Size:** ~515 lines.
+
 **Export:**
 
 | Constant | Type | Description |
@@ -576,9 +592,16 @@ Specialised families extend the schema with additional fields:
 |---|---|---|---|
 | 1 | `getting-started` | Getting Started | 8 |
 | 2 | `modes` | Modes | 4 |
-| 3 | `controls` | Controls & Settings | 14 |
-| 4 | `breakdown` | The Breakdown Panel | 22 |
-| 5 | `glossary` | Music Theory Glossary | 32 |
+| 3 | `controls` | Controls & Settings | 18 |
+| 4 | `breakdown` | The Breakdown Panel | 34 |
+| 5 | `glossary` | Music Theory Glossary | 45 |
+
+**Changes from voicings cleanup pass (Prompt 9):**
+- `controls` section, Group 3 Shell/Rootless entry: rewritten to list only the 12 surviving voicings (removed 16 deleted ones). Entry count unchanged.
+- `controls` section, Group 5 Intervallic entry: rewritten to explain the group was removed and where its chord identities went. Entry count unchanged.
+- `controls` section, Group 6 Style entry: rewritten to list only the 13 surviving voicings (removed 4 deleted ones). Entry count unchanged.
+- `glossary` section, Cluster chords entry: updated from "Three types" to "Ten types" with descriptions of all four interval flavours. Entry count unchanged.
+- Note on entry counts: the ARCHITECTURE.md previously stated `controls`: 14 entries, `glossary`: 32. The actual counts are 18 and 45 respectively. This discrepancy predated the voicings cleanup — Prompt 9 rewrote entry bodies only, never added or removed entries. The `breakdown` section count (previously 22, now 34) was similarly stale. All counts above reflect the actual current file.
 
 **Notable design decisions:**
 
@@ -796,16 +819,20 @@ Specialised families extend the schema with additional fields:
 
 ### ✅ js/engine/voicings.js
 
-**Role:** Voicing system for Chords mode. Owns the complete voicing data table (`VOICING_MODES`, 62 voicings across 6 groups) and all voicing transformation algorithms. `applyVoicing()` is the single entry point that transforms a chord's root and base intervals into a concrete MIDI note array for a given voicing style. `resolveVoicingMode()` picks one concrete mode per question from the user's selection or active setting.
+**Role:** Voicing system for Chords mode. Owns the complete voicing data table (`VOICING_MODES`, 36 voicings across 5 active groups), the per-symbol applicability requirements table (`VOICING_REQUIREMENTS`), and all voicing transformation algorithms. `applyVoicing()` is the single entry point that transforms a chord's root and base intervals into a concrete MIDI note array. `resolveVoicingMode()` picks one concrete mode per question. `voicingAppliesToChord()` provides a chord-aware applicability test used by the UI to grey out inapplicable chips.
 
-**Size:** ~1,130 lines across 10 functions (6 internal helpers, 1 main dispatcher, 1 resolver, 2 constants).
+**Size:** ~960 lines across 12 functions / constants.
 
-**Public functions:**
+**Public API:**
 
-| Function | Signature | Description |
+| Symbol | Signature | Description |
 |---|---|---|
-| `applyVoicing(rootMidi, baseIntervals, mode)` | `(number, number[], string) → number[]` | Main dispatcher. Routes to the correct voicing algorithm for the given mode symbol and returns a sorted MIDI note array. Every voicing mode in `VOICING_MODES` has a corresponding case. Falls back to `'close'` on any error or unrecognised mode. Called recursively by some cases that fall back to simpler modes (e.g. shell voicings fall back to `'close'` for triads with no 7th). |
-| `resolveVoicingMode()` | `() → string` | Picks one concrete voicing symbol for the current question. In quiz mode: picks randomly from `selectedVoicings`, filtering out `'random'` and (in Basic mode) any advanced symbols. In dictionary mode with `activeVoicingMode === 'random'`: picks randomly from all concrete symbols scoped to difficulty. In dictionary mode with a concrete `activeVoicingMode`: returns it directly. Never returns `'random'`. |
+| `VOICING_MODES` | `VoicingMode[]` | Complete catalogue of all 36 voicing modes. Each entry: `{ group, name, symbol, desc }`. Used by `pool-chords.js` to build chip UI and by `breakdown-chords.js` to label the active voicing. |
+| `CONCRETE_VOICING_SYMBOLS` | `string[]` | Flat array of all 36 voicing symbols derived from `VOICING_MODES` at startup. Excludes the UI meta-value `'random'`. Used by `resolveVoicingMode()`. |
+| `VOICING_REQUIREMENTS` | `Object.<string, string[]>` | Maps voicing symbols that have structural role requirements to the harmonic roles they need. Symbols absent from the table are universally applicable. Used by `voicingAppliesToChord()`. See design patterns below. |
+| `applyVoicing(rootMidi, baseIntervals, mode)` | `(number, number[], string) → number[]` | Main dispatcher. Routes to the correct voicing algorithm for `mode` and returns a sorted MIDI note array. Every symbol in `VOICING_MODES` has a corresponding `case`. Falls back to `'close'` on any error or unrecognised mode. Called recursively by cases that fall back to simpler modes. |
+| `resolveVoicingMode()` | `() → string` | Picks one concrete voicing symbol for the current question. In quiz mode: picks randomly from `selectedVoicings`, filtering out `'random'` and (in Basic mode) any advanced symbols. In dictionary mode with `activeVoicingMode === 'random'`: picks randomly from the difficulty-scoped concrete pool. In dictionary mode with a concrete `activeVoicingMode`: returns it directly. Never returns `'random'`. |
+| `voicingAppliesToChord(symbol, baseIntervals)` | `(string, number[]) → boolean` | UI-gating helper. Returns `true` if the voicing is structurally meaningful for a chord with the given `baseIntervals`. Symbols absent from `VOICING_REQUIREMENTS` always return `true`. For `oct_bass_triad`, `open5_triad`, and `spread_2h`, a `'fifth'` requirement is satisfied by either `'fifth'` or `'altfifth'` (dim/aug fifth), matching those voicings' `applyVoicing()` behaviour. |
 
 **Internal helpers:**
 
@@ -816,20 +843,65 @@ Specialised families extend the schema with additional fields:
 | `_pc(midi, rootMidi)` | `(number, number) → number` | Returns the pitch class of a MIDI note as a semitone interval from root (0–11). |
 | `_clampToRange(midi, loMidi, hiMidi)` | `(number, number, number) → number` | Clamps a MIDI note into a target range by transposing by octaves. |
 | `_noteFromInterval(rootMidi, semitones, targetLoMidi)` | `(number, number, number) → number` | Builds a MIDI note from a semitone offset, clamped to a 2-octave window from `targetLoMidi`. |
-| `_stackFourths(startMidi, n)` | `(number, number) → number[]` | Builds `n` notes stacked in perfect fourths from a starting MIDI note. Used by `quartal` and `mccoy_tyner` voicings. |
-| `_stackFifths(startMidi, n)` | `(number, number) → number[]` | Builds `n` notes stacked in perfect fifths. Used by `quintal` voicing. |
+| `_ALTFIFTH_OK` | `Set.<string>` | Internal set of voicing symbols whose `'fifth'` requirement also accepts `'altfifth'`. Used by `voicingAppliesToChord()`. |
+
+**Note on removed helpers:** `_stackFourths`, `_stackFifths`, `DIATONIC_STEPS`, and `PENTATONIC_STEPS` existed solely for the Group 5 Intervallic voicings and were deleted in the cleanup. A comment in the file marks their removal location.
+
+**Voicing groups — 5 active (Group 5 removed):**
+
+| Group | Key | Count | Symbols |
+|---|---|---|---|
+| 1 — Position | `'position'` | 3 | `close`, `open`, `spread` |
+| 2 — Doubling | `'doubling'` | 4 | `dbl_root_oct`, `dbl_root_above5`, `dbl_fifth`, `dbl_root_wrap` |
+| 3 — Shell / Rootless | `'shell'` | 12 | `shell`, `shell_alt`, `shell_rootless`, `tn_maj_135`, `tn_maj_357`, `tn_maj_137`, `tn_dom_13b7`, `tn_dom_35b7`, `tn_dom_3b79`, `tn_min_1b3b7`, `tn_min_b35b7`, `tn_min_b3b79` |
+| 4 — Drop | `'drop'` | 4 | `drop2`, `drop3`, `drop24`, `drop23` |
+| 5 — Intervallic | — | 0 | **Removed entirely.** All 7 members (`quartal`, `quintal`, `secundal`, `cluster_chrom`, `cluster_diaton`, `cluster_pent`, `cluster_wt`) stacked free intervals and produced non-chord tones by design. Their characteristic pitch structures have been promoted to dedicated `chords.js` entries in the `cluster` and `quartal` families. |
+| 6 — Style | `'style'` | 13 | `evans_a`, `evans_b`, `kenny_barron`, `oct_bass_triad`, `oct_bass_7th`, `open5_triad`, `block_close`, `block_locked`, `four_way_close`, `block_drop2`, `oct_melody_inner`, `pedal_point`, `spread_2h` |
+| **Total** | | **36** | |
+
+**Removed from Group 3 (vs. previous 27-entry table):** `rl_maj7`, `rl_maj7_ext`, `rl_min7`, `rl_dom7`, `rl_alt_a`, `rl_alt_b`, `rl_alt_c`, `rl_alt_d`, `rl_sharp9`, `sus_voicing`, `phrygian`, `sixth_maj`, `sixth_min`, `sixth_nine`, `rl_sixth_nine` (15 deleted).
+
+**Removed from Group 6 (vs. previous 17-entry table):** `so_what`, `mccoy_tyner`, `pop_piano`, `gospel` (4 deleted).
+
+**`VOICING_REQUIREMENTS` table — entries and their required roles:**
+
+| Symbol | Required roles |
+|---|---|
+| `dbl_root_above5` | `['third', 'fifth']` |
+| `dbl_fifth` | `['third', 'fifth']` |
+| `shell` | `['seventh']` |
+| `shell_alt` | `['seventh', 'third']` |
+| `shell_rootless` | `['seventh']` |
+| `tn_maj_357` | `['seventh']` |
+| `tn_maj_137` | `['seventh']` |
+| `tn_dom_13b7` | `['seventh', 'third']` |
+| `tn_dom_35b7` | `['seventh']` |
+| `tn_dom_3b79` | `['seventh', 'third', 'extension']` |
+| `tn_min_1b3b7` | `['seventh', 'third']` |
+| `tn_min_b35b7` | `['seventh']` |
+| `tn_min_b3b79` | `['seventh', 'third', 'extension']` |
+| `evans_a` | `['seventh', 'third']` |
+| `evans_b` | `['seventh', 'third']` |
+| `kenny_barron` | `['seventh']` |
+| `oct_bass_triad` | `['third', 'fifth']` ★ |
+| `open5_triad` | `['fifth']` ★ |
+| `spread_2h` | `['fifth']` ★ |
+
+★ For these three symbols, `'fifth'` is satisfied by either `'fifth'` or `'altfifth'` in `_voicingRoles()` output. `voicingAppliesToChord()` applies a special-case check for them via `_ALTFIFTH_OK`. Group 4 drop voicings are intentionally absent — they degrade gracefully to wide triad spacing, which is a legitimate texture.
 
 **Key design patterns:**
 
-- **62 voicings across 6 groups:** Group 1 Position (3), Group 2 Doubling (4), Group 3 Shell/Rootless (27), Group 4 Drop (4), Group 5 Intervallic (7), Group 6 Style (17). All symbols are in `VOICING_MODES`; `CONCRETE_VOICING_SYMBOLS` is derived from it at startup.
+- **Rule — no fabricated tones:** A voicing may only output notes derivable from `baseIntervals`. No `?? fallback` that invents a note the chord doesn't contain. Every Group 3/6 voicing that requires a role checks for it first and falls back to `applyVoicing(…, 'close')` when absent.
 - **Role-based note selection:** `_voicingRoles()` maps semitone intervals to functional labels so algorithms like `shell`, `drop2`, and `evans_a` work correctly across all chord qualities without hard-coding interval numbers.
-- **Intervallic voicing design (Group 5):** Notes are stacked freely — non-chord tones are intentional; the ambiguity is the sound. Note count: triads → 4 notes; all other chords → 5 notes. Bass clamped to MIDI 36–59; all notes clamped within 2 octaves above bass. `cluster_modal` removed (not distinct from `cluster_diaton` per Persichetti). `secundal` = diatonic-step stacking (m2/M2 mix); `cluster_wt` = pure whole-tone stacking (always M2).
-- **Basic mode scoping:** `resolveVoicingMode()` restricts the pool to position and doubling groups (Groups 1–2) when `appDifficulty === 'basic'`. Advanced voicings (shell, drop, intervallic, style) are only available in Advanced mode.
-- **Graceful fallback:** `applyVoicing()` wraps all cases in try/catch and returns a close-position array on any error. Individual cases fall back to `'close'` when the chord lacks a required tone (e.g. no 7th for shell voicings on triads).
+- **`VOICING_REQUIREMENTS` as the UI-honesty layer:** This table mirrors the role guards inside `applyVoicing()` cases. It lets `voicingAppliesToChord()` answer "does this voicing apply?" without running the full algorithm. Keep the table in sync with `applyVoicing()` at all times — every `-1` guard that triggers a fallback must have an entry here, and vice versa.
+- **`altfifth` special case:** Three voicings (`oct_bass_triad`, `open5_triad`, `spread_2h`) use `roles.findIndex(r => r === 'fifth' || r === 'altfifth')` in their `applyVoicing()` cases, meaning a diminished or augmented fifth satisfies the requirement. `voicingAppliesToChord()` replicates this via `_ALTFIFTH_OK` rather than adding `'altfifth'` to those entries' requirement arrays.
+- **Basic mode scoping:** `resolveVoicingMode()` restricts the pool to position and doubling groups (Groups 1–2) when `appDifficulty === 'basic'`. Advanced voicings (shell, drop, style) are only available in Advanced mode.
+- **Graceful fallback:** `applyVoicing()` wraps all cases in try/catch and returns a close-position array on any error. Individual cases fall back to `'close'` when the chord lacks a required tone.
+- **`drop24` falls back to `drop2`:** When the chord has fewer than 4 voices, `drop24` calls `applyVoicing(rootMidi, baseIntervals, 'drop2')` rather than returning a degenerate result. `block_close` and `block_drop2` are thin aliases for `'close'` and `'drop2'` respectively — their names convey a stylistic context, not a different algorithm.
 
 **Dependencies:** `state.js` (`appMode`, `appDifficulty`, `selectedVoicings`, `activeVoicingMode`), `helpers.js` (implicit globals).
 
-**Consumed by:** `helpers.js` (`recomputeCurrentNotes`), `app.js` (`recomputeCurrentNotes`).
+**Consumed by:** `helpers.js` (`recomputeCurrentNotes`), `app.js` (`recomputeCurrentNotes`), `breakdown-chords.js` (`VOICING_MODES` for voicing label display), `pool-chords.js` (`VOICING_MODES`, `voicingAppliesToChord`).
 
 ---
 
@@ -963,7 +1035,7 @@ Specialised families extend the schema with additional fields:
 
 **Role:** Chords branch of the post-answer breakdown panel. Handles all four chord families — polychords, UST, slash, and regular chords — and owns the complete voice leading and resolution rendering pipeline.
 
-**Size:** ~1,624 lines across 15 functions plus 2 constants and 1 IIFE-style section.
+**Size:** ~1,641 lines across 15+ functions plus 2 constants and 1 IIFE-style section.
 
 **Public API:**
 
@@ -987,6 +1059,12 @@ Specialised families extend the schema with additional fields:
 | `figuredBass(chord, invIndex)` | `(Object, number) → string` | Returns the figured bass string for a chord inversion. |
 | `nameChordFromIntervals(rootPc, allPcs)` | `(number, Set) → string` | Names a chord from a set of pitch classes by matching against `CHORD_TYPES`. |
 | `showBreakdownChords(panel)` | `(HTMLElement) → void` | Main renderer. Delegates to family-specific paths (poly / UST / slash / regular) and appends all sub-collapsibles. |
+
+**Changes from voicings cleanup pass:**
+
+- **`alsoKnownAs` rendering (Prompt 7):** In the regular-chord path of `showBreakdownChords()`, immediately after `makeNameHeader()`, the function now reads `baseChord.alsoKnownAs` (not `currentChord.alsoKnownAs` — for inverted chords `currentChord` is a wrapper; only `baseChord` reliably carries the field). When `alsoKnownAs` is a non-empty `string[]`, a `div.breakdown-aka` element is appended to the panel with text `"Also known as: …"`. This covers all standard/quartal/cluster/dominant entries.
+- **Slash `alsoKnownAs` guard:** The slash family already rendered its `alsoKnownAs` field as a plain string. An `Array.isArray` guard was added to the slash path so it handles both `string` (legacy) and `string[]` (new schema) gracefully.
+- **`VOICING_MODES` label display:** The regular-chord path reads `VOICING_MODES` directly to surface the active voicing's name and description in a "Voicing" breakdown row when `currentVoicingMode !== 'close'`. This was already present before the cleanup but remains accurate: `VOICING_MODES` now contains the post-cleanup 36-entry table.
 
 **Key design patterns:**
 
@@ -1079,7 +1157,7 @@ Specialised families extend the schema with additional fields:
 
 **Dependencies:** `state.js` (`answered`, `resolutionActive`, `resolutionRootMidi`, `dictInversionIndex`, `correct`, `total`, `streak`), `breakdown.js` (`hideBreakdown`), `progressions-mode.js` (`teardownProgressionUI`).
 
-**Consumed by:** `app.js`, all four mode files (via `resetQuizUI()` at question generation time).
+**Consumed by:** `app.js`, all four mode files (via `resetQuizUI()` at question generation and answer submission time).
 
 ---
 
@@ -1140,9 +1218,9 @@ Specialised families extend the schema with additional fields:
 
 ### ✅ js/ui/pool-chords.js
 
-**Role:** Chord quality and voicing pool panel rendering. Handles the full complexity of the chord pool — 12 chord families (with UST sub-family splitting), the inversions toggle, and the two-mode voicing panel (multi-select before answering; single-select in dict and post-answer). Delegates to shared primitives in `pool.js`.
+**Role:** Chord quality and voicing pool panel rendering. Handles the full complexity of the chord pool — 12 chord families (with UST sub-family splitting), the inversions toggle, and the two-mode voicing panel (multi-select before answering in quiz; single-select in dict and post-answer). Delegates to shared primitives in `pool.js`. Implements per-chord voicing gating in the single-select panel.
 
-**Size:** ~330 lines across 4 constants and 14 functions.
+**Size:** ~587 lines across 4 constants and 15 functions.
 
 **Public API:**
 
@@ -1150,10 +1228,11 @@ Specialised families extend the schema with additional fields:
 |---|---|---|
 | `CHORD_FAMILY_TITLES` | `Object.<string, string>` | Display titles for known `CHORD_TYPES` family keys. Keys absent from this map get a capitalised fallback. |
 | `UST_SUBFAMILY_TITLES` | `Object.<string, string>` | Display titles for UST `subFamily` values (`dom7`, `min`, `maj7`). |
-| `VOICING_GROUPS` | `Array.<{label, basic, symbols[]}>` | Voicing groups in display order. Each group carries a `basic` flag that limits visibility in Basic mode. |
+| `VOICING_GROUPS` | `Array.<{label, basic, symbols[]}>` | Voicing groups in display order. Five groups (Position, Doubling, Shell/Rootless, Drop, Style). Each group carries a `basic` flag that limits visibility in Basic mode. Group 5 Intervallic is absent — it was removed entirely in the voicings cleanup. |
 | `ALL_VOICING_SYMBOLS` | `string[]` | Flat array of all voicing symbols including `'random'` — used for global All/None coverage. |
 | `renderChordPoolPanel(panel)` | `(HTMLElement) → void` | Builds the chord pool shell and delegates sub-group rendering. Called by `renderPoolPanel()`. |
 | `renderChordStyleChips()` | `() → void` | Renders chord playback style chips into `#chordStyleRow`. Updates `chordPlayStyle`, the play label, and notation on selection. |
+| `syncVoicingModeToChord(baseIntervals)` | `(number[]) → boolean` | Checks whether the active single-select voicing (`activeVoicingMode`) is still applicable to the incoming chord. If not, resets `activeVoicingMode` to `'close'` and returns `true`. Called by `dictLoadSymbol()` and `dictShow()` in `app.js` before re-rendering the voicing panel. Returns `false` if no reset was needed. |
 
 **Private helpers (not exported, documented for maintainers):**
 
@@ -1164,22 +1243,25 @@ Specialised families extend the schema with additional fields:
 | `_renderChordSubGroups(body)` | Builds the Chord quality and Voicing collapsible sub-groups. Shared by quiz and dict renderers. |
 | `_renderChordQualitySection(body)` | Renders chord quality: multi-select + inversions toggle in quiz; single-select via `makeDictSection` in dict. |
 | `_renderVoicingSection(body)` | Routes to multi or single-select voicing rendering based on `appMode` and `answered`. |
-| `_renderVoicingMulti(body)` | Full multi-select voicing panel: global All/None, Random chip, six collapsible groups. |
+| `_renderVoicingMulti(body)` | Full multi-select voicing panel: global All/None, Random chip, five collapsible groups. No per-chord gating — the pre-answer quiz pool shows all voicings regardless of the chord that will be rolled. |
 | `_makeVoicingGroupMulti(body, title, items, allChipRefs)` | Builds one collapsible multi-select voicing group; pushes chip refs into `allChipRefs` for global sync. |
-| `_renderVoicingSingle(body)` | Single-select voicing panel: Random chip + collapsible groups; each chip re-voices immediately. |
-| `_makeVoicingGroupSingle(body, title, items)` | Builds one collapsible single-select voicing group. |
-| `_syncVoicingChipActive(body)` | Syncs the active class across all single-select voicing chips after a selection. |
+| `_renderVoicingSingle(body, currentBaseIntervals)` | Single-select voicing panel: Random chip + five collapsible groups. Passes `currentBaseIntervals` to `_makeVoicingGroupSingle` for per-chord applicability gating. |
+| `_makeVoicingGroupSingle(body, title, items, currentBaseIntervals)` | Builds one collapsible single-select voicing group. For each chip, calls `voicingAppliesToChord(v.symbol, currentBaseIntervals)` — applicable chips get a click handler that sets `activeVoicingMode` and calls `recomputeCurrentNotes()`; inapplicable chips receive the `voicing-chip-disabled` class, `aria-disabled="true"`, and no click handler. |
+| `_syncVoicingChipActive(body)` | Syncs the active class across all single-select voicing chips after a selection. Skips chips with `voicing-chip-disabled`. |
 | `_updateAllSectionCounts(body)` | Updates count displays for all voicing group sections in multi-select mode. |
 | `_updateSectionCount(sec, symbols)` | Updates the count display for a single voicing section. |
 
 **Key design patterns:**
 
-- **Two voicing modes:** The voicing panel has two distinct rendering paths. Before answering in quiz mode it is multi-select (selectedVoicings Set, no immediate re-render). Post-answer and in dict mode it switches to single-select (activeVoicingMode string, immediate re-voice on chip click via `recomputeCurrentNotes()`).
-- **External dependency — `makeDictSection`:** `_renderChordQualitySection` calls `makeDictSection` in dict mode. This function is defined in the dict/dictionary UI layer, not in `pool.js`. It must be loaded before `pool-chords.js`.
+- **Two voicing modes:** The voicing panel has two distinct rendering paths. Before answering in quiz mode it is multi-select (`selectedVoicings` Set, no immediate re-render, no gating). Post-answer and in dict mode it switches to single-select (`activeVoicingMode` string, immediate re-voice on chip click, per-chord gating).
+- **Per-chord voicing gating (Prompt 5):** `_makeVoicingGroupSingle` receives `currentBaseIntervals` and calls `voicingAppliesToChord()` from `voicings.js` for each chip. Inapplicable chips are rendered with `.voicing-chip-disabled` (visible but inert). The gating applies only to dict mode and the post-answer quiz view; the pre-answer multi-select panel is explicitly ungated — chip selections are about the chord-quality pool, not a specific chord.
+- **`syncVoicingModeToChord`:** A new exported function (Prompt 5b hook). Called by `app.js`'s `dictLoadSymbol()` and `dictShow()` before the voicing panel re-renders. Ensures `activeVoicingMode` is never left pointing at a chip that would be disabled on the incoming chord — the panel always opens with a valid active chip.
+- **`VOICING_GROUPS` has five entries, not six:** Group 5 Intervallic is absent. `_renderVoicingMulti` and `_renderVoicingSingle` both iterate `VOICING_GROUPS` directly — no empty group is rendered anywhere. The "six collapsible groups" phrasing in older documentation was stale from the pre-cleanup state.
+- **External dependency — `makeDictSection`:** `_renderChordQualitySection` calls `makeDictSection` in dict mode. This function is defined in `app.js` (Layer 7), not in `pool.js`. It must be loaded before `pool-chords.js` calls it. This is a documented cross-layer dependency; acceptable because `app.js` loads last and the function is stable.
 
-**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`, `makeSection`, `_makeSubGroup`, `_makeAllNoneBtn`), `state.js`, `defaults.js`, `chords.js` (`CHORD_TYPES`), `voicings.js` (`VOICING_MODES`), `audio.js` (`recomputeCurrentNotes`), `notation.js`.
+**Dependencies:** `pool.js` (`makePoolPanelShell`, `makeGlobalAllNone`, `makeSection`, `_makeSubGroup`, `_makeAllNoneBtn`), `state.js`, `defaults.js`, `chords.js` (`CHORD_TYPES`), `voicings.js` (`VOICING_MODES`, `voicingAppliesToChord`), `audio.js` (`recomputeCurrentNotes`), `notation.js`.
 
-**Consumed by:** `pool.js` (`renderPoolPanel` dispatcher).
+**Consumed by:** `pool.js` (`renderPoolPanel` dispatcher), `app.js` (`_renderChordSubGroups`, `renderChordStyleChips`).
 
 ---
 
@@ -1372,7 +1454,7 @@ Specialised families extend the schema with additional fields:
 
 **Dependencies:** `state.js`, `defaults.js`, `progressions.js` (`PROGRESSIONS`, `PROG_GROUPS`, `PROG_GROUP_COLLAPSED`, `PROG_DEGREES`, `PROG_QUALITIES`), `chords.js` (`CHORD_TYPES`), `spelling.js` (`spelledRoot`, `midiToVexKeySpelled`, `pcInterval`, `vexAccidental`), `keysig.js` (`vexKeyMajor`, `keySigCoveredLetters`, `isCoveredByKeySig`, `respellForKeySig`, `keySigAccidentalCount`), `audio.js` (`piano`, `audioCtx`, `NOTE_NAMES`), `notation.js` (`showBreakdown`, `resetQuizUI`, `updateRootBadge`, `updateScore`), `pool.js` (`makePoolPanelShell`), `pool-progressions.js` (`renderProgressionPoolPanel`).
 
-**Consumed by:** `app.js` (calls `generateQuestion`, `teardownProgressionUI`, `generateProgressionQuestion_entry`).
+**Consumed by:** `app.js` (calls `generateQuestion`, `teardownProgressionUI`, `generateProgressionQuestion_entry`, `renderDictProgressionPoolPanel`, `dictShowProgression`, `dictProgSymbol`, `showProgressionNotation`).
 
 ---
 
@@ -1442,7 +1524,7 @@ Specialised families extend the schema with additional fields:
 
 Module-level state declared here (not in `state.js`) because it is tightly coupled to dictionary UI logic and has no cross-file consumers: `dictSymbol` and `dictInversionIndex`.
 
-**Size:** ~1,060 lines across 14 functions plus 5 IIFEs and module-level event wiring.
+**Size:** ~1,084 lines across 14 functions plus 5 IIFEs and module-level event wiring.
 
 **Public API:**
 
@@ -1450,13 +1532,13 @@ Module-level state declared here (not in `state.js`) because it is tightly coupl
 |---|---|---|
 | `switchMode(mode, targetSymbol?)` | `(string, string\|null) → void` | Switches the active training mode. Calls `teardownProgressionUI()`, updates `currentMode`, resets streak, updates mode tab active states, rebuilds the pool panel and per-mode style rows, updates the play label, resets the root badge, then enters dict or quiz flow. Optional `targetSymbol` loads a specific item directly in dict mode (used by chord-scales breakdown links). |
 | `setAppDifficulty(difficulty)` | `('basic'\|'advanced') → void` | Switches between Basic and Advanced difficulty. Resets all four pool selections (intervals, chords, scales, progressions) and voicing state to mode-appropriate defaults — no cross-difficulty memory. Rebuilds the pool panel and generates a fresh question. |
-| `setAppMode(mode)` | `('quiz'\|'dict') → void` | Switches between quiz and dictionary application modes. Calls `teardownProgressionUI()`, updates the Q/D toggle UI, shows/hides score and session UI, and initialises the appropriate pool panel and view for the current training mode. |
+| `setAppMode(mode)` | `('quiz'\|'dict') → void` | Switches between quiz and dictionary application modes. Calls `teardownProgressionUI()`, updates the Q/D toggle UI, shows/hides score and session UI, and initialises the appropriate pool panel and view for the current training mode. In chords dict mode, calls `dictLoadSymbol(dictSymbol)` which internally calls `syncVoicingModeToChord()` — ensuring the voicing panel opens with an accurate chip state even when transitioning from quiz mode with an incompatible voicing active. |
 | `renderRegisterPanel()` | `() → void` | Renders root note and octave register chip rows into `#rootChips` and `#octaveChips`. Root chips include both enharmonic spellings for each accidental pitch class. Clicking either chip type sets the relevant state variable and calls `recomputeCurrentNotes()`. |
 | `recomputeCurrentNotes()` | `() → void` | Reapplies current settings (root pin, octave band, voicing) to the active item without picking a new question. Handles all four chord families, intervals, scales, and progressions. Refreshes notation and breakdown if in dict mode or after answering in quiz mode. |
-| `dictLoadSymbol(symbol)` | `(string) → void` | Loads a dictionary item by symbol and sets all relevant state variables so `dictShow()` can render it. Handles all four chord families, intervals, and scales. The special symbol `'_random'` picks a random item from the full catalog. Mirrors the four chord-family paths in `generateChordQuestion()` exactly. |
+| `dictLoadSymbol(symbol)` | `(string) → void` | Loads a dictionary item by symbol and sets all relevant state variables so `dictShow()` can render it. Handles all four chord families, intervals, and scales. The special symbol `'_random'` picks a random item from the full catalog. Mirrors the four chord-family paths in `generateChordQuestion()` exactly. For normal chords in chords mode, calls `syncVoicingModeToChord(item.intervals)` before resolving the voicing — if the currently active single-select voicing is inapplicable to the incoming chord it is reset to `'close'` before the panel re-renders. |
 | `renderDictPoolPanel()` | `() → void` | Renders the pool panel in dictionary mode. Same groups and sections as the quiz pool but single-select chips with no All/None buttons. Chords reuse `_renderChordSubGroups()` from `pool-chords.js`. |
 | `makeDictSection(body, title, items, useDisplayName?, collapsed?)` | `(HTMLElement, string, object[], boolean, boolean) → void` | Builds one collapsible section of single-select chips for the dictionary pool panel. Clicking a chip calls `dictLoadSymbol` + `dictShow`. No count display, no All/None buttons. |
-| `dictShow()` | `() → void` | Reveals notation and breakdown for the currently loaded dictionary item. Sets `answered = true`, resets resolution state, rebuilds the Hear Slowly + Resolve control buttons. No-ops if required current-item state is missing. |
+| `dictShow()` | `() → void` | Reveals notation and breakdown for the currently loaded dictionary item. Sets `answered = true`, resets resolution state, rebuilds the Hear Slowly + Resolve control buttons. In chords mode, calls `syncVoicingModeToChord()` on the current chord's intervals before rebuilding the pool panel, so the voicing panel reflects the incoming chord's applicability immediately. No-ops if required current-item state is missing. |
 | `dictApplyInversion(invIdx)` | `(number) → void` | Applies a specific inversion index to the current chord in dict or post-answer quiz mode. Re-voices in place, updates the notation chord name label, and refreshes notation and breakdown. No-ops for chord families that do not support rotation-based inversions. |
 | `renderInversionChips()` | `() → void` | Renders inversion chips into `#inversionChipRow` for normal chords in dict and post-answer quiz mode. Hidden for families that do not support rotation-based inversions, for non-chord modes, and for single-note chords. |
 | `makeCollapsible(headerId, bodyId, arrowId)` | `(string, string, string) → void` | Wires a collapsible toggle for a header/body/arrow element triple. No-ops silently if any element is missing. |
@@ -1502,12 +1584,13 @@ Module-level state declared here (not in `state.js`) because it is tightly coupl
 **Key design patterns:**
 
 - **`dictLoadSymbol` mirrors `generateChordQuestion`:** All four chord-family state-setting paths (slash, poly, UST, normal) are duplicated between the two functions. Any change to question generation must be reflected in the dict loader. The JSDoc cross-reference is intentional.
+- **`syncVoicingModeToChord` call sites:** Three places in `app.js` trigger this check: `dictLoadSymbol()` (for the normal chord path), `dictShow()` (before pool panel re-render on chord load), and `setAppMode('dict')` (indirectly, via `dictLoadSymbol`). The function is defined in `pool-chords.js` and imported via global scope. The combined effect ensures `activeVoicingMode` is never pointing at a disabled chip when the voicing panel renders.
 - **`recomputeCurrentNotes` handles all modes:** Consolidates the re-voice-in-place logic for every mode in one function. Inner helpers `resolvePc` and `rootMidiForPc` avoid code repetition across the four chord family branches. Progressions update the root badge and re-show notation without re-voicing.
 - **`_deactivateAllDictChips` naming:** Follows the `_camelCase` private-helper convention used throughout the codebase (cf. `_makeProgSection`, `_buildVoiceLeadingAnalysis`).
-- **`makeDictSection` is consumed externally:** `pool-chords.js` calls `makeDictSection` from `_renderChordQualitySection()` in dict mode. This is a documented cross-layer dependency: `app.js` (Layer 7) defines the function; `pool-chords.js` (Layer 5) calls it. Acceptable because `app.js` loads last and the function is stable. Noted in `pool-chords.js` ARCHITECTURE entry.
+- **`makeDictSection` is consumed externally:** `pool-chords.js` calls `makeDictSection` from `_renderChordQualitySection()` in dict mode. This is a documented cross-layer dependency: `app.js` (Layer 7) defines the function; `pool-chords.js` (Layer 5) calls it. Acceptable because `app.js` loads last and the function is stable. Noted in `pool-chords.js` architecture entry.
 - **Boot order:** `setAppMode('dict')` is the final render call. It triggers `dictLoadSymbol` + `renderDictPoolPanel` + `dictShow` for the initial item — the user sees a chord immediately without playing audio (audio is not yet loaded at this point).
 - **`teardownProgressionUI` guard:** Both `switchMode()` and `setAppMode()` call `teardownProgressionUI()` with a `typeof` guard, defensively allowing the function to be undefined (e.g. in test environments where `progressions-mode.js` is not loaded).
 
-**Dependencies:** `state.js`, `defaults.js`, `helpers.js` (`resetSession`, `getAllChords`, `pickRandom`, `chooseSimpleRootMidi`, `resolveOctaveBand`, `spelledRoot`, `getChordRootName`, `updateRootBadge`, `spelledNote`), `spelling.js` (`spelledNote`), `keysig.js`, `audio.js` (`playInterval`, `playScale`, `playProgression`, `playChord`, `playSlowly`, `playResolution`, `initAudio`, `audioCtx`, `midiToSoundFontName`, `piano`), `notation.js` (`showNotation`, `renderInversionChips`, `showBreakdown`, `showCurrentView`, `showProgressionNotation`, `updateRootBadge`), `voicings.js` (`resolveVoicingMode`, `applyVoicing`), `voiceLeading.js` (`getResolutionInfo`, `getSourceMidi`, `resolutionActive`), `breakdown.js`, `breakdown-chords.js`, `stats.js` (`resetQuizUI`), `controls.js`, `pool.js` (`renderPoolPanel`, `makePoolPanelShell`), `pool-chords.js` (`renderChordStyleChips`, `_renderChordSubGroups`), `pool-intervals.js` (`renderIntervalStyleChips`), `pool-scales.js` (`renderScaleDirChips`, `iterateScaleGroups`), `pool-progressions.js` (`renderProgressionPoolPanel`), `chords-mode.js` (`generateChordQuestion`), `intervals-mode.js` (`generateIntervalQuestion`), `scales-mode.js` (`generateScaleQuestion`), `progressions-mode.js` (`generateQuestion`, `teardownProgressionUI`, `generateProgressionQuestion_entry`, `renderDictProgressionPoolPanel`, `dictShowProgression`, `dictProgSymbol`, `showProgressionNotation`), `help-mode.js`, `about-mode.js`.
+**Dependencies:** `state.js`, `defaults.js`, `helpers.js` (`resetSession`, `getAllChords`, `pickRandom`, `chooseSimpleRootMidi`, `resolveOctaveBand`, `spelledRoot`, `getChordRootName`, `updateRootBadge`, `spelledNote`), `spelling.js` (`spelledNote`), `keysig.js`, `audio.js` (`playInterval`, `playScale`, `playProgression`, `playChord`, `playSlowly`, `playResolution`, `initAudio`, `audioCtx`, `midiToSoundFontName`, `piano`), `notation.js` (`showNotation`, `renderInversionChips`, `showBreakdown`, `showCurrentView`, `showProgressionNotation`, `updateRootBadge`), `voicings.js` (`resolveVoicingMode`, `applyVoicing`), `voiceLeading.js` (`getResolutionInfo`, `getSourceMidi`, `resolutionActive`), `breakdown.js`, `breakdown-chords.js`, `stats.js` (`resetQuizUI`), `controls.js`, `pool.js` (`renderPoolPanel`, `makePoolPanelShell`), `pool-chords.js` (`renderChordStyleChips`, `_renderChordSubGroups`, `syncVoicingModeToChord`), `pool-intervals.js` (`renderIntervalStyleChips`), `pool-scales.js` (`renderScaleDirChips`, `iterateScaleGroups`), `pool-progressions.js` (`renderProgressionPoolPanel`), `chords-mode.js` (`generateChordQuestion`), `intervals-mode.js` (`generateIntervalQuestion`), `scales-mode.js` (`generateScaleQuestion`), `progressions-mode.js` (`generateQuestion`, `teardownProgressionUI`, `generateProgressionQuestion_entry`, `renderDictProgressionPoolPanel`, `dictShowProgression`, `dictProgSymbol`, `showProgressionNotation`), `help-mode.js`, `about-mode.js`.
 
 **Consumed by:** nothing — this is the boot layer; no other file loads after it.

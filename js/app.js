@@ -98,7 +98,7 @@ const BASIC_CHORD_SYMBOLS = ['maj','Maj7','m','m7','7','dim','m7b5','o7','aug','
  *   Chords      — 12 core families (BASIC_CHORD_SYMBOLS); Advanced shows all
  *   Scales      — Major, Natural Minor, Major/Minor Pentatonic; Advanced shows all
  *   Progressions — 9 core progressions (basic: true in progressions.js); Advanced shows all
- *   Voicings     — Position + Doubling groups only (Groups 1–2); Advanced shows all 6
+ *   Voicings     — Position + Doubling groups only (Groups 1–2); Advanced shows all 5
  *
  * @param {'basic'|'advanced'} difficulty - Target difficulty level.
  */
@@ -141,7 +141,7 @@ function setAppDifficulty(difficulty) {
     PROGRESSIONS.forEach(p => selectedProgressions.add(p.symbol));
   }
 
-  // Reset voicings to close position — Groups 1–2 only in Basic, all 6 in Advanced
+  // Reset voicings to close position — Groups 1–2 only in Basic, all 5 in Advanced
   selectedVoicings.clear();
   selectedVoicings.add('close');
   activeVoicingMode = 'close';
@@ -290,6 +290,11 @@ function dictDefaultSymbol() {
  *
  * The special symbol '_random' picks a random item from the full catalog.
  *
+ * For normal chords in chords mode, calls syncVoicingModeToChord() before
+ * resolving the voicing, so that if the active single-select voicing is
+ * inapplicable to the incoming chord it is reset to 'close' before the panel
+ * re-renders. This is the Prompt 5b hook.
+ *
  * @param {string} symbol - Item symbol to load, or '_random' for a random pick.
  */
 function dictLoadSymbol(symbol) {
@@ -345,7 +350,11 @@ function dictLoadSymbol(symbol) {
       currentMidiNotes = [...currentUSTShellMidi, ...currentUSTUpperMidi];
       currentVoicingMode = 'full';
     } else {
-      // Normal chord path (including inversions)
+      // Normal chord path (including inversions).
+      // Reset activeVoicingMode to 'close' if the current voicing doesn't apply
+      // to this chord's intervals — keeps the single-select panel honest.
+      syncVoicingModeToChord(item.intervals);
+
       const rootMidi = chooseSimpleRootMidi(Math.max(...item.intervals.map(Math.abs)));
       currentChordRootMidi = rootMidi;
       currentVoicingMode = resolveVoicingMode();
@@ -587,6 +596,10 @@ function renderInversionChips() {
  * Sets answered = true so showNotation() and showBreakdown() render without
  * restriction, resets resolution state, and rebuilds the Hear Slowly + Resolve
  * control buttons. No-ops if the required current-item state is missing.
+ *
+ * For chords mode, calls syncVoicingModeToChord() on the current chord's
+ * intervals before rebuilding the pool panel, so the voicing panel reflects
+ * the incoming chord's applicability immediately.
  */
 function dictShow() {
   if (currentMode === 'scales'    && !currentScale)    return;
@@ -819,6 +832,11 @@ function recomputeCurrentNotes() {
  * Always calls teardownProgressionUI() first to clean up any progression DOM
  * residue before rebuilding.
  *
+ * In chords mode, when entering dict mode, calls syncVoicingModeToChord() on
+ * the current chord before rendering the pool panel — this ensures the voicing
+ * panel opens with an accurate initial chip state if the user was in quiz mode
+ * with an incompatible voicing active.
+ *
  * @param {'quiz'|'dict'} mode - Target application mode.
  */
 function setAppMode(mode) {
@@ -843,6 +861,8 @@ function setAppMode(mode) {
       dictShowProgression(prog);
     } else {
       if (!dictSymbol) dictSymbol = dictDefaultSymbol();
+      // dictLoadSymbol handles syncVoicingModeToChord for normal chords internally.
+      // Calling it here covers the transition from quiz → dict with the same chord.
       dictLoadSymbol(dictSymbol);
       renderDictPoolPanel();
       dictShow();

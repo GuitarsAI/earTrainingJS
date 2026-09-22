@@ -1385,7 +1385,13 @@ function showBreakdownChords(panel) {
     makeBDRow(slashBody, 'Bass interval', intervalAbbr(((bassInt % 12) + 12) % 12) + ' below upper root');
 
     if (currentChord.alsoKnownAs) {
-      makeBDRow(slashBody, 'Also known as', bassName + ' ' + currentChord.alsoKnownAs);
+      // Slash entries carry alsoKnownAs as a plain string (equivalent tertian
+      // reading), but guard for string[] too in case a future entry uses the
+      // array form shared by standard/quartal/cluster families.
+      const slashAka = Array.isArray(currentChord.alsoKnownAs)
+        ? currentChord.alsoKnownAs.join(', ')
+        : currentChord.alsoKnownAs;
+      makeBDRow(slashBody, 'Also known as', bassName + ' ' + slashAka);
     }
     makeBDRow(slashBody, 'Type', currentChord.name);
     makeBDRow(slashBody, 'Note', 'Slash chords separate an upper triad from an independent bass note, creating richer harmonic colour');
@@ -1437,6 +1443,18 @@ function showBreakdownChords(panel) {
     hdrLabelEl.appendChild(sup);
   }
   const { body: mainBody } = makeNameHeader(panel, hdrLabelEl);
+
+  // Render "also known as" aliases from deleted voicings (Prompt 7).
+  // Read from baseChord, not currentChord — for inversions currentChord is a
+  // wrapper ({ invIndex, baseChord, ... }) and the descriptor carrying
+  // alsoKnownAs is baseChord.
+  const aka = baseChord.alsoKnownAs;
+  if (Array.isArray(aka) && aka.length > 0) {
+    const akaRow = document.createElement('div');
+    akaRow.className = 'breakdown-aka';
+    akaRow.textContent = 'Also known as: ' + aka.join(', ');
+    panel.appendChild(akaRow);
+  }
 
   // POINT 41: Voicing mode label — shown for all voicings except 'close' (the default baseline)
   // Reads directly from VOICING_MODES so no parallel label table needs maintaining.

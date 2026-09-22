@@ -89,7 +89,7 @@ const CHORD_TYPES = {
     { name: '7(9)(\u266f11)(13)',symbol:'7_9_s11_13',   intervals: [0,4,7,10,14,18,21], family: 'dominant' },
     { name: '7(\u266d9)(\u266f11)',symbol:'7_b9_s11',   intervals: [0,4,7,10,13,18],    family: 'dominant' },
     { name: '7(\u266d9)(\u266f11)(\u266d13)',symbol:'7_b9_s11_b13',intervals:[0,4,7,10,13,18,20],family:'dominant'},
-    { name: '7sus4',            symbol: '7sus4',         intervals: [0,5,7,10],          family: 'dominant' },
+    { name: '7sus4',            symbol: '7sus4',         intervals: [0,5,7,10],          family: 'dominant', alsoKnownAs: ['McCoy Tyner'] },
     { name: '7(9)sus4',         symbol: '7_9sus4',       intervals: [0,5,7,10,14],       family: 'dominant' },
     { name: '7(\u266d5)',       symbol: '7_b5',          intervals: [0,4,6,10],          family: 'dominant' },
     { name: '7(\u266f5)',       symbol: '7_s5',          intervals: [0,4,8,10],          family: 'dominant' },
@@ -97,6 +97,8 @@ const CHORD_TYPES = {
     { name: '11',               symbol: '11',            intervals: [0,4,7,10,14,17],    family: 'dominant' },
     { name: '7(\u266d9,\u266f9)', symbol: '7_b9_s9',    intervals: [0,4,7,10,13,15],    family: 'dominant' },
     { name: '13sus4',           symbol: '13sus4',        intervals: [0,5,7,10,14,21],    family: 'dominant' },
+    { name: '7(\u266d5)(\u266d9)', symbol: '7b5b9',     intervals: [0,4,6,10,13],       family: 'dominant', alsoKnownAs: ['Rootless Altered C'] },
+    { name: 'Phrygian Dom (1\u2013\u266d2\u20135\u2013\u266d7)', symbol: 'phryg_dom', intervals: [0,1,7,10], family: 'dominant', alsoKnownAs: ['Phrygian Voicing'] },
   ],
   diminished: [
     { name: 'dim',              symbol: 'dim',           intervals: [0,3,6],             family: 'diminished', basic: true },
@@ -158,10 +160,10 @@ const CHORD_TYPES = {
     { name: 'qrt3 (Quartal, 3-note)',   symbol: 'qrt3',  intervals: [0,5,10],     family: 'quartal', quartal: true,
       quartNote: 'Three-note quartal chord — two stacked perfect fourths (P4 + P4). The most compact quartal voicing: rootless and tonally ambiguous, any of the three notes can function as the root depending on context. Pioneered in jazz by McCoy Tyner and used throughout modal jazz. Fits naturally over Dorian, Mixolydian, Lydian, Phrygian, and Aeolian — the absence of a third means it floats freely across major and minor contexts. Sound character: open, suspended, modern.' },
     // 4-note quartal: three stacked perfect fourths
-    { name: 'qrt4 (Quartal, 4-note)',   symbol: 'qrt4',  intervals: [0,5,10,15],  family: 'quartal', quartal: true,
+    { name: 'qrt4 (Quartal, 4-note)',   symbol: 'qrt4',  intervals: [0,5,10,15],  family: 'quartal', quartal: true, alsoKnownAs: ['Quartal (4-note)'],
       quartNote: 'Four-note quartal chord — three stacked perfect fourths (P4 + P4 + P4). The workhorse quartal voicing in jazz piano and guitar comping. Completely symmetrical stack — all adjacent intervals are equal, making root ambiguity total. Used extensively by McCoy Tyner on John Coltrane recordings (A Love Supreme, My Favorite Things) to create a dense, modal wash. Fits Dorian, Mixolydian, Lydian, and Aeolian contexts. Sound character: full, angular, harmonically suspended.' },
     // 5-note "So What" chord: three P4s + one M3 on top
-    { name: 'qrt5 (So What)',           symbol: 'qrt5',  intervals: [0,5,10,15,19], family: 'quartal', quartal: true,
+    { name: 'qrt5 (So What)',           symbol: 'qrt5',  intervals: [0,5,10,15,19], family: 'quartal', quartal: true, alsoKnownAs: ['So What'],
       quartNote: 'Five-note "So What" chord — three stacked perfect fourths plus a major third on top (P4 + P4 + P4 + M3). Named for its use by Bill Evans on Miles Davis\u2019 "So What" (Kind of Blue, 1959) — one of the most iconic voicings in jazz history. The major third at the top gives it a subtle warmth compared to a pure quartal stack. Specifically a Dorian voicing: the two shapes Evans played move diatonically up the D Dorian scale. Sound character: lush, modern, modal — the definitive sound of late-1950s jazz impressionism.' },
     // Mixed quartal with tritone
     { name: 'qrtTT (Quartal + TT)',     symbol: 'qrtTT', intervals: [0,5,10,16],  family: 'quartal', quartal: true,
@@ -170,7 +172,7 @@ const CHORD_TYPES = {
     { name: 'qnt3 (Quintal, 3-note)',   symbol: 'qnt3',  intervals: [0,7,14],     family: 'quartal', quartal: true,
       quartNote: 'Three-note quintal chord — two stacked perfect fifths (P5 + P5). The inversional equivalent of the three-note quartal chord: same three pitch classes, wider spacing. Where quartal sounds compact and interlocked, quintal sounds open and spacious — like a power chord expanded upward. Common in Hindemith\u2019s 20th-century counterpoint and in orchestral writing as a "neutral" sonority with no major/minor identity. Fits Dorian, Mixolydian, and Lydian. Sound character: open, hollow, vast — medieval and modern at once.' },
     // 4-note quintal: three stacked perfect fifths
-    { name: 'qnt4 (Quintal, 4-note)',   symbol: 'qnt4',  intervals: [0,7,14,21],  family: 'quartal', quartal: true,
+    { name: 'qnt4 (Quintal, 4-note)',   symbol: 'qnt4',  intervals: [0,7,14,21],  family: 'quartal', quartal: true, alsoKnownAs: ['Quintal'],
       quartNote: 'Four-note quintal chord — three stacked perfect fifths (P5 + P5 + P5). The widest-spanning standard quintal voicing, spanning three octaves minus a whole tone. Inversionally equivalent to the four-note quartal chord but voiced with maximum registral spread. Creates an enormous, cathedral-like sonority when played in the lower register; translucent and ringing in the upper register. Used in Hindemith, Bart\u00f3k, and contemporary orchestral writing for its tonal neutrality and resonance. Sound character: expansive, resonant, harmonically open.' },
   ],
 
@@ -197,8 +199,22 @@ const CHORD_TYPES = {
     { name: 'clust mix (4-note)',       symbol: 'clust_mix_4', intervals: [0,1,3,4],   family: 'cluster', cluster: true,
       clustNote: 'Four-note mixed cluster — alternating semitone and whole tone (m2 + M2 + m2). The combination of minor and major seconds creates a slightly less uniform, more "organic" cluster than a pure chromatic stack. The outer notes span a major third, which gives the voicing a distant tertian shadow while remaining thoroughly dissonant. Found in Messiaen\u2019s "modes of limited transposition" contexts and in jazz as a dense interior voicing. The interval pattern [0,1,3,4] is the first four notes of a chromatic scale with one gap. Sound character: dense, complex, dissonant but with subtle internal structure.' },
     // 4-note chromatic cluster
-    { name: 'clust chr (4-note)',       symbol: 'clust_chr_4', intervals: [0,1,2,3],   family: 'cluster', cluster: true,
+    { name: 'clust chr (4-note)',       symbol: 'clust_chr_4', intervals: [0,1,2,3],   family: 'cluster', cluster: true, alsoKnownAs: ['Cluster Chromatic (4-note)'],
       clustNote: 'Four-note chromatic cluster — three consecutive semitones (m2 + m2 + m2). Four adjacent chromatic pitches: the densest, most dissonant standard cluster voicing. No interval larger than a semitone appears between any adjacent pair, making it a pure noise mass with no implied harmony. Henry Cowell coined the term "tone cluster" in the 1920s for this technique, which he notated as solid black rectangles on the staff. Later adopted by Bartók, Ligeti, Penderecki, and film composers. In jazz, compressed chromatic clusters appear in stride piano and as percussive colour in avant-garde playing. Sound character: maximally dissonant, percussive, noise-mass — the most extreme timbral effect available on a standard keyboard.' },
+    { name: 'Chromatic Cluster (5-note)', symbol: 'clust_chr_5', intervals: [0,1,2,3,4], family: 'cluster', cluster: true, alsoKnownAs: ['Cluster Chromatic (5-note)'],
+      clustNote: 'Five adjacent semitones — maximum chromatic density (Persichetti/Hindemith)' },
+    { name: 'Diatonic Cluster (5-note)', symbol: 'clust_diaton_5', intervals: [0,2,4,5,7], family: 'cluster', cluster: true, alsoKnownAs: ['Secundal', 'Cluster Diatonic'],
+      clustNote: 'Adjacent diatonic steps — softer secundal texture (Persichetti)' },
+    { name: 'Diatonic Cluster (4-note)', symbol: 'clust_diaton_4', intervals: [0,2,4,5], family: 'cluster', cluster: true,
+      clustNote: 'Adjacent diatonic steps — softer secundal texture (Persichetti)' },
+    { name: 'Pentatonic Cluster (5-note)', symbol: 'clust_pent_5', intervals: [0,2,4,7,9], family: 'cluster', cluster: true, alsoKnownAs: ['Cluster Pentatonic'],
+      clustNote: 'Stacked pentatonic steps — open, percussive cluster (McCoy Tyner influence)' },
+    { name: 'Pentatonic Cluster (4-note)', symbol: 'clust_pent_4', intervals: [0,2,4,7], family: 'cluster', cluster: true,
+      clustNote: 'Stacked pentatonic steps — open, percussive cluster (McCoy Tyner influence)' },
+    { name: 'Whole-tone Cluster (5-note)', symbol: 'clust_wt_5', intervals: [0,2,4,6,8], family: 'cluster', cluster: true, alsoKnownAs: ['Cluster Whole-tone'],
+      clustNote: 'Stacked whole tones — whole-tone collection; Debussy/impressionist flavour' },
+    { name: 'Whole-tone Cluster (4-note)', symbol: 'clust_wt_4', intervals: [0,2,4,6], family: 'cluster', cluster: true,
+      clustNote: 'Stacked whole tones — whole-tone collection; Debussy/impressionist flavour' },
   ],
 
   // ── Slash chords ───────────────────────────────────────────────────────────

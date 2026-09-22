@@ -40,47 +40,44 @@ const UST_SUBFAMILY_TITLES = {
   maj7: 'UST \u2014 Maj7 shell (3 + 7)',
 };
 
-// Voicing groups in display order. Each group carries a `basic` flag that
-// limits visibility when appDifficulty === 'basic'.
+// Voicing groups in display order, aligned with the post-cleanup 36-entry
+// VOICING_MODES. Each group carries a `basic` flag that limits visibility
+// when appDifficulty === 'basic'.
+//
+// Group 5 Intervallic has been removed entirely (all 7 members fabricated
+// non-chord tones). Their pitch structures are now dedicated chord entries
+// in chords.js. No Intervallic group is rendered.
 const VOICING_GROUPS = [
   {
     label: 'Position',
     basic: true,
-    symbols: ['close','open','spread'],
+    symbols: ['close', 'open', 'spread'],
   },
   {
     label: 'Doubling',
     basic: true,
-    symbols: ['dbl_root_oct','dbl_root_above5','dbl_fifth','dbl_root_wrap'],
+    symbols: ['dbl_root_oct', 'dbl_root_above5', 'dbl_fifth', 'dbl_root_wrap'],
   },
   {
     label: 'Shell / Rootless',
     symbols: [
-      'shell','shell_alt','shell_rootless',
-      'tn_maj_135','tn_maj_357','tn_maj_137',
-      'tn_dom_13b7','tn_dom_35b7','tn_dom_3b79',
-      'tn_min_1b3b7','tn_min_b35b7','tn_min_b3b79',
-      'rl_maj7','rl_maj7_ext','rl_min7','rl_dom7',
-      'rl_alt_a','rl_alt_b','rl_alt_c','rl_alt_d','rl_sharp9',
-      'sus_voicing','phrygian',
-      'sixth_maj','sixth_min','sixth_nine','rl_sixth_nine',
+      'shell', 'shell_alt', 'shell_rootless',
+      'tn_maj_135', 'tn_maj_357', 'tn_maj_137',
+      'tn_dom_13b7', 'tn_dom_35b7', 'tn_dom_3b79',
+      'tn_min_1b3b7', 'tn_min_b35b7', 'tn_min_b3b79',
     ],
   },
   {
     label: 'Drop',
-    symbols: ['drop2','drop3','drop24','drop23'],
-  },
-  {
-    label: 'Intervallic',
-    symbols: ['quartal','quintal','secundal','cluster_chrom','cluster_diaton','cluster_pent','cluster_wt','cluster_modal'],
+    symbols: ['drop2', 'drop3', 'drop24', 'drop23'],
   },
   {
     label: 'Style',
     symbols: [
-      'so_what','evans_a','evans_b','kenny_barron','mccoy_tyner',
-      'pop_piano','gospel','oct_bass_triad','oct_bass_7th','open5_triad',
-      'block_close','block_locked','four_way_close','block_drop2',
-      'oct_melody_inner','pedal_point','spread_2h',
+      'evans_a', 'evans_b', 'kenny_barron',
+      'oct_bass_triad', 'oct_bass_7th', 'open5_triad',
+      'block_close', 'block_locked', 'four_way_close', 'block_drop2',
+      'oct_melody_inner', 'pedal_point', 'spread_2h',
     ],
   },
 ];
@@ -196,7 +193,7 @@ function _renderVoicingSection(body) {
 
 // ── Multi-select (quiz before answering) ──────────────────────────────────────
 
-/** Renders the full multi-select voicing panel: global All/None, Random chip, six collapsible groups. */
+/** Renders the full multi-select voicing panel: global All/None, Random chip, collapsible groups. */
 function _renderVoicingMulti(body) {
   const globalRow = document.createElement('div');
   globalRow.style.cssText = 'display:flex;gap:8px;padding:4px 0 8px 0;';
@@ -253,7 +250,7 @@ function _renderVoicingMulti(body) {
   randomSec.appendChild(randomChipsEl);
   body.appendChild(randomSec);
 
-  // Six collapsible voicing groups
+  // Collapsible voicing groups — no gating in multi-select (pre-answer quiz pool)
   const visibleGroups = appDifficulty === 'basic'
     ? VOICING_GROUPS.filter(g => g.basic)
     : VOICING_GROUPS;
@@ -364,15 +361,26 @@ function _makeVoicingGroupMulti(body, title, items, allChipRefs) {
 
 // ── Single-select (dict + quiz post-answer) ───────────────────────────────────
 
-/** Renders single-select voicing panel: Random chip + collapsible groups; each chip re-voices immediately on click. */
-function _renderVoicingSingle(body) {
+/**
+ * Renders single-select voicing panel: Random chip + collapsible groups.
+ * Each applicable chip re-voices immediately on click.
+ * Chips for voicings that don't apply to the current chord are greyed out
+ * and non-interactive (voicing-chip-disabled). The active voicing is reset
+ * to 'close' first if it no longer applies to the current chord — callers
+ * (dictLoadSymbol, post-answer re-render) should call
+ * syncVoicingModeToChord() before rendering the panel.
+ *
+ * @param {HTMLElement} body              - Container to render into.
+ * @param {number[]}    currentBaseIntervals - baseIntervals of the chord on screen.
+ */
+function _renderVoicingSingle(body, currentBaseIntervals) {
   const randomRow = document.createElement('div');
   randomRow.style.padding = '0 0 0.4rem 0';
 
   const randomChip = document.createElement('button');
   randomChip.className = 'pool-chip voicing-single-chip' + (activeVoicingMode === 'random' ? ' active' : '');
   randomChip.textContent = 'Random';
-  randomChip.title = 'Pick a random voicing from all options';
+  randomChip.title = 'Pick a random voicing from all applicable options';
   randomChip.dataset.voicingSymbol = 'random';
   randomChip.addEventListener('click', () => {
     activeVoicingMode = 'random';
@@ -390,12 +398,22 @@ function _renderVoicingSingle(body) {
     const items = group.symbols
       .map(sym => VOICING_MODES.find(v => v.symbol === sym))
       .filter(Boolean);
-    _makeVoicingGroupSingle(body, group.label, items);
+    _makeVoicingGroupSingle(body, group.label, items, currentBaseIntervals);
   });
 }
 
-/** Builds one collapsible single-select voicing group; each chip re-voices immediately on click. */
-function _makeVoicingGroupSingle(body, title, items) {
+/**
+ * Builds one collapsible single-select voicing group.
+ * Applicable chips re-voice immediately on click.
+ * Inapplicable chips are rendered with the 'voicing-chip-disabled' class,
+ * aria-disabled, and no click handler — they are visible but inert.
+ *
+ * @param {HTMLElement} body              - Container to render into.
+ * @param {string}      title             - Section label.
+ * @param {VoicingMode[]} items           - Voicing entries for this group.
+ * @param {number[]}    currentBaseIntervals - baseIntervals of the chord on screen.
+ */
+function _makeVoicingGroupSingle(body, title, items, currentBaseIntervals) {
   const hasActive = items.some(v => v.symbol === activeVoicingMode);
 
   const sec = document.createElement('div');
@@ -427,15 +445,33 @@ function _makeVoicingGroupSingle(body, title, items) {
 
   items.forEach(v => {
     const chip = document.createElement('button');
-    chip.className = 'pool-chip voicing-single-chip' + (activeVoicingMode === v.symbol ? ' active' : '');
-    chip.textContent = v.name;
-    chip.title = v.desc;
-    chip.dataset.voicingSymbol = v.symbol;
-    chip.addEventListener('click', () => {
-      activeVoicingMode = v.symbol;
-      _syncVoicingChipActive(body);
-      recomputeCurrentNotes();
-    });
+    const isActive = activeVoicingMode === v.symbol;
+
+    // Gate: check applicability against the chord currently on screen.
+    // currentBaseIntervals may be undefined in edge cases (panel rendered before
+    // any chord is loaded); treat as applicable when we can't check.
+    const applies = !currentBaseIntervals || voicingAppliesToChord(v.symbol, currentBaseIntervals);
+
+    if (applies) {
+      chip.className = 'pool-chip voicing-single-chip' + (isActive ? ' active' : '');
+      chip.textContent = v.name;
+      chip.title = v.desc;
+      chip.dataset.voicingSymbol = v.symbol;
+      chip.addEventListener('click', () => {
+        activeVoicingMode = v.symbol;
+        _syncVoicingChipActive(body);
+        recomputeCurrentNotes();
+      });
+    } else {
+      chip.className = 'pool-chip voicing-single-chip voicing-chip-disabled';
+      chip.textContent = v.name;
+      chip.title = 'Not applicable to this chord';
+      chip.dataset.voicingSymbol = v.symbol;
+      chip.setAttribute('aria-disabled', 'true');
+      // No click handler — pointer-events: none in CSS makes this belt-and-suspenders,
+      // but omitting the handler is the authoritative guard.
+    }
+
     chipsEl.appendChild(chip);
   });
 
@@ -450,6 +486,8 @@ function _makeVoicingGroupSingle(body, title, items) {
 /** Syncs the active class across all single-select voicing chips after a selection. */
 function _syncVoicingChipActive(body) {
   body.querySelectorAll('.voicing-single-chip').forEach(c => {
+    // Disabled chips can never be the active chip — skip them.
+    if (c.classList.contains('voicing-chip-disabled')) return;
     c.classList.toggle('active', c.dataset.voicingSymbol === activeVoicingMode);
   });
 }
@@ -472,6 +510,29 @@ function _updateSectionCount(sec, symbols) {
   if (!countEl) return;
   const active = symbols.filter(sym => selectedVoicings.has(sym)).length;
   countEl.textContent = active + ' / ' + symbols.length;
+}
+
+/**
+ * Checks whether the currently active single-select voicing is still applicable
+ * to a new chord's baseIntervals, and resets to 'close' if not.
+ *
+ * Call this whenever the chord on screen changes in dict mode or post-answer view,
+ * before (re-)rendering the voicing panel. The reset ensures the panel always
+ * opens with a consistent active chip — no chip marked active while disabled.
+ *
+ * @param {number[]} baseIntervals - baseIntervals of the incoming chord.
+ * @returns {boolean} true if a reset occurred (caller may want to log or animate).
+ */
+function syncVoicingModeToChord(baseIntervals) {
+  if (
+    activeVoicingMode !== 'random' &&
+    activeVoicingMode !== 'close' &&
+    !voicingAppliesToChord(activeVoicingMode, baseIntervals)
+  ) {
+    activeVoicingMode = 'close';
+    return true;
+  }
+  return false;
 }
 
 // ─── Public renderers ─────────────────────────────────────────────────────────
