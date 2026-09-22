@@ -29,7 +29,7 @@ Always calls teardownProgressionUI() first to clean up any progression DOM resid
 
 Switches between Basic and Advanced difficulty modes. Resets all four pool selections (intervals, chords, scales, progressions) and voicing state to mode-appropriate defaults — no cross-difficulty memory. Rebuilds the pool panel and generates a fresh question for the current mode.
 
-Basic boundaries per mode: Intervals — 12 simple (m2–P8); Advanced adds 7 compound (m9–M13) Chords — 12 core families (BASIC\_CHORD\_SYMBOLS); Advanced shows all Scales — Major, Natural Minor, Major/Minor Pentatonic; Advanced shows all Progressions — 9 core progressions (basic: true in progressions.js); Advanced shows all Voicings — Position + Doubling groups only (Groups 1–2); Advanced shows all 6
+Basic boundaries per mode: Intervals — 12 simple (m2–P8); Advanced adds 7 compound (m9–M13) Chords — 12 core families (BASIC\_CHORD\_SYMBOLS); Advanced shows all Scales — Major, Natural Minor, Major/Minor Pentatonic; Advanced shows all Progressions — 9 core progressions (basic: true in progressions.js); Advanced shows all Voicings — Position + Doubling groups only (Groups 1–2); Advanced shows all 5
 
 **Parameters**
 
@@ -65,11 +65,13 @@ Returns the symbol of the first item in the full catalog for the current mode. U
 
 <MemberHeading id="dictloadsymbol" depth="3" name="dictLoadSymbol" sig="dictLoadSymbol(symbol: string)" />
 
-<MemberMeta sourceHref="/source/app-js/#L295" sourceLabel="app.js:295" />
+<MemberMeta sourceHref="/source/app-js/#L300" sourceLabel="app.js:300" />
 
 Loads a dictionary item by symbol and sets all relevant state variables so dictShow() / showNotation() / showBreakdown() can render it immediately. Mirrors the four chord-family paths in generateChordQuestion() exactly — any logic change there must be reflected here.
 
 The special symbol '\_random' picks a random item from the full catalog.
+
+For normal chords in chords mode, calls syncVoicingModeToChord() before resolving the voicing, so that if the active single-select voicing is inapplicable to the incoming chord it is reset to 'close' before the panel re-renders. This is the Prompt 5b hook.
 
 **Parameters**
 
@@ -77,7 +79,7 @@ The special symbol '\_random' picks a random item from the full catalog.
 
 <MemberHeading id="renderdictpoolpanel" depth="3" name="renderDictPoolPanel" sig="renderDictPoolPanel()" />
 
-<MemberMeta sourceHref="/source/app-js/#L384" sourceLabel="app.js:384" />
+<MemberMeta sourceHref="/source/app-js/#L393" sourceLabel="app.js:393" />
 
 Renders the pool panel in dictionary mode. Structure mirrors the quiz pool (same groups and sections) but uses single-select chips with no All/None buttons. Chords reuse the shared \_renderChordSubGroups() from pool-chords.js, which reads appMode internally to switch between multi and single select.
 
@@ -94,7 +96,7 @@ Renders the pool panel in dictionary mode. Structure mirrors the quiz pool (same
 )"
 />
 
-<MemberMeta sourceHref="/source/app-js/#L424" sourceLabel="app.js:424" />
+<MemberMeta sourceHref="/source/app-js/#L433" sourceLabel="app.js:433" />
 
 Builds one collapsible section of single-select chips for the dictionary pool panel. Clicking a chip loads the item immediately via dictLoadSymbol + dictShow. No All/None buttons, no count display — dict mode is browse-only.
 
@@ -108,13 +110,13 @@ Builds one collapsible section of single-select chips for the dictionary pool pa
 
 <MemberHeading id="deactivatealldictchips" depth="3" name="_deactivateAllDictChips" sig="_deactivateAllDictChips()" />
 
-<MemberMeta sourceHref="/source/app-js/#L475" sourceLabel="app.js:475" />
+<MemberMeta sourceHref="/source/app-js/#L484" sourceLabel="app.js:484" />
 
 Removes the active class from every pool chip in #poolPanel. Called before activating a newly selected dict chip to ensure single-select.
 
 <MemberHeading id="dictapplyinversion" depth="3" name="dictApplyInversion" sig="dictApplyInversion(invIdx: number)" />
 
-<MemberMeta sourceHref="/source/app-js/#L489" sourceLabel="app.js:489" />
+<MemberMeta sourceHref="/source/app-js/#L498" sourceLabel="app.js:498" />
 
 Applies a specific inversion index to the current chord in dict or post-answer quiz mode, re-voices in place, and refreshes notation and breakdown without triggering a full showNotation() header rebuild.
 
@@ -126,7 +128,7 @@ No-ops for chord families that do not support rotation-based inversions: slash, 
 
 <MemberHeading id="renderinversionchips" depth="3" name="renderInversionChips" sig="renderInversionChips()" />
 
-<MemberMeta sourceHref="/source/app-js/#L542" sourceLabel="app.js:542" />
+<MemberMeta sourceHref="/source/app-js/#L551" sourceLabel="app.js:551" />
 
 Renders inversion chips into #inversionChipRow for normal chords in dict mode and post-answer quiz mode. Each chip calls dictApplyInversion() on click.
 
@@ -138,13 +140,15 @@ Called by showNotation() after every chord question and by dictShow().
 
 <MemberHeading id="dictshow" depth="3" name="dictShow" sig="dictShow()" />
 
-<MemberMeta sourceHref="/source/app-js/#L591" sourceLabel="app.js:591" />
+<MemberMeta sourceHref="/source/app-js/#L604" sourceLabel="app.js:604" />
 
 Reveals notation and breakdown for the currently loaded dictionary item. Sets answered = true so showNotation() and showBreakdown() render without restriction, resets resolution state, and rebuilds the Hear Slowly + Resolve control buttons. No-ops if the required current-item state is missing.
 
+For chords mode, calls syncVoicingModeToChord() on the current chord's intervals before rebuilding the pool panel, so the voicing panel reflects the incoming chord's applicability immediately.
+
 <MemberHeading id="recomputecurrentnotes" depth="3" name="recomputeCurrentNotes" sig="recomputeCurrentNotes()" />
 
-<MemberMeta sourceHref="/source/app-js/#L651" sourceLabel="app.js:651" />
+<MemberMeta sourceHref="/source/app-js/#L664" sourceLabel="app.js:664" />
 
 Reapplies current settings (root pin, octave band, voicing) to the active item without picking a new question. Called whenever a setting changes: root chip, octave chip, voicing chip, style/direction chip.
 
@@ -154,11 +158,13 @@ All four chord families (slash, poly, UST, normal) are handled identically to di
 
 <MemberHeading id="setappmode" depth="3" name="setAppMode" sig="setAppMode(mode: 'quiz' | 'dict')" />
 
-<MemberMeta sourceHref="/source/app-js/#L824" sourceLabel="app.js:824" />
+<MemberMeta sourceHref="/source/app-js/#L842" sourceLabel="app.js:842" />
 
 Switches between quiz and dictionary application modes. Updates the Q/D toggle button states, shows/hides score and session UI, and initialises the appropriate pool panel and view for the current training mode.
 
 Always calls teardownProgressionUI() first to clean up any progression DOM residue before rebuilding.
+
+In chords mode, when entering dict mode, calls syncVoicingModeToChord() on the current chord before rendering the pool panel — this ensures the voicing panel opens with an accurate initial chip state if the user was in quiz mode with an incompatible voicing active.
 
 **Parameters**
 
@@ -175,7 +181,7 @@ Always calls teardownProgressionUI() first to clean up any progression DOM resid
 )"
 />
 
-<MemberMeta sourceHref="/source/app-js/#L869" sourceLabel="app.js:869" />
+<MemberMeta sourceHref="/source/app-js/#L889" sourceLabel="app.js:889" />
 
 Wires a collapsible toggle for a header/body/arrow element triple. Clicking the header toggles the `open` class on the body and updates the arrow glyph. No-ops silently if any element is missing.
 
@@ -500,79 +506,125 @@ Clears and rebuilds the control area on every call. Before answering the area is
 
 <MemberHeading id="familytitle" depth="3" name="_familyTitle" sig="_familyTitle()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L94" sourceLabel="pool-chords.js:94" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L91" sourceLabel="pool-chords.js:91" />
 
 Returns a human-readable title for a CHORD\_TYPES family key.
 
 <MemberHeading id="buildchordfamilies" depth="3" name="_buildChordFamilies" sig="_buildChordFamilies()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L103" sourceLabel="pool-chords.js:103" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L100" sourceLabel="pool-chords.js:100" />
 
 Builds the flat list of { title, items } sections from CHORD\_TYPES. Families whose entries carry a subFamily field are split into one section per subFamily value, preserving the order subFamily values first appear.
 
 <MemberHeading id="renderchordsubgroups" depth="3" name="_renderChordSubGroups" sig="_renderChordSubGroups()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L133" sourceLabel="pool-chords.js:133" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L130" sourceLabel="pool-chords.js:130" />
 
 Builds the two top-level sub-groups (Chord quality, Voicing) inside `body` and delegates to the mode-aware section renderers. Shared by renderChordPoolPanel (quiz) and renderDictPoolPanel (dict).
 
 <MemberHeading id="renderchordqualitysection" depth="3" name="_renderChordQualitySection" sig="_renderChordQualitySection()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L146" sourceLabel="pool-chords.js:146" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L143" sourceLabel="pool-chords.js:143" />
 
 Renders the chord quality section. Quiz mode: multi-select chips, Global All/None, inversions checkbox. Dict mode: single-select chips that load the chord immediately on click.
 
 <MemberHeading id="rendervoicingsection" depth="3" name="_renderVoicingSection" sig="_renderVoicingSection()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L188" sourceLabel="pool-chords.js:188" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L185" sourceLabel="pool-chords.js:185" />
 
 Routes to multi-select (quiz before answering) or single-select (dict + quiz post-answer) voicing rendering.
 
 <MemberHeading id="rendervoicingmulti" depth="3" name="_renderVoicingMulti" sig="_renderVoicingMulti()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L200" sourceLabel="pool-chords.js:200" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L197" sourceLabel="pool-chords.js:197" />
 
-Renders the full multi-select voicing panel: global All/None, Random chip, six collapsible groups.
+Renders the full multi-select voicing panel: global All/None, Random chip, collapsible groups.
 
 <MemberHeading id="makevoicinggroupmulti" depth="3" name="_makeVoicingGroupMulti" sig="_makeVoicingGroupMulti()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L273" sourceLabel="pool-chords.js:273" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L270" sourceLabel="pool-chords.js:270" />
 
 Builds one collapsible multi-select voicing group section. Pushes chip refs into `allChipRefs` for global All/None sync.
 
-<MemberHeading id="rendervoicingsingle" depth="3" name="_renderVoicingSingle" sig="_renderVoicingSingle()" />
+<MemberHeading
+  id="rendervoicingsingle"
+  depth="3"
+  name="_renderVoicingSingle"
+  sig="_renderVoicingSingle(
+	body: HTMLElement,
+	currentBaseIntervals: Array.<number>,
+)"
+/>
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L368" sourceLabel="pool-chords.js:368" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L376" sourceLabel="pool-chords.js:376" />
 
-Renders single-select voicing panel: Random chip + collapsible groups; each chip re-voices immediately on click.
+Renders single-select voicing panel: Random chip + collapsible groups. Each applicable chip re-voices immediately on click. Chips for voicings that don't apply to the current chord are greyed out and non-interactive (voicing-chip-disabled). The active voicing is reset to 'close' first if it no longer applies to the current chord — callers (dictLoadSymbol, post-answer re-render) should call syncVoicingModeToChord() before rendering the panel.
 
-<MemberHeading id="makevoicinggroupsingle" depth="3" name="_makeVoicingGroupSingle" sig="_makeVoicingGroupSingle()" />
+**Parameters**
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L398" sourceLabel="pool-chords.js:398" />
+- `body` (HTMLElement) — Container to render into.
+- `currentBaseIntervals` (Array.\<number>) — baseIntervals of the chord on screen.
 
-Builds one collapsible single-select voicing group; each chip re-voices immediately on click.
+<MemberHeading
+  id="makevoicinggroupsingle"
+  depth="3"
+  name="_makeVoicingGroupSingle"
+  sig="_makeVoicingGroupSingle(
+	body: HTMLElement,
+	title: string,
+	items: Array.<VoicingMode>,
+	currentBaseIntervals: Array.<number>,
+)"
+/>
+
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L416" sourceLabel="pool-chords.js:416" />
+
+Builds one collapsible single-select voicing group. Applicable chips re-voice immediately on click. Inapplicable chips are rendered with the 'voicing-chip-disabled' class, aria-disabled, and no click handler — they are visible but inert.
+
+**Parameters**
+
+- `body` (HTMLElement) — Container to render into.
+- `title` (string) — Section label.
+- `items` (Array.\<[VoicingMode](/module/voicings#voicingmode)>) — Voicing entries for this group.
+- `currentBaseIntervals` (Array.\<number>) — baseIntervals of the chord on screen.
 
 <MemberHeading id="syncvoicingchipactive" depth="3" name="_syncVoicingChipActive" sig="_syncVoicingChipActive()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L451" sourceLabel="pool-chords.js:451" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L487" sourceLabel="pool-chords.js:487" />
 
 Syncs the active class across all single-select voicing chips after a selection.
 
 <MemberHeading id="updateallsectioncounts" depth="3" name="_updateAllSectionCounts" sig="_updateAllSectionCounts()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L458" sourceLabel="pool-chords.js:458" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L496" sourceLabel="pool-chords.js:496" />
 
 Updates the count display for all voicing group sections in multi-select mode.
 
 <MemberHeading id="updatesectioncount" depth="3" name="_updateSectionCount" sig="_updateSectionCount()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L470" sourceLabel="pool-chords.js:470" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L508" sourceLabel="pool-chords.js:508" />
 
 Updates the count display for a single voicing section given its symbol list.
 
+<MemberHeading id="syncvoicingmodetochord" depth="3" name="syncVoicingModeToChord" sig="syncVoicingModeToChord(baseIntervals: Array.<number>): boolean" />
+
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L526" sourceLabel="pool-chords.js:526" />
+
+Checks whether the currently active single-select voicing is still applicable to a new chord's baseIntervals, and resets to 'close' if not.
+
+Call this whenever the chord on screen changes in dict mode or post-answer view, before (re-)rendering the voicing panel. The reset ensures the panel always opens with a consistent active chip — no chip marked active while disabled.
+
+**Parameters**
+
+- `baseIntervals` (Array.\<number>) — baseIntervals of the incoming chord.
+
+**Returns**
+
+- `boolean` — true if a reset occurred (caller may want to log or animate).
+
 <MemberHeading id="renderchordpoolpanel" depth="3" name="renderChordPoolPanel" sig="renderChordPoolPanel(panel: HTMLElement)" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L486" sourceLabel="pool-chords.js:486" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L547" sourceLabel="pool-chords.js:547" />
 
 Renders the chord training pool panel into `panel`. Builds the panel shell and delegates sub-group rendering to \_renderChordSubGroups. Called by renderPoolPanel() when currentMode === 'chords'.
 
@@ -582,7 +634,7 @@ Renders the chord training pool panel into `panel`. Builds the panel shell and d
 
 <MemberHeading id="renderchordstylechips" depth="3" name="renderChordStyleChips" sig="renderChordStyleChips()" />
 
-<MemberMeta sourceHref="/source/ui/pool-chords-js/#L497" sourceLabel="pool-chords.js:497" />
+<MemberMeta sourceHref="/source/ui/pool-chords-js/#L558" sourceLabel="pool-chords.js:558" />
 
 Renders the chord playback style chips into #chordStyleRow. Updates chordPlayStyle, the play button label, and notation on selection. Called on mode switch and after answering.
 

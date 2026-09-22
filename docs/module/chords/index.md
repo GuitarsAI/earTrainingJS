@@ -27,7 +27,7 @@ Complete chord type library, keyed by family name. Each family is an array of ch
 
 <MemberHeading id="chordplaybackstyles" depth="3" name="CHORD_PLAYBACK_STYLES" sig="CHORD_PLAYBACK_STYLES: Array.<{name: string, symbol: string}>" />
 
-<MemberMeta sourceHref="/source/data/chords-js/#L356" sourceLabel="chords.js:356" />
+<MemberMeta sourceHref="/source/data/chords-js/#L372" sourceLabel="chords.js:372" />
 
 Available playback styles for chord questions. Controls the order in which notes are sounded during playback.
 
