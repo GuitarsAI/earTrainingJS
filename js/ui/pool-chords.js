@@ -8,7 +8,8 @@
  * @file pool-chords.js
  * @description Chord quality and voicing pool panel rendering.
  *   Handles both quiz multi-select and dict/post-answer single-select modes.
- *   Exports: renderChordPoolPanel, renderChordStyleChips
+ *   Exports: renderChordPoolPanel, renderChordStyleChips, refreshVoicingPanel,
+ *            syncVoicingModeToChord
  * @layer ui
  * @requires pool.js  (makePoolPanelShell, makeGlobalAllNone, makeSection,
  *                     _makeSubGroup, _makeAllNoneBtn)
@@ -132,6 +133,9 @@ function _renderChordSubGroups(body) {
   _renderChordQualitySection(qualityGroup);
 
   const voicingGroup = _makeSubGroup(body, 'Voicing');
+  // Tag the body so refreshVoicingPanel() can find and re-render it in place
+  // (keeps the sub-group's open/closed state and the panel scroll position).
+  voicingGroup.dataset.role = 'voicing';
   _renderVoicingSection(voicingGroup);
 }
 
@@ -179,16 +183,46 @@ function _renderChordQualitySection(body) {
 }
 
 /**
+ * Returns the baseIntervals of the chord currently on screen, or `undefined`
+ * when there is nothing to gate against.
+ *
+ * - No chord loaded yet          -> undefined
+ * - slash / poly / UST families  -> undefined. They have no `.intervals` (they
+ *   use upperIntervals / shellIntervals) and always play with
+ *   currentVoicingMode === 'full', so voicing chips are left ungated.
+ * - Inversion wrapper            -> baseChord.intervals (the wrapper itself
+ *   carries no `.intervals`).
+ * - Everything else              -> currentChord.intervals.
+ *
+ * @returns {number[]|undefined}
+ */
+function _getCurrentBaseIntervals() {
+  if (typeof currentChord === 'undefined' || !currentChord) return undefined;
+  const fam = currentChord.family;
+  if (fam === 'slash' || fam === 'poly' || fam === 'ust') return undefined;
+  const src = (currentChord.invIndex !== undefined && currentChord.baseChord)
+    ? currentChord.baseChord
+    : currentChord;
+  return Array.isArray(src.intervals) ? src.intervals : undefined;
+}
+
+/**
  * Routes to multi-select (quiz before answering) or single-select
  * (dict + quiz post-answer) voicing rendering.
+ *
+ * For the single-select path, derives the on-screen chord's baseIntervals and
+ * resets `activeVoicingMode` to 'close' first if it no longer applies, so the
+ * panel never opens with an active chip that is also disabled.
  */
 function _renderVoicingSection(body) {
   const isMulti = appMode === 'quiz' && !answered;
   if (isMulti) {
     _renderVoicingMulti(body);
-  } else {
-    _renderVoicingSingle(body, currentBaseIntervals);
+    return;
   }
+  const baseIntervals = _getCurrentBaseIntervals();
+  if (baseIntervals) syncVoicingModeToChord(baseIntervals);
+  _renderVoicingSingle(body, baseIntervals);
 }
 
 // ── Multi-select (quiz before answering) ──────────────────────────────────────
@@ -365,13 +399,13 @@ function _makeVoicingGroupMulti(body, title, items, allChipRefs) {
  * Renders single-select voicing panel: Random chip + collapsible groups.
  * Each applicable chip re-voices immediately on click.
  * Chips for voicings that don't apply to the current chord are greyed out
- * and non-interactive (voicing-chip-disabled). The active voicing is reset
- * to 'close' first if it no longer applies to the current chord — callers
- * (dictLoadSymbol, post-answer re-render) should call
- * syncVoicingModeToChord() before rendering the panel.
+ * and non-interactive (voicing-chip-disabled). When `currentBaseIntervals` is
+ * undefined (no chord yet, or a slash / poly / UST chord) no chip is gated.
+ * _renderVoicingSection() runs syncVoicingModeToChord() before calling this,
+ * so the active chip is never one that would be disabled.
  *
  * @param {HTMLElement} body              - Container to render into.
- * @param {number[]}    currentBaseIntervals - baseIntervals of the chord on screen.
+ * @param {number[]|undefined} currentBaseIntervals - baseIntervals of the chord on screen.
  */
 function _renderVoicingSingle(body, currentBaseIntervals) {
   const randomRow = document.createElement('div');
@@ -524,6 +558,9 @@ function _updateSectionCount(sec, symbols) {
  * @returns {boolean} true if a reset occurred (caller may want to log or animate).
  */
 function syncVoicingModeToChord(baseIntervals) {
+  // voicingAppliesToChord() throws on non-arrays (slash / poly / UST chords have
+  // no .intervals) — nothing to check against, so leave the voicing alone.
+  if (!Array.isArray(baseIntervals)) return false;
   if (
     activeVoicingMode !== 'random' &&
     activeVoicingMode !== 'close' &&
@@ -548,6 +585,21 @@ function renderChordPoolPanel(panel) {
   const totalSelected = () => getActivePool().length + ' items';
   const { body } = makePoolPanelShell(panel, 'Training pool — Chords', totalSelected);
   _renderChordSubGroups(body);
+}
+
+/**
+ * Re-renders only the Voicing sub-group's inner body for the chord now on
+ * screen, so greyed-out chips and the active chip follow chord changes without
+ * rebuilding the whole pool panel (which would reset open/closed sections and
+ * scroll position). No-op when the chord pool panel is not in the DOM.
+ *
+ * Called by dictShow() in app.js whenever a dictionary chord is loaded.
+ */
+function refreshVoicingPanel() {
+  const voicingBody = document.querySelector('#poolPanel [data-role="voicing"]');
+  if (!voicingBody) return;
+  voicingBody.innerHTML = '';
+  _renderVoicingSection(voicingBody);
 }
 
 /**
