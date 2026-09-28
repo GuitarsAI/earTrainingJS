@@ -25,6 +25,9 @@
  *   - js/modes/chords-mode.js  — renderInversionChips
  *
  * @module notation
+ * @revision Sep 2026: SVG height was computed as if a stave started at its y; VexFlow
+ *   places the top line 40 px lower, so the bottom of the staff was clipped. Layout now
+ *   works from staff-line positions, and fitNotationSvg() measures the drawn content.
  * @author Renato Fera P.
  * @copyright The Sound Travels 2026
  * @license MIT
@@ -69,6 +72,75 @@ function addAccidentals(staveNote, keys, VF) {
 
 // ─── Main notation renderer ────────────────────────────────────────────────────
 
+// ─── SVG sizing helpers ────────────────────────────────────────────────────────
+
+/*
+ * VexFlow 5.0.0 geometry (verified against js/vendor/vexflow.min.js):
+ * a Stave created at y has its TOP LINE drawn at y + 40 and its BOTTOM LINE at
+ * y + 80. The 40 px above the top line is built-in headroom. Earlier versions
+ * of this file assumed the staff started at y, so the SVG ended 40 px too early
+ * and the bottom of the staff was clipped. All layout math below works in terms
+ * of the top/bottom LINE positions and converts to a stave y with these values.
+ */
+const VF_TOP_LINE_OFFSET = 40;  // stave y  -> top line
+const VF_STAFF_H         = 40;  // top line -> bottom line (4 spaces x 10 px)
+const NOTATION_FIT_PAD   = 12;  // px of breathing room around measured content
+
+/**
+ * Clears any sizing state left on the shared #notation-svg by a previous render.
+ * #notation-svg is reused by the chord renderers here, the Resolve view
+ * (breakdown.js) and the Progressions view (progressions-mode.js); the latter two
+ * set only width/height, so nothing else may linger on the element.
+ *
+ * @param {SVGSVGElement} svg
+ * @returns {void}
+ */
+function resetNotationSvg(svg) {
+  ['viewBox', 'data-base-w', 'data-base-h', 'data-fit-w', 'data-fit-h']
+    .forEach(a => svg.removeAttribute(a));
+}
+
+/**
+ * Grows the SVG so everything VexFlow drew is inside it. Uses getBBox() to
+ * measure the real extent of the drawing (staves, ledger lines, clefs,
+ * accidentals, stems, brace) and only ever GROWS the canvas beyond the size the
+ * renderer computed; it never shrinks it.
+ *
+ * It changes width and height ONLY. It deliberately does not set a viewBox: a
+ * viewBox would persist on the shared element and would scale the Progressions
+ * and Resolve views, which do not reset it.
+ *
+ * It is a no-op when the panel is hidden (getBBox reports nothing) and when
+ * another renderer has drawn into the element since (the current size is not one
+ * this function recorded). showNotation() calls it again once the panel is visible.
+ *
+ * @param {SVGSVGElement} svg
+ * @returns {void}
+ */
+function fitNotationSvg(svg) {
+  if (!svg || !svg.getAttribute) return;
+  svg.removeAttribute('viewBox');                 // never leave a viewBox behind
+  const baseW = parseFloat(svg.getAttribute('data-base-w'));
+  const baseH = parseFloat(svg.getAttribute('data-base-h'));
+  if (!baseW || !baseH) return;
+  const curW = parseFloat(svg.getAttribute('width'));
+  const curH = parseFloat(svg.getAttribute('height'));
+  const fitW = parseFloat(svg.getAttribute('data-fit-w'));
+  const fitH = parseFloat(svg.getAttribute('data-fit-h'));
+  const ours = (curW === baseW || curW === fitW) && (curH === baseH || curH === fitH);
+  if (!ours) { resetNotationSvg(svg); return; }   // another renderer owns the SVG now
+  let bb;
+  try { bb = svg.getBBox(); } catch (e) { return; }
+  if (!bb || (!bb.width && !bb.height)) return;   // hidden or empty: nothing to measure
+  const w = Math.ceil(Math.max(baseW, bb.x + bb.width  + NOTATION_FIT_PAD));
+  const h = Math.ceil(Math.max(baseH, bb.y + bb.height + NOTATION_FIT_PAD));
+  svg.setAttribute('width',  w);
+  svg.setAttribute('height', h);
+  svg.setAttribute('data-fit-w', w);
+  svg.setAttribute('data-fit-h', h);
+}
+
+
 /**
  * Renders a set of MIDI notes into the `#notation-svg` element using VexFlow.
  *
@@ -103,6 +175,7 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
 
   const svg = document.getElementById('notation-svg');
   svg.innerHTML = '';
+  resetNotationSvg(svg);
 
   // For chords: sort and deduplicate so stacked notation is unambiguous.
   // For scales: preserve the caller's note order (ascending, descending, or both).
@@ -127,7 +200,9 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
   // ── Dynamic layout: expand SVG to fit all ledger lines ──────────────────────
   //
   // VexFlow renders ledger lines outside the staff body without clipping them
-  // itself — clipping happens when the SVG height is too small. We measure how
+  // itself — clipping happens when the SVG height is too small. NOTE: a stave's
+  // top line sits 40 px BELOW the y passed to new Stave() (VF_TOP_LINE_OFFSET),
+  // so all sizing here is done in terms of staff lines. We measure how
   // far each note sits above/below its staff's outer lines and add the required
   // pixel padding so every note is always fully visible.
   //
@@ -188,26 +263,32 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
   const tOver = _staffOvershoot(trebleNotesMeasure, TREBLE_TOP, TREBLE_BOTTOM);
   const bOver = _staffOvershoot(bassNotesMeasure,   BASS_TOP,   BASS_BOTTOM);
 
-  // Staff body height is fixed at 40 px (4 spaces × 10 px each).
-  // Gap between treble bottom and bass top on a grand staff is 60 px.
-  const STAFF_H    = 40;
+  // Gap between the treble bottom line and the bass top line on a grand staff.
+  // Positions are computed for the staff LINES; the stave y is then derived by
+  // subtracting VexFlow's 40 px top-line offset (see VF_TOP_LINE_OFFSET above).
   const GRAND_GAP  = 60;
 
   let H, trebleY, bassY;
   if (grandStaff) {
-    trebleY = tOver.above;
-    bassY   = trebleY + STAFF_H + GRAND_GAP;
-    H       = bassY + STAFF_H + bOver.below;
+    const trebleTopLine = tOver.above;
+    const bassTopLine   = trebleTopLine + VF_STAFF_H + GRAND_GAP;
+    trebleY = trebleTopLine - VF_TOP_LINE_OFFSET;
+    bassY   = bassTopLine   - VF_TOP_LINE_OFFSET;
+    H       = bassTopLine + VF_STAFF_H + bOver.below;
   } else if (needsBass) {
-    bassY = bOver.above;
-    H     = bassY + STAFF_H + bOver.below;
+    const bassTopLine = bOver.above;
+    bassY = bassTopLine - VF_TOP_LINE_OFFSET;
+    H     = bassTopLine + VF_STAFF_H + bOver.below;
   } else {
-    trebleY = tOver.above;
-    H       = trebleY + STAFF_H + tOver.below;
+    const trebleTopLine = tOver.above;
+    trebleY = trebleTopLine - VF_TOP_LINE_OFFSET;
+    H       = trebleTopLine + VF_STAFF_H + tOver.below;
   }
 
   svg.setAttribute('width', W);
   svg.setAttribute('height', H);
+  svg.setAttribute('data-base-w', W);
+  svg.setAttribute('data-base-h', H);
   const renderer = new Renderer(svg, Renderer.Backends.SVG);
   renderer.resize(W, H);
   const ctx = renderer.getContext();
@@ -431,6 +512,9 @@ function renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr) {
       }
     }
   } catch(e) { console.error('VexFlow render error:', e); }
+
+  // Measure what was actually drawn and grow the canvas if anything overflows.
+  fitNotationSvg(svg);
 }
 
 
@@ -581,6 +665,7 @@ function renderPolyNotation(keySigStr) {
 
   const svg = document.getElementById('notation-svg');
   svg.innerHTML = '';
+  resetNotationSvg(svg);
 
   // Polychord layout: grand staff, but sized dynamically so ledger lines are
   // never clipped. Upper triad always on treble, lower on bass.
@@ -607,12 +692,17 @@ function renderPolyNotation(keySigStr) {
   const tOver = _polyOvershoot(currentPolyUpperMidi, TREBLE_TOP_P, TREBLE_BOT_P);
   const bOver = _polyOvershoot(currentPolyLowerMidi, BASS_TOP_P,   BASS_BOT_P);
 
-  const trebleY = tOver.above;
-  const bassY   = trebleY + STAFF_H_P + GRAND_GAP_P;
-  const H       = bassY + STAFF_H_P + bOver.below;
+  // Layout in terms of staff LINES; stave y = line position - VexFlow's 40 px offset.
+  const trebleTopLine = tOver.above;
+  const bassTopLine   = trebleTopLine + STAFF_H_P + GRAND_GAP_P;
+  const trebleY = trebleTopLine - VF_TOP_LINE_OFFSET;
+  const bassY   = bassTopLine   - VF_TOP_LINE_OFFSET;
+  const H       = bassTopLine + STAFF_H_P + bOver.below;
 
   svg.setAttribute('width', W);
   svg.setAttribute('height', H);
+  svg.setAttribute('data-base-w', W);
+  svg.setAttribute('data-base-h', H);
   const renderer = new Renderer(svg, Renderer.Backends.SVG);
   renderer.resize(W, H);
   const ctx = renderer.getContext();
@@ -726,6 +816,8 @@ function renderPolyNotation(keySigStr) {
     drawStaff(currentPolyLowerMidi, loPc, currentChord.lowerSymbol, 'bass',   bassStave);
 
   } catch(e) { console.error('VexFlow poly render error:', e); }
+
+  fitNotationSvg(svg);
 }
 
 
@@ -864,6 +956,9 @@ function showNotation() {
 
   area.style.display = 'block';
   document.getElementById('notationPanel').style.display = 'block';
+  // The renderers may have run while the panel was hidden (nothing to measure);
+  // refit now that it is visible.
+  fitNotationSvg(document.getElementById('notation-svg'));
   showBreakdown();
 }
 

@@ -2,7 +2,12 @@
 
 > **Working reference document — production pass only. Delete after v1.0.0.**  
 > Sections are filled in file by file as the production pass progresses.  
-> Last updated: ARCHITECTURE.md ✅ (voicings cleanup pass)
+> Last updated: ARCHITECTURE.md ✅ (Sep 2026 — notation clipping fix, duplicate-note voicing fix)
+
+> **Sep 2026 fixes (recorded in the sections below):**
+> 1. **Notation clipping** — `notation.js` sized the SVG as if a stave started at its `y`; VexFlow places the top line 40 px lower, so the bottom of the staff was cut off. Layout now works from staff-line positions; new `fitNotationSvg()` measures the drawn content. `#notation-svg` also gets `overflow: visible` in `components.css`.
+> 2. **Duplicate voicing notes** — `oct_bass_triad`, `oct_bass_7th`, `open5_triad` (and, for some chords, `spread_2h`) could return the same MIDI note twice, shown as a repeated note in the breakdown and played twice. Fixed at the source and guarded in `applyVoicing()`.
+> 3. **`oct_bass_7th`** now requires a seventh (`VOICING_REQUIREMENTS`) and is greyed out on triads and 6th chords.
 
 ---
 
@@ -259,7 +264,7 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 
 **Role:** All component-level styles for the application. Consumed after `base.css` (which defines the CSS custom property tokens) and before `mobile.css` (which applies narrow-viewport overrides). Contains zero design tokens — all colour, spacing, and shadow values are referenced via `var(--...)` from `base.css`, with two deliberate exceptions noted below.
 
-**Size:** 1,138 lines across 20 sections.
+**Size:** 1,141 lines across 20 sections.
 
 **Structure — 20 sections in render order:**
 
@@ -273,7 +278,7 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 | 6 | Training pool panel | `.pool-panel`, `.pool-panel-header`, `.pool-panel-body` / `.open`, `.pool-section`, `.pool-section-header`, `.pool-section-body` / `.collapsed`, `.pool-section-chevron`, `.pool-chips`, `.pool-chip` / `.active`, `.pool-inv-row`. Also: `.voicing-chip-disabled` — greyed-out inert chip for voicings inapplicable to the current chord (opacity 0.35, pointer-events none; see §6 design decisions below). |
 | 7 | Chip system | `.option-chip` base + four aliases: `.chord-style-chip`, `.voicing-chip`, `.style-chip`, `.scale-dir-chip` — all share one ruleset; row wrappers: `.chord-style-row`, `.voicing-mode-row`, `.interval-style-row`, `.scale-dir-row` |
 | 8 | Play area | `.play-area`, `.play-label`, `.play-btn` / `.playing` / `:disabled`, `.chord-hint` |
-| 9 | Notation panel | `.notation-area` (hardcoded `#ffffff` — see design decisions), `.notation-scroll` (`-webkit-overflow-scrolling: touch`), `#notation-svg`, `.notation-label`, `.notation-chord-name`, `.keysig-chip-row`, `.keysig-chip` / `.active` (hardcoded light-palette — see design decisions) |
+| 9 | Notation panel | `.notation-area` (hardcoded `#ffffff` — see design decisions), `.notation-scroll` (`-webkit-overflow-scrolling: touch`), `#notation-svg` (`overflow: visible` — see design decisions), `.notation-label`, `.notation-chord-name`, `.keysig-chip-row`, `.keysig-chip` / `.active` (hardcoded light-palette — see design decisions) |
 | 10 | Quiz status | `.status-msg` / `.good` (`--correct`) / `.bad` (`--wrong`); `min-height` preserves layout when empty |
 | 11 | Answer dropdown | `.answer-dropdown-wrap`, `.ans-dropdown-trigger` / `.open` / `.correct` / `.wrong` / `.disabled`, CSS `::after` chevron, `.ans-dropdown-list` / `.open`, `.ans-dropdown-item` / `.correct` / `.wrong` |
 | 12 | Controls | `.controls`, `.ctrl-btn` / `.primary` / `.slow` / `.resolve` |
@@ -311,6 +316,7 @@ No runtime CDN calls. No frameworks. No build-time transpilation required.
 
 **Design decisions recorded:**
 
+- **`#notation-svg { overflow: visible }`** — safety net added Sep 2026. `notation.js` sizes the SVG from the drawn content (`fitNotationSvg()`), but if any glyph ever lands outside the SVG box it is still painted instead of clipped. Never give this element a CSS `height` / `max-height`; its size comes from the `width` / `height` attributes set by the renderers.
 - **Notation card hardcoded white** — `.notation-area` uses `background: #ffffff` (not `var(--bg-card)`) because VexFlow renders black ink; the card must remain white regardless of active theme. `.notation-label`, `.notation-chord-name`, and all `.keysig-chip` colours are also hardcoded to light-palette hex values for the same reason — they sit on a white surface, not the themed background.
 - **`#themeToggleMobile` hidden here** — `display:none` is set in this file; `mobile.css` overrides to `display:inline-flex` at the narrow breakpoint so the score-bar instance shows on mobile. The desktop instance `#themeToggle` is always visible via `.header-actions`. Note: `mobile.css` previously contained a duplicate `display:none` rule that re-hid the mobile toggle — corrected to `display:inline-flex` in the Aug 2026 production pass.
 - **Chip alias pattern** — `.option-chip`, `.chord-style-chip`, `.voicing-chip`, `.style-chip`, `.scale-dir-chip` all share one ruleset via a grouped selector. This allows JS in each mode file to use semantically meaningful class names without any style duplication.
@@ -779,17 +785,19 @@ Specialised families extend the schema with additional fields:
 
 **Role:** VexFlow-based notation renderer for all app modes. Handles enharmonic spelling, key signature accidental filtering, automatic grand staff layout, sequential (scale) and block (chord/interval) rendering, polychord rendering, and label generation for all chord families (slash, poly, UST, inversion). Contains no music theory logic — it consumes MIDI note arrays and state variables produced by mode files and renders them.
 
-**Size:** ~350 lines across 13 functions (4 top-level, 9 inner).
+**Size:** ~970 lines. Top-level: `midiToVexKeyExact`, `addAccidentals`, `resetNotationSvg`, `fitNotationSvg`, `renderNotation`, `renderPolyNotation`, `showNotation`, plus the label helpers below and the inner spelling/drawing functions. Three module-level constants (`VF_TOP_LINE_OFFSET`, `VF_STAFF_H`, `NOTATION_FIT_PAD`) drive SVG sizing.
 
-**Functions — 4 top-level:**
+**Functions — top-level:**
 
 | Function | Signature | Description |
 |---|---|---|
 | `midiToVexKeyExact(midi)` | `(number) → string` | Converts a MIDI note number to a VexFlow key string using a fixed chromatic (always-sharps) mapping. No enharmonic awareness. Used for simple single-note cases where spelling context is unavailable. |
 | `addAccidentals(staveNote, keys, VF)` | `(VF.StaveNote, string[], object) → void` | Adds VexFlow accidental modifiers to a StaveNote for every key that carries an accidental. Does not filter for key signature coverage — use `addAccidentalsFiltered` when a key signature is active. |
-| `renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr)` | `(number[], boolean, string, number, string\|null) → void` | Main notation renderer. `sequential=false` renders a stacked whole-note block chord (chords, intervals); `sequential=true` renders quarter notes in order with bar lines and rest padding (scales). Auto-selects treble, bass, or grand staff based on note range. When `keySigStr` is supplied, draws the key signature and filters accidentals via `addAccidentalsFiltered`. Contains two inner functions: `spellMidi()` and `addAccidentalsFiltered()`. |
-| `renderPolyNotation(keySigStr)` | `(string\|null) → void` | Dedicated polychord renderer. Always forces a grand staff (upper triad → treble, lower triad → bass). Each triad is spelled independently using its own root and symbol via `spellMidiRelative()`. Necessary because a single-root renderer cannot handle the dual spelling contexts of a polychord. Contains two inner functions: `spellMidiRelative()` and `addAccidentalsFiltered()`. |
-| `showNotation()` | `() → void` | Entry point for all notation display. Dispatches to the correct rendering path based on `currentMode` and `currentChord.family`: intervals, scales, polychords, UST, slash chords, and standard chords (including inversions). Manages key signature chip row visibility and active state. Mirrors `currentChordPlayStyle` in notation for ascending, descending, broken, and block playback. Triggers `renderInversionChips()` for standard chords after answering. Calls `showBreakdown()` at the end. |
+| `resetNotationSvg(svg)` | `(SVGSVGElement) → void` | Removes `viewBox`, `data-base-w/h` and `data-fit-w/h` from the shared `#notation-svg`. Called at the start of `renderNotation` and `renderPolyNotation` so no sizing state survives from a previous render. |
+| `fitNotationSvg(svg)` | `(SVGSVGElement) → void` | Measures the drawn content with `getBBox()` and grows the SVG `width` / `height` if anything overflows (accidentals, stems, ledger lines, brace). Never shrinks the canvas and never sets a `viewBox`. No-op while the panel is `display:none` (nothing to measure) and when another renderer has drawn into the SVG since (its size no longer matches the values recorded in `data-base-*` / `data-fit-*`). |
+| `renderNotation(midiNotes, sequential, symbol, rootPc, keySigStr)` | `(number[], boolean, string, number, string\|null) → void` | Main notation renderer. `sequential=false` renders a stacked whole-note block chord (chords, intervals); `sequential=true` renders quarter notes in order with bar lines and rest padding (scales). Auto-selects treble, bass, or grand staff based on note range. When `keySigStr` is supplied, draws the key signature and filters accidentals via `addAccidentalsFiltered`. SVG size is computed from staff-line positions (see design patterns) and refined by `fitNotationSvg()` after drawing. Contains two inner functions: `spellMidi()` and `addAccidentalsFiltered()`. |
+| `renderPolyNotation(keySigStr)` | `(string\|null) → void` | Dedicated polychord renderer. Always forces a grand staff (upper triad → treble, lower triad → bass). Each triad is spelled independently using its own root and symbol via `spellMidiRelative()`. Necessary because a single-root renderer cannot handle the dual spelling contexts of a polychord. Uses the same staff-line sizing and `fitNotationSvg()` as `renderNotation`. Contains two inner functions: `spellMidiRelative()` and `addAccidentalsFiltered()`. |
+| `showNotation()` | `() → void` | Entry point for all notation display. Dispatches to the correct rendering path based on `currentMode` and `currentChord.family`: intervals, scales, polychords, UST, slash chords, and standard chords (including inversions). Manages key signature chip row visibility and active state. Mirrors `currentChordPlayStyle` in notation for ascending, descending, broken, and block playback. Triggers `renderInversionChips()` for standard chords after answering. Once the panel is visible it calls `fitNotationSvg()` again (the renderers may have run while it was hidden). Calls `showBreakdown()` at the end. |
 
 **Label helpers — 5 total:**
 
@@ -811,6 +819,11 @@ Specialised families extend the schema with additional fields:
 - **Polychord renderer is separate:** `renderPolyNotation` cannot share `renderNotation`'s spelling context because each triad requires its own `rootPc` and `symbol`. The dedicated renderer receives both triads' MIDI arrays, roots, and symbols from module-level state variables and spells each independently.
 - **Notation mirrors playback:** `showNotation()` reads `currentChordPlayStyle` (the resolved value stored at play time by `audio.js`) to render sequential notation for ascending/descending/broken styles, ensuring the visual matches exactly what the user heard.
 
+- **SVG sizing works from staff lines, not stave `y` (Sep 2026 fix):** In VexFlow 5.0.0 a `Stave` created at `y` draws its top line at `y + 40` and its bottom line at `y + 80` (verified against `vexflow.min.js`). The renderers therefore compute the top-line position (`above` margin, plus 40 px staff height, plus the grand-staff gap of 60 px for the bass stave), set `H = bottomLine + below-margin`, and pass `stave y = line position − VF_TOP_LINE_OFFSET` to `new Stave(...)`. The old code treated `y` as the top of the staff, so the SVG ended 40 px too early and the bottom of the staff was clipped on simple chords (treble, bass and grand staff).
+- **Grow-only measured fit:** After drawing, `fitNotationSvg()` uses `getBBox()` to catch anything the arithmetic misses. It only ever enlarges the SVG.
+- **`#notation-svg` is shared — never leave a `viewBox` on it:** the same element is drawn into by `renderNotation`, `renderPolyNotation`, `renderResolutionNotation()` (`breakdown.js`) and `showProgressionNotation()` (`progressions-mode.js`). The last two set only `width` / `height` and never reset a `viewBox`. An earlier revision of `fitNotationSvg()` set a `viewBox`, which stayed on the element and scaled the Progressions staves down into a tiny staff. Only `width` / `height` are set now, and the chord renderers clear leftover attributes on every render.
+- **Known limitation:** `renderResolutionNotation()` and `showProgressionNotation()` use fixed heights (240 px grand staff, 140 px single staff). They fit typical chords but do not grow for unusually high or low voicings.
+
 **Dependencies:** `VexFlow` (vendor), `spelling.js` (`spelledNote`, `midiToVexKeySpelled`, `respellForKeySig`, `isCoveredByKeySig`, `vexAccidental`, `spelledRoot`), `keysig.js` (`keySigCoveredLetters`, `keySigAccidentalCount`), `helpers.js` (`pcInterval`, `tritoneLabel`, `getBestFitKeyStr`, `getChordKeyStr`, `getIntervalKeyStr`, `getScaleParentKeyStr`), `state.js` (all current-question state variables), `breakdown.js` (`showBreakdown`), `chords-mode.js` (`renderInversionChips`).
 
 **Consumed by:** `audio.js` (`showNotation` called from `playScale()`), `chords-mode.js`, `intervals-mode.js`, `scales-mode.js`, `progressions-mode.js`.
@@ -821,7 +834,7 @@ Specialised families extend the schema with additional fields:
 
 **Role:** Voicing system for Chords mode. Owns the complete voicing data table (`VOICING_MODES`, 36 voicings across 5 active groups), the per-symbol applicability requirements table (`VOICING_REQUIREMENTS`), and all voicing transformation algorithms. `applyVoicing()` is the single entry point that transforms a chord's root and base intervals into a concrete MIDI note array. `resolveVoicingMode()` picks one concrete mode per question. `voicingAppliesToChord()` provides a chord-aware applicability test used by the UI to grey out inapplicable chips.
 
-**Size:** ~960 lines across 12 functions / constants.
+**Size:** ~990 lines across 13 functions / constants.
 
 **Public API:**
 
@@ -830,7 +843,7 @@ Specialised families extend the schema with additional fields:
 | `VOICING_MODES` | `VoicingMode[]` | Complete catalogue of all 36 voicing modes. Each entry: `{ group, name, symbol, desc }`. Used by `pool-chords.js` to build chip UI and by `breakdown-chords.js` to label the active voicing. |
 | `CONCRETE_VOICING_SYMBOLS` | `string[]` | Flat array of all 36 voicing symbols derived from `VOICING_MODES` at startup. Excludes the UI meta-value `'random'`. Used by `resolveVoicingMode()`. |
 | `VOICING_REQUIREMENTS` | `Object.<string, string[]>` | Maps voicing symbols that have structural role requirements to the harmonic roles they need. Symbols absent from the table are universally applicable. Used by `voicingAppliesToChord()`. See design patterns below. |
-| `applyVoicing(rootMidi, baseIntervals, mode)` | `(number, number[], string) → number[]` | Main dispatcher. Routes to the correct voicing algorithm for `mode` and returns a sorted MIDI note array. Every symbol in `VOICING_MODES` has a corresponding `case`. Falls back to `'close'` on any error or unrecognised mode. Called recursively by cases that fall back to simpler modes. |
+| `applyVoicing(rootMidi, baseIntervals, mode)` | `(number, number[], string) → number[]` | Main dispatcher. Routes to the correct voicing algorithm for `mode` and returns a sorted MIDI note array. Every symbol in `VOICING_MODES` has a corresponding `case` (in `_applyVoicingCore()`). Falls back to `'close'` on any error or unrecognised mode. Called recursively by cases that fall back to simpler modes. The result never contains the same MIDI note twice: identical notes are removed on exit. |
 | `resolveVoicingMode()` | `() → string` | Picks one concrete voicing symbol for the current question. In quiz mode: picks randomly from `selectedVoicings`, filtering out `'random'` and (in Basic mode) any advanced symbols. In dictionary mode with `activeVoicingMode === 'random'`: picks randomly from the difficulty-scoped concrete pool. In dictionary mode with a concrete `activeVoicingMode`: returns it directly. Never returns `'random'`. |
 | `voicingAppliesToChord(symbol, baseIntervals)` | `(string, number[]) → boolean` | UI-gating helper. Returns `true` if the voicing is structurally meaningful for a chord with the given `baseIntervals`. Symbols absent from `VOICING_REQUIREMENTS` always return `true`. For `oct_bass_triad`, `open5_triad`, and `spread_2h`, a `'fifth'` requirement is satisfied by either `'fifth'` or `'altfifth'` (dim/aug fifth), matching those voicings' `applyVoicing()` behaviour. |
 
@@ -838,6 +851,7 @@ Specialised families extend the schema with additional fields:
 
 | Function | Signature | Description |
 |---|---|---|
+| `_applyVoicingCore(rootMidi, baseIntervals, mode)` | `(number, number[], string) → number[]` | The voicing algorithms (the `switch` over `mode`). `applyVoicing()` is a thin wrapper that removes duplicate MIDI notes from its result. Internal fallbacks call the public `applyVoicing()`. |
 | `_voicingRoles(baseIntervals)` | `(number[]) → string[]` | Classifies each interval by harmonic role (`'root'`, `'third'`, `'fifth'`, `'altfifth'`, `'seventh'`, `'extension'`). Used throughout `applyVoicing()` to select notes by function rather than raw semitone value. |
 | `_notesByRole(rootMidi, baseIntervals, roles)` | `(number, number[], string[]) → number[]` | Extracts MIDI notes matching specific harmonic roles from a chord's base intervals. |
 | `_pc(midi, rootMidi)` | `(number, number) → number` | Returns the pitch class of a MIDI note as a semitone interval from root (0–11). |
@@ -884,6 +898,7 @@ Specialised families extend the schema with additional fields:
 | `evans_b` | `['seventh', 'third']` |
 | `kenny_barron` | `['seventh']` |
 | `oct_bass_triad` | `['third', 'fifth']` ★ |
+| `oct_bass_7th` | `['seventh']` |
 | `open5_triad` | `['fifth']` ★ |
 | `spread_2h` | `['fifth']` ★ |
 
@@ -895,6 +910,8 @@ Specialised families extend the schema with additional fields:
 - **Role-based note selection:** `_voicingRoles()` maps semitone intervals to functional labels so algorithms like `shell`, `drop2`, and `evans_a` work correctly across all chord qualities without hard-coding interval numbers.
 - **`VOICING_REQUIREMENTS` as the UI-honesty layer:** This table mirrors the role guards inside `applyVoicing()` cases. It lets `voicingAppliesToChord()` answer "does this voicing apply?" without running the full algorithm. Keep the table in sync with `applyVoicing()` at all times — every `-1` guard that triggers a fallback must have an entry here, and vice versa.
 - **`altfifth` special case:** Three voicings (`oct_bass_triad`, `open5_triad`, `spread_2h`) use `roles.findIndex(r => r === 'fifth' || r === 'altfifth')` in their `applyVoicing()` cases, meaning a diminished or augmented fifth satisfies the requirement. `voicingAppliesToChord()` replicates this via `_ALTFIFTH_OK` rather than adding `'altfifth'` to those entries' requirement arrays.
+- **No duplicate MIDI notes (Sep 2026 fix):** The left hand of `oct_bass_triad`, `oct_bass_7th` and `open5_triad` used to wrap into MIDI 36–59. Its octave (`lhBase + 12`) or fifth could then land on the same MIDI note as a right-hand note (window starts at 60), producing e.g. `[48, 60, 60, 64, 67]` for C major — a repeated C in the breakdown and a note struck twice. The left-hand root for these three voicings now wraps into 36–47, keeping the LH notes below MIDI 60. `applyVoicing()` additionally removes identical MIDI notes from any result as a safety net (this also covers 21 `spread_2h` chord/root cases found in a scan of all 95 `chords.js` types). Verified: 167,580 voicing × chord × root combinations, zero duplicates and no non-chord tones.
+- **`oct_bass_7th` requires a seventh:** Without one its notes were identical to `oct_bass_triad`. It now has a `VOICING_REQUIREMENTS` entry and a matching guard that falls back to `'close'`. The chip greys out on triads and on 6th chords (no 7th); it stays active on maj7, dominant 7 and other chords that contain a seventh.
 - **Basic mode scoping:** `resolveVoicingMode()` restricts the pool to position and doubling groups (Groups 1–2) when `appDifficulty === 'basic'`. Advanced voicings (shell, drop, style) are only available in Advanced mode.
 - **Graceful fallback:** `applyVoicing()` wraps all cases in try/catch and returns a close-position array on any error. Individual cases fall back to `'close'` when the chord lacks a required tone.
 - **`drop24` falls back to `drop2`:** When the chord has fewer than 4 voices, `drop24` calls `applyVoicing(rootMidi, baseIntervals, 'drop2')` rather than returning a degenerate result. `block_close` and `block_drop2` are thin aliases for `'close'` and `'drop2'` respectively — their names convey a stylistic context, not a different algorithm.

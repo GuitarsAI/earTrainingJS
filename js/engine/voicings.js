@@ -35,6 +35,10 @@
  *     `voicingAppliesToChord()` can grey out inapplicable chips without running
  *     `applyVoicing()`. Keep this table in sync whenever cases are added, removed, or
  *     their role checks are changed.
+ *   - `applyVoicing()` never returns the same MIDI note twice (deduplicated on exit). The
+ *     octave-bass and open-fifth voicings also keep their left hand below MIDI 60 so their
+ *     LH notes cannot collide with the right-hand window.
+ *   - `oct_bass_7th` requires a seventh (see `VOICING_REQUIREMENTS`).
  *   - For `fifth`-requiring voicings (`oct_bass_triad`, `open5_triad`, `spread_2h`),
  *     `altfifth` (dim/aug 5th) satisfies the requirement — both `voicingAppliesToChord()`
  *     and the corresponding `applyVoicing()` cases accept either role.
@@ -122,7 +126,7 @@ const VOICING_MODES = [
   { group: 'style',      name: 'Bill Evans B',          symbol: 'evans_b',         desc: '7 on bottom, 3rd above — rootless form B inversion; requires seventh and third' },
   { group: 'style',      name: 'Kenny Barron',          symbol: 'kenny_barron',    desc: 'LH: root + 7th. RH: available chord tones — signature two-hand spread; requires seventh' },
   { group: 'style',      name: 'Octave Bass + Triad',   symbol: 'oct_bass_triad',  desc: 'LH: root octave. RH: root/3rd/5th — pop/R&B staple; requires third and fifth' },
-  { group: 'style',      name: 'Octave Bass + 7th',     symbol: 'oct_bass_7th',    desc: 'LH: root octave. RH: full chord close — works on any chord' },
+  { group: 'style',      name: 'Octave Bass + 7th',     symbol: 'oct_bass_7th',    desc: 'LH: root octave. RH: full 7th chord close — requires a 7th' },
   { group: 'style',      name: 'Open Fifth + Triad',    symbol: 'open5_triad',     desc: 'LH: root + 5th (power chord). RH: available tones — requires fifth or altered fifth' },
   { group: 'style',      name: 'Block Chord Close',     symbol: 'block_close',     desc: 'Melody on top, close-position chord tones harmonised below (jazz arranging)' },
   { group: 'style',      name: 'Locked Hands',          symbol: 'block_locked',    desc: 'Melody doubled one octave lower, inner chord tones between — Milt Buckner style' },
@@ -195,6 +199,9 @@ const VOICING_REQUIREMENTS = {
   // oct_bass_triad, open5_triad, spread_2h: 'fifth' here means fifth OR altfifth.
   // voicingAppliesToChord() handles these symbols with a special-case check.
   oct_bass_triad:   ['third', 'fifth'],
+  // oct_bass_7th: the name promises a 7th, so a chord without one (triads, 6th chords)
+  // is not offered this voicing. Mirrors the guard in the 'oct_bass_7th' case.
+  oct_bass_7th:     ['seventh'],
   open5_triad:      ['fifth'],
   spread_2h:        ['fifth'],
 };
@@ -350,10 +357,24 @@ function _noteFromInterval(rootMidi, semitones, targetLoMidi) {
  * @param {number}   rootMidi      - MIDI number of the chord root.
  * @param {number[]} baseIntervals - Semitone intervals from root (root = 0 always present).
  * @param {string}   mode          - Voicing symbol string (already resolved; never `'random'`).
- * @returns {number[]} Sorted MIDI note array (ascending pitch). Never empty —
- *   falls back to close position on any error or unrecognised mode.
+ * @returns {number[]} Sorted MIDI note array (ascending pitch) with no duplicate notes.
+ *   Never empty — falls back to close position on any error or unrecognised mode.
  */
 function applyVoicing(rootMidi, baseIntervals, mode) {
+  const notes = _applyVoicingCore(rootMidi, baseIntervals, mode);
+  // Safety net: the same MIDI note twice has no musical meaning (one key, struck
+  // twice) and shows up as a repeated note in the breakdown. Return distinct notes only.
+  return Array.isArray(notes) ? [...new Set(notes)].sort((a, b) => a - b) : notes;
+}
+
+/**
+ * Voicing algorithms (see `applyVoicing()` for the public contract). Kept separate so
+ * that `applyVoicing()` can guarantee a duplicate-free result for every case.
+ * Internal fallbacks call the public `applyVoicing()`.
+ *
+ * @private
+ */
+function _applyVoicingCore(rootMidi, baseIntervals, mode) {
   if (!baseIntervals || !baseIntervals.length) return [rootMidi];
 
   try {
@@ -758,8 +779,11 @@ function applyVoicing(rootMidi, baseIntervals, mode) {
       case 'oct_bass_triad': {
         // Octave bass + triad: LH root octave (oct 2–3), RH root/3rd/5th (oct 4–5).
         // Requires third and fifth (or altfifth) — the RH triad is the voicing's identity.
+        // LH root is kept in 36–47 so that lhBase + 12 (the octave) stays below the RH
+        // window that starts at MIDI 60; otherwise the octave and the RH root collide
+        // on the same MIDI note (duplicate note in the breakdown and double audio hit).
         let lhBase = rootMidi;
-        while (lhBase > 59) lhBase -= 12;
+        while (lhBase > 47) lhBase -= 12;
         while (lhBase < 36) lhBase += 12;
 
         const roles    = _voicingRoles(baseIntervals);
@@ -780,9 +804,14 @@ function applyVoicing(rootMidi, baseIntervals, mode) {
 
       case 'oct_bass_7th': {
         // Octave bass + 7th chord: LH root octave (oct 2–3), RH full chord close (oct 4–5).
-        // No role requirements — all chord tones are used exactly as-is in the RH.
+        // Requires a seventh — without one this would be identical to Octave Bass + Triad,
+        // so it falls back to close position (mirrors VOICING_REQUIREMENTS).
+        // LH root is kept in 36–47 so lhBase + 12 stays below the RH window (MIDI 60+).
+        if (!_voicingRoles(baseIntervals).includes('seventh')) {
+          return applyVoicing(rootMidi, baseIntervals, 'close');
+        }
         let lhBase = rootMidi;
-        while (lhBase > 59) lhBase -= 12;
+        while (lhBase > 47) lhBase -= 12;
         while (lhBase < 36) lhBase += 12;
 
         const rhBase  = 60;
@@ -797,8 +826,10 @@ function applyVoicing(rootMidi, baseIntervals, mode) {
         // Open fifth + triad: LH root + 5th (power chord, oct 2–3), RH available tones (oct 4–5).
         // Requires fifth or altfifth for the LH power chord — without it the voicing has no
         // characteristic open-fifth sound. Third is included in RH only when present.
+        // LH root is kept in 36–47 so the LH fifth (max lhBase + 8) stays below the RH
+        // window (MIDI 60+) and cannot duplicate the RH fifth.
         let lhBase = rootMidi;
-        while (lhBase > 59) lhBase -= 12;
+        while (lhBase > 47) lhBase -= 12;
         while (lhBase < 36) lhBase += 12;
 
         const roles    = _voicingRoles(baseIntervals);

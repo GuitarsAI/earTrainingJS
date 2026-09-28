@@ -422,7 +422,10 @@
   overflow-x: auto; overflow-y: visible;
   width: 100%; -webkit-overflow-scrolling: touch;
 }
-#notation-svg { display: block; margin: 0 auto; max-width: none; }
+/* overflow:visible is a safety net: notation.js sizes the SVG from the drawn content
+   (fitNotationSvg), but if a glyph ever lands outside the box it is still painted
+   instead of being clipped. Never set a CSS height/max-height on this element. */
+#notation-svg { display: block; margin: 0 auto; max-width: none; overflow: visible; }
 /* Hardcoded light-palette values — these labels sit on the always-white notation card. */
 .notation-label      { font-size: 0.75rem; color: #777; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; margin-bottom: 4px; }
 .notation-chord-name { font-size: 1.125rem; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
